@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Otli</string>
+    <string name="home_customer">Customer home</string>
+    <string name="home_merchant">Merchant home</string>
+    <string name="home_courier">Courier home</string>
+    <string name="home_admin">Admin home</string>
+    <string name="signed_out_placeholder">Sign in or create an account</string>
+    <string name="profile_incomplete_placeholder">Finishing your profile</string>
+    <string name="pending_placeholder">Waiting for approval</string>
+    <string name="suspended_placeholder">Account suspended</string>
 </resources>

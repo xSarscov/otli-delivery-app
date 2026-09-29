@@ -123,7 +123,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 1.4 — UI and navigation
 
-- [ ] 1.4.1 Create `core/navigation/RootNavHost.kt` (`@Serializable` type-safe routes: `SignedOutGraph`, `Gate.PendingApproval`, `Gate.Suspended`, `Gate.ProfileIncomplete`, `CustomerGraph`, `MerchantGraph`, `CourierGraph`, `AdminGraph`) driven by `ObserveSessionUseCase`'s `SessionState`, plus minimal empty-home composables per role (`CustomerHomeScreen`, `MerchantHomeScreen`, `CourierHomeScreen`, `AdminHomeScreen` — placeholders filled by later slices) and `core/theme/Theme.kt`.
+- [x] 1.4.1 Create `core/navigation/RootNavHost.kt` (`@Serializable` type-safe routes: `SignedOutGraph`, `Gate.PendingApproval`, `Gate.Suspended`, `Gate.ProfileIncomplete`, `CustomerGraph`, `MerchantGraph`, `CourierGraph`, `AdminGraph`) driven by `ObserveSessionUseCase`'s `SessionState`, plus minimal empty-home composables per role (`CustomerHomeScreen`, `MerchantHomeScreen`, `CourierHomeScreen`, `AdminHomeScreen` — placeholders filled by later slices) and `core/theme/Theme.kt`.
   - Test-first: write `app/src/test/java/com/otli/app/core/navigation/RootNavHostRoutingTest.kt` RED (Robolectric + Compose UI test, using a fake session `StateFlow`: each `SessionState` value routes to the expected graph/screen and no other role's screen is reachable), then implement GREEN.
   - Acceptance: auth-roles spec — "Each role reaches its own home", "A user cannot perform another role's action" (UI-level: no navigation path exists to another role's screens).
   - Est. lines: ~180
