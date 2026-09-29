@@ -110,11 +110,11 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 1.3 — Firestore adapter
 
-- [ ] 1.3.1 Create `core/di/FirebaseModule.kt` (Hilt module providing `FirebaseAuth`, `FirebaseFirestore`, wiring `useEmulator(host, port)` from `BuildConfig.OTLI_USE_EMULATOR`/`OTLI_EMULATOR_HOST` per the Environment Wiring section of `design.md`).
+- [x] 1.3.1 Create `core/di/FirebaseModule.kt` (Hilt module providing `FirebaseAuth`, `FirebaseFirestore`, wiring `useEmulator(host, port)` from `BuildConfig.OTLI_USE_EMULATOR`/`OTLI_EMULATOR_HOST` per the Environment Wiring section of `design.md`).
   - Test-first: N/A (DI wiring, verified by instrumented tests connecting to the emulator).
   - Acceptance: app connects to the emulator in debug builds.
   - Est. lines: ~50
-- [ ] 1.3.2 Create `auth/adapters/firestore/FirestoreAuthRepository.kt` implementing `AuthRepository` (Firebase Auth for credentials, a single batched write of `users/{uid}` on register, `FirebaseAuth.authStateChanges()` + a `users/{uid}` snapshot listener for `observeUserDocument`) and `auth/di/AuthModule.kt` (Hilt binding).
+- [x] 1.3.2 Create `auth/adapters/firestore/FirestoreAuthRepository.kt` implementing `AuthRepository` (Firebase Auth for credentials, a single batched write of `users/{uid}` on register, `FirebaseAuth.authStateChanges()` + a `users/{uid}` snapshot listener for `observeUserDocument`) and `auth/di/AuthModule.kt` (Hilt binding).
   - Test-first: write `app/src/androidTest/java/com/otli/app/auth/adapters/firestore/FirestoreAuthRepositoryTest.kt` RED against the emulator (register customer → doc has `status=active`; register merchant/courier → `status=pending`; login with bad credentials → rejected and no session resolved), then implement GREEN. Run: `npm --prefix backend run test:android`.
   - Acceptance: auth-roles spec — "Invalid credentials are rejected", plus the three registration scenarios (adapter-level proof that PR 1.1's policy and PR 1.2's rules are wired correctly end-to-end).
   - Est. lines: ~230
