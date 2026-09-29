@@ -56,8 +56,11 @@ Extra commands:
 ## Running the emulators and seed data
 
 1. Start the emulators: `npm --prefix backend run emulators` (Auth 9099, Firestore 8080, UI 4000).
-2. In another terminal, load demo accounts: `npm --prefix backend run seed`.
-   The seed script is added in task 1.2.2; until then the command has nothing to run.
+2. In another terminal, load demo accounts. The seed script refuses to run unless both emulator
+   host variables are set, so it can never touch a real project:
+   `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 npm --prefix backend run seed`.
+   It is idempotent (fixed UIDs) and currently creates the `seed-admin` account
+   (`admin@otli.test` / `otli-demo-123`); later slices extend it.
 
 The emulator project id is `demo-otli`; no real Firebase project is needed for development.
 
