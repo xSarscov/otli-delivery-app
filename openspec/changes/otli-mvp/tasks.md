@@ -72,23 +72,23 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 1.1 — Domain and application layer
 
-- [ ] 1.1.1 Create `core/money/Money.kt` (`@JvmInline value class Money(val centavos: Long)`, `plus`, `times`, `require(centavos >= 0)`) and `app/src/test/java/com/otli/app/core/money/MoneyTest.kt` (table-driven: addition, multiplication, negative-value rejection).
+- [x] 1.1.1 Create `core/money/Money.kt` (`@JvmInline value class Money(val centavos: Long)`, `plus`, `times`, `require(centavos >= 0)`) and `app/src/test/java/com/otli/app/core/money/MoneyTest.kt` (table-driven: addition, multiplication, negative-value rejection).
   - Test-first: write `MoneyTest` RED (class doesn't exist), then implement `Money` GREEN. Run: `./gradlew testDebugUnitTest --tests "com.otli.app.core.money.MoneyTest"`.
   - Acceptance: unit test only, no spec scenario (shared kernel used by `ordering` later).
   - Est. lines: ~70
-- [ ] 1.1.2 Create `core/time/Clock.kt` (port interface + `SystemClock` impl) and `core/result/DomainError.kt` (sealed error hierarchy root, e.g. `Unauthorized`, `InvalidTransition`, `NotFound`).
+- [x] 1.1.2 Create `core/time/Clock.kt` (port interface + `SystemClock` impl) and `core/result/DomainError.kt` (sealed error hierarchy root, e.g. `Unauthorized`, `InvalidTransition`, `NotFound`).
   - Test-first: N/A (interfaces/sealed types, tested indirectly through consumers).
   - Acceptance: compiles; consumed starting Slice 1 session logic.
   - Est. lines: ~40
-- [ ] 1.1.3 Create `auth/domain/Role.kt` (`enum class Role { CUSTOMER, MERCHANT, COURIER, ADMIN }`), `auth/domain/AccountStatus.kt` (`ACTIVE, PENDING, SUSPENDED`), `auth/domain/RegistrationPolicy.kt` (pure function: given a chosen `Role`, return the initial `AccountStatus` — `ACTIVE` for `CUSTOMER`, `PENDING` for `MERCHANT`/`COURIER`; `ADMIN` is not an acceptable input and the function returns a typed rejection), and `app/src/test/java/com/otli/app/auth/domain/RegistrationPolicyTest.kt`.
+- [x] 1.1.3 Create `auth/domain/Role.kt` (`enum class Role { CUSTOMER, MERCHANT, COURIER, ADMIN }`), `auth/domain/AccountStatus.kt` (`ACTIVE, PENDING, SUSPENDED`), `auth/domain/RegistrationPolicy.kt` (pure function: given a chosen `Role`, return the initial `AccountStatus` — `ACTIVE` for `CUSTOMER`, `PENDING` for `MERCHANT`/`COURIER`; `ADMIN` is not an acceptable input and the function returns a typed rejection), and `app/src/test/java/com/otli/app/auth/domain/RegistrationPolicyTest.kt`.
   - Test-first: write `RegistrationPolicyTest` RED covering all four scenarios below, then implement `RegistrationPolicy` GREEN.
   - Acceptance: auth-roles spec — "Customer registers and becomes active immediately", "Merchant registers and starts pending", "Courier registers and starts pending", "Admin accounts are never created through self-registration".
   - Est. lines: ~90
-- [ ] 1.1.4 Create `auth/domain/SessionState.kt` (sealed interface: `SignedOut`, `Loading`, `ProfileIncomplete`, `Pending(role)`, `Suspended(role)`, `Active(role)`) and `auth/application/AuthRepository.kt` (port: `observeAuthState(): Flow<AuthUser?>`, `observeUserDocument(uid): Flow<UserAccount?>`, `register(email, password, role, profileFields): Result<Unit>`, `login(email, password): Result<Unit>`, `logout()`).
+- [x] 1.1.4 Create `auth/domain/SessionState.kt` (sealed interface: `SignedOut`, `Loading`, `ProfileIncomplete`, `Pending(role)`, `Suspended(role)`, `Active(role)`) and `auth/application/AuthRepository.kt` (port: `observeAuthState(): Flow<AuthUser?>`, `observeUserDocument(uid): Flow<UserAccount?>`, `register(email, password, role, profileFields): Result<Unit>`, `login(email, password): Result<Unit>`, `logout()`).
   - Test-first: N/A (interfaces).
   - Acceptance: compiles; consumed by 1.1.5.
   - Est. lines: ~60
-- [ ] 1.1.5 Create `auth/application/ObserveSessionUseCase.kt` (combines auth state + user document into `SessionState`, per the Session gate sequence diagram in `design.md`) and `app/src/test/java/com/otli/app/auth/application/ObserveSessionUseCaseTest.kt` using a fake `AuthRepository` and `kotlinx-coroutines-test`/Turbine.
+- [x] 1.1.5 Create `auth/application/ObserveSessionUseCase.kt` (combines auth state + user document into `SessionState`, per the Session gate sequence diagram in `design.md`) and `app/src/test/java/com/otli/app/auth/application/ObserveSessionUseCaseTest.kt` using a fake `AuthRepository` and `kotlinx-coroutines-test`/Turbine.
   - Test-first: write the test RED (signed out → `SignedOut`; signed in, no user doc yet → `ProfileIncomplete`; signed in + `pending` → `Pending(role)`; signed in + `suspended` → `Suspended(role)`; signed in + `active` → `Active(role)`), then implement GREEN.
   - Acceptance: auth-roles spec — "Each role reaches its own home", "Pending merchant or courier is blocked with a clear message", "Suspended account is blocked with a clear message", "Active account has unrestricted role access".
   - Est. lines: ~110
@@ -97,11 +97,11 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 1.2 — Firestore rules for `users/{uid}`
 
-- [ ] 1.2.1 Extend `backend/firestore.rules` with the `users/{uid}` match block: self-create on registration (role ∈ {customer, merchant, courier}, status forced to the value `RegistrationPolicy` would produce — `active` for customer, `pending` for merchant/courier — and rejecting any client-supplied `role == 'admin'` or self-supplied `status` that doesn't match the role default), self-update of profile fields only (not `role`/`status`), Admin-only update of `status`. Add the composite index `users(status ASC, createdAt ASC)` to `backend/firestore.indexes.json`.
+- [x] 1.2.1 Extend `backend/firestore.rules` with the `users/{uid}` match block: self-create on registration (role ∈ {customer, merchant, courier}, status forced to the value `RegistrationPolicy` would produce — `active` for customer, `pending` for merchant/courier — and rejecting any client-supplied `role == 'admin'` or self-supplied `status` that doesn't match the role default), self-update of profile fields only (not `role`/`status`), Admin-only update of `status`. Add the composite index `users(status ASC, createdAt ASC)` to `backend/firestore.indexes.json`.
   - Test-first: write `backend/tests/rules/users.test.ts` RED first (one `assertSucceeds`/`assertFails` per bullet above, using `authenticatedContext`/`withSecurityRulesDisabled` fixtures per `design.md`), then extend the rules GREEN. Run: `npm --prefix backend test -- users`.
   - Acceptance: auth-roles spec — "Customer registers and becomes active immediately", "Merchant registers and starts pending", "Courier registers and starts pending", "Admin accounts are never created through self-registration", "A user cannot act on a resource they do not own" (profile fields of another uid).
   - Est. lines: ~230 (rules + tests)
-- [ ] 1.2.2 Add `backend/scripts/seed.ts` bootstrap: Admin SDK connection to the emulator (`FIRESTORE_EMULATOR_HOST`, `FIREBASE_AUTH_EMULATOR_HOST`), fixed-UID idempotent creation of the `seed-admin` Auth user + `users/seed-admin` document only (later tasks in Slices 2–6 extend this same script with merchant/courier/customer seed data). Add `npm run seed` wiring already declared in 0.3.
+- [x] 1.2.2 Add `backend/scripts/seed.ts` bootstrap: Admin SDK connection to the emulator (`FIRESTORE_EMULATOR_HOST`, `FIREBASE_AUTH_EMULATOR_HOST`), fixed-UID idempotent creation of the `seed-admin` Auth user + `users/seed-admin` document only (later tasks in Slices 2–6 extend this same script with merchant/courier/customer seed data). Add `npm run seed` wiring already declared in 0.3.
   - Test-first: N/A (imperative script) — acceptance is a manual run against the emulator producing the Admin account idempotently (re-running does not duplicate or error).
   - Acceptance: ADR-15 / proposal decision "seed script creates pre-approved test accounts"; unblocks Admin login before Slice 6's approval UI exists.
   - Est. lines: ~70
