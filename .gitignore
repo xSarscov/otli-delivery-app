@@ -1,2 +1,37 @@
 # Local agent tooling state
 .atl/
+
+# Gradle / Android build outputs
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Node / backend
+node_modules/
+backend/emulator-data/
+backend/coverage/
+
+# Firebase emulator and debug logs
+*.log
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Secrets
+*service-account*.json
+*.jks
+*.keystore
+
+# OS
+.DS_Store
+Thumbs.db
