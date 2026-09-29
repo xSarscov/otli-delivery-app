@@ -131,7 +131,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Test-first: write the ViewModel test RED (submitting with Admin as a role is impossible because it's not in the picker's domain — assert the picker's role list excludes Admin; successful submit calls `AuthRepository.register`; failure maps to an error message), then implement GREEN.
   - Acceptance: auth-roles spec — "Admin accounts are never created through self-registration".
   - Est. lines: ~150
-- [ ] 1.4.3 Create `auth/adapters/ui/LoginScreen.kt` + `LoginContent.kt` + `LoginViewModel.kt` and its test; create `auth/adapters/ui/GateScreens.kt` (`PendingApprovalContent`, `SuspendedContent`, role-appropriate messages) and a Compose UI test asserting the correct message text per status.
+- [x] 1.4.3 Create `auth/adapters/ui/LoginScreen.kt` + `LoginContent.kt` + `LoginViewModel.kt` and its test; create `auth/adapters/ui/GateScreens.kt` (`PendingApprovalContent`, `SuspendedContent`, role-appropriate messages) and a Compose UI test asserting the correct message text per status.
   - Test-first: write `LoginViewModelTest` and `GateScreensTest` RED, then implement GREEN.
   - Acceptance: auth-roles spec — "Invalid credentials are rejected", "Pending merchant or courier is blocked with a clear message", "Suspended account is blocked with a clear message", "Active account has unrestricted role access".
   - Est. lines: ~170

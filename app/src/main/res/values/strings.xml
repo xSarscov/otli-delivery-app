@@ -24,6 +24,11 @@
     <string name="register_error_missing_fields">Fill in every field to continue.</string>
     <string name="register_error_weak_password">The password needs at least 6 characters.</string>
     <string name="register_error_failed">We could not create the account. Check your connection and try again.</string>
+    <string name="login_title">Welcome back</string>
+    <string name="action_login">Sign in</string>
+    <string name="login_no_account">New here? Create an account</string>
+    <string name="login_error_missing_fields">Enter your email and password.</string>
+    <string name="login_error_failed">We could not sign you in. Check your email and password and try again.</string>
     <string name="action_logout">Sign out</string>
     <string name="gate_pending_title">Approval pending</string>
     <string name="gate_pending_merchant">Your store is waiting for approval by an administrator. You will be able to manage your catalog and receive orders once it is approved.</string>
