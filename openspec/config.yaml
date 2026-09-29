@@ -1,0 +1,76 @@
+schema: spec-driven
+
+context: |
+  Project: Otli Delivery App — Android-only mobile app for order/delivery/
+  merchant management (PedidosYa-style) for Nagarote, Nicaragua. Academic
+  project. Stack (decided in sdd-design, otli-mvp): Kotlin + Jetpack Compose,
+  Hilt, Navigation Compose, Firebase Auth + Cloud Firestore on the Spark plan
+  (rules-only server authority, no Cloud Functions), MapLibre Native Android
+  with OpenFreeMap tiles; minSdk 26, targetSdk/compileSdk 36.
+  Architecture: single :app module, screaming feature packages (auth, catalog,
+  ordering, dispatch, tracking, admin) with pragmatic hexagonal layers
+  (domain / application / adapters); ViewModel + StateFlow with
+  container/presentational composables. Backend config and rules tests live
+  in backend/ (Node + firebase-tools + Vitest).
+
+strict_tdd: false
+strict_tdd_reason: >
+  Decided ON by sdd-design (otli-mvp). Kept false only until the slice 1
+  scaffold task creates both runners and they run green; that task MUST then
+  set strict_tdd: true, testing.status: available, and rules.apply.tdd: true.
+
+testing:
+  status: planned
+  note: "Runners are created by the slice 1 scaffold task; commands below are final."
+  workspace_command: "./gradlew verifyAll"
+  projects:
+    - path: app
+      stack: Kotlin / Android (Gradle)
+      unit: "./gradlew testDebugUnitTest"
+      unit_single: "./gradlew testDebugUnitTest --tests \"<fully.qualified.Class>\""
+      instrumented: "npm --prefix backend run test:android"
+      lint: "./gradlew lintDebug"
+      frameworks: [JUnit4, kotlinx-coroutines-test, Turbine, Truth, Compose UI test]
+    - path: backend
+      stack: TypeScript / Firebase Emulator Suite
+      rules: "npm --prefix backend test"
+      typecheck: "npm --prefix backend run typecheck"
+      frameworks: [Vitest, "@firebase/rules-unit-testing"]
+  requirements:
+    - "JDK 17 (Android build)"
+    - "JDK 21 (Firebase emulators; unverified)"
+    - "Node >= 20"
+    - "firebase-tools"
+
+delivery:
+  strategy: auto-chain
+  review_line_budget: 400
+
+execution_mode: interactive
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Do not assume a tech stack; flag stack decisions as open questions for sdd-design
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Decide the Android tech stack (language, architecture, persistence, backend) here, not earlier
+    - Include sequence diagrams for complex flows (order lifecycle, delivery assignment)
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Forecast against the 400 changed-line review budget; recommend chained PRs when at risk
+  apply:
+    guidelines:
+      - Follow existing code patterns once a stack is chosen
+    tdd: false           # Flip to true in the slice 1 scaffold task once runners are green
+    test_command: "./gradlew verifyAll"
+  verify:
+    test_command: "./gradlew verifyAll"
+    build_command: "./gradlew assembleDebug"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
