@@ -39,28 +39,28 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ## Phase 0: Scaffold (prerequisite to every slice)
 
-- [ ] 0.1 Create the Gradle project skeleton: `settings.gradle.kts`, `build.gradle.kts`, `gradle/libs.versions.toml`, `gradlew`/`gradlew.bat`, `app/build.gradle.kts` (Hilt+KSP, Compose, Firebase BoM, MapLibre, JUnit4/Turbine/Truth/coroutines-test/Robolectric test deps, `minSdk 26`/`targetSdk 36`/`compileSdk 36`, JDK 17 toolchain, emulator `BuildConfig` fields for `otli.useEmulator`/`otli.emulatorHost`), `app/src/main/AndroidManifest.xml` (permissions: `ACCESS_FINE_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS`; empty `MainActivity`), `.gitignore`.
+- [x] 0.1 Create the Gradle project skeleton: `settings.gradle.kts`, `build.gradle.kts`, `gradle/libs.versions.toml`, `gradlew`/`gradlew.bat`, `app/build.gradle.kts` (Hilt+KSP, Compose, Firebase BoM, MapLibre, JUnit4/Turbine/Truth/coroutines-test/Robolectric test deps, `minSdk 26`/`targetSdk 36`/`compileSdk 36`, JDK 17 toolchain, emulator `BuildConfig` fields for `otli.useEmulator`/`otli.emulatorHost`), `app/src/main/AndroidManifest.xml` (permissions: `ACCESS_FINE_LOCATION`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_LOCATION`, `POST_NOTIFICATIONS`; empty `MainActivity`), `.gitignore`.
   - **Verify official docs first**: before pinning any version, confirm each `[unverified]` claim in `openspec/changes/otli-mvp/design.md` against its listed official page (Firebase pricing/quotas, Firebase Android release notes, Cloud Storage Blaze FAQ, Firebase CLI releases, MapLibre Android API, OpenFreeMap, OSM tile policy, Android API levels) using the docs/web tool available in this session. Record the confirmed version numbers directly in `gradle/libs.versions.toml` and `backend/package.json`; do not carry an `[unverified]` version into a committed file.
   - Test-first: N/A (infra scaffold, no behavior yet) — acceptance is a green build.
   - Acceptance: `./gradlew assembleDebug` succeeds (this is the scaffold's own proof, no spec scenario applies).
   - Est. lines: ~180
-- [ ] 0.2 Create `app/src/main/java/com/otli/app/OtliApplication.kt` (`@HiltAndroidApp`) and one trivial placeholder unit test `app/src/test/java/com/otli/app/PlaceholderTest.kt` asserting `1 + 1 == 2`, to prove `testDebugUnitTest` runs.
+- [x] 0.2 Create `app/src/main/java/com/otli/app/OtliApplication.kt` (`@HiltAndroidApp`) and one trivial placeholder unit test `app/src/test/java/com/otli/app/PlaceholderTest.kt` asserting `1 + 1 == 2`, to prove `testDebugUnitTest` runs.
   - Test-first: the placeholder test IS the first RED→GREEN cycle (write it failing on a bad assertion, then fix it).
   - Acceptance: `./gradlew testDebugUnitTest` passes.
   - Est. lines: ~30
-- [ ] 0.3 Create the backend project: `backend/package.json` (scripts: `test`, `test:android`, `emulators`, `seed`, `typecheck`), `backend/tsconfig.json`, `backend/vitest.config.ts`, `backend/firebase.json` (emulator ports: auth 9099, firestore 8080, ui 4000), `backend/.firebaserc` (`demo-otli` default alias for tests), `backend/firestore.indexes.json` (empty array, indexes added per slice), a minimal `backend/firestore.rules` that denies everything (`allow read, write: if false;`), and one placeholder rules test `backend/tests/rules/placeholder.test.ts` asserting a signed-out read is denied.
+- [x] 0.3 Create the backend project: `backend/package.json` (scripts: `test`, `test:android`, `emulators`, `seed`, `typecheck`), `backend/tsconfig.json`, `backend/vitest.config.ts`, `backend/firebase.json` (emulator ports: auth 9099, firestore 8080, ui 4000), `backend/.firebaserc` (`demo-otli` default alias for tests), `backend/firestore.indexes.json` (empty array, indexes added per slice), a minimal `backend/firestore.rules` that denies everything (`allow read, write: if false;`), and one placeholder rules test `backend/tests/rules/placeholder.test.ts` asserting a signed-out read is denied.
   - Test-first: the placeholder test IS the first RED→GREEN cycle for the rules runner.
   - Acceptance: `npm --prefix backend test` passes.
   - Est. lines: ~120
-- [ ] 0.4 Create `backend/contracts/order-transitions.json` with the full transition table from `design.md` (empty `allowed: []` at this point is wrong — populate it now since Slice 3 consumes it from both sides; see `ordering` spec, Requirement: Order State Machine With Actor-Authorized Transitions, for the exact 9 triples).
+- [x] 0.4 Create `backend/contracts/order-transitions.json` with the full transition table from `design.md` (empty `allowed: []` at this point is wrong — populate it now since Slice 3 consumes it from both sides; see `ordering` spec, Requirement: Order State Machine With Actor-Authorized Transitions, for the exact 9 triples).
   - Test-first: N/A (static fixture; consumed by `OrderTransitionsContractTest` in Slice 3, task 3.1).
   - Acceptance: file exists and is valid JSON with exactly the 9 allowed triples.
   - Est. lines: ~40
-- [ ] 0.5 Wire the Gradle `verifyAll` aggregate task (`testDebugUnitTest` + `lintDebug` + an `Exec` task running `npm --prefix backend test` with fixed, non-user-supplied arguments) in `build.gradle.kts` or a new `buildSrc`/convention plugin, whichever is simpler for a single-module project. Add `README.md` documenting setup (JDK 17/21, Node ≥ 20, `firebase-tools`, emulator start, seed run) and the four exact test commands.
+- [x] 0.5 Wire the Gradle `verifyAll` aggregate task (`testDebugUnitTest` + `lintDebug` + an `Exec` task running `npm --prefix backend test` with fixed, non-user-supplied arguments) in `build.gradle.kts` or a new `buildSrc`/convention plugin, whichever is simpler for a single-module project. Add `README.md` documenting setup (JDK 17/21, Node ≥ 20, `firebase-tools`, emulator start, seed run) and the four exact test commands.
   - Test-first: N/A (build wiring) — acceptance is the aggregate running both suites.
   - Acceptance: `./gradlew verifyAll` runs `testDebugUnitTest`, `lintDebug`, and `npm --prefix backend test`, all green.
   - Est. lines: ~90
-- [ ] 0.6 **Strict TDD gate**: once 0.1–0.5 are green, edit `openspec/config.yaml` to set `strict_tdd: true`, `testing.status: available`, `rules.apply.tdd: true`, and update Engram topic `sdd/otli-delivery-app/testing-capabilities` to reflect both runners are live. Every task from Phase 1 onward follows RED → GREEN → REFACTOR with the runner named in its task.
+- [x] 0.6 **Strict TDD gate**: once 0.1–0.5 are green, edit `openspec/config.yaml` to set `strict_tdd: true`, `testing.status: available`, `rules.apply.tdd: true`, and update Engram topic `sdd/otli-delivery-app/testing-capabilities` to reflect both runners are live. Every task from Phase 1 onward follows RED → GREEN → REFACTOR with the runner named in its task.
   - Acceptance: `openspec/config.yaml` reflects the flip; no spec scenario (process gate).
   - Est. lines: ~10 (config diff)
 

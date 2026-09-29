@@ -13,15 +13,14 @@ context: |
   container/presentational composables. Backend config and rules tests live
   in backend/ (Node + firebase-tools + Vitest).
 
-strict_tdd: false
+strict_tdd: true
 strict_tdd_reason: >
-  Decided ON by sdd-design (otli-mvp). Kept false only until the slice 1
-  scaffold task creates both runners and they run green; that task MUST then
-  set strict_tdd: true, testing.status: available, and rules.apply.tdd: true.
+  Decided ON by sdd-design (otli-mvp). Flipped by scaffold task 0.6 after
+  `./gradlew verifyAll` ran green with both runners (JUnit4 and Vitest).
 
 testing:
-  status: planned
-  note: "Runners are created by the slice 1 scaffold task; commands below are final."
+  status: available
+  note: "Both runners are live and green as of scaffold task 0.6 (verifyAll)."
   workspace_command: "./gradlew verifyAll"
   projects:
     - path: app
@@ -38,8 +37,8 @@ testing:
       frameworks: [Vitest, "@firebase/rules-unit-testing"]
   requirements:
     - "JDK 17 (Android build)"
-    - "JDK 21 (Firebase emulators; unverified)"
-    - "Node >= 20"
+    - "JDK 21 (Firebase emulators; verified working with openjdk 21.0.12)"
+    - "Node >= 22"
     - "firebase-tools"
 
 delivery:
@@ -66,7 +65,7 @@ rules:
   apply:
     guidelines:
       - Follow existing code patterns once a stack is chosen
-    tdd: false           # Flip to true in the slice 1 scaffold task once runners are green
+    tdd: true
     test_command: "./gradlew verifyAll"
   verify:
     test_command: "./gradlew verifyAll"

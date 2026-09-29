@@ -26,32 +26,32 @@ slice to concrete packages, collections, rules blocks, and tests.
 ### Verification status of external claims
 
 The docs lookup tool (context7) and web access were **not available** in this
-design session. Version numbers and third-party policies below come from
-training knowledge (cutoff mid-2026) and are marked **[unverified]**. Slice 1's
-scaffold task MUST confirm them against the listed official pages and pin the
-real latest-stable versions in `gradle/libs.versions.toml` and
-`backend/package.json`.
+design session, so third-party policies below are marked **[unverified]**.
+Software versions were verified and pinned on 2026-09-29 by scaffold task 0.1 in
+`gradle/libs.versions.toml` and `backend/package.json`; those files are the
+source of truth and the version numbers in the table below match them. Pricing,
+quota and tile-policy claims remain **[unverified]** until checked on the listed pages.
 
 ## Final Stack
 
 | Concern | Choice | Notes |
 |---|---|---|
-| Language / UI | Kotlin 2.x (K2, latest stable, ≥ 2.2) [unverified] + Jetpack Compose (Compose BOM latest stable), Material 3 | Android-only; Compose avoids XML/Fragments |
-| Build | Gradle Kotlin DSL + version catalog, AGP latest stable (≥ 8.10) [unverified], JDK 17 toolchain for the Android build | |
-| SDK levels | `minSdk 26` (Android 8.0), `targetSdk 36`, `compileSdk 36` [unverified: confirm 36 is the current stable API level] | 26 gives `java.time` without desugaring and covers the vast majority of devices in use; Firebase BoM 34 raised its own floor to 23 [unverified] |
+| Language / UI | Kotlin 2.4.20 (K2) + Jetpack Compose (Compose BOM 2026.09.00), Material 3 | Android-only; Compose avoids XML/Fragments |
+| Build | Gradle 9.8.0 Kotlin DSL + version catalog, AGP 9.4.1 (built-in Kotlin, no `kotlin-android` plugin, KSP only), JDK 17 toolchain for the Android build | |
+| SDK levels | `minSdk 26` (Android 8.0), `targetSdk 36`, `compileSdk 37` (the pinned AndroidX releases require compileSdk 37; targetSdk stays 36) | 26 gives `java.time` without desugaring and covers the vast majority of devices in use; Firebase BoM 34 raised its own floor to 23 [unverified] |
 | DI | Hilt (with KSP) | See ADR-4 |
 | Navigation | Navigation Compose ≥ 2.8 type-safe (`@Serializable` routes) | See ADR-5 |
 | Async / state | Coroutines + Flow, `ViewModel` + `StateFlow` | |
 | Auth | Firebase Auth, **email/password only** | Phone auth (SMS) has Blaze/quota implications; not needed |
-| Database / realtime | Cloud Firestore (Android SDK via Firebase BoM ≥ 34 — use the non-`-ktx` artifacts; KTX modules were folded into the main modules [unverified]) | Listeners for real time, transactions for the claim |
+| Database / realtime | Cloud Firestore (Android SDK via Firebase BoM 34.19.0 — use the non-`-ktx` artifacts; KTX modules were folded into the main modules) | Listeners for real time, transactions for the claim |
 | Server-side authority | Firestore Security Rules (rules-only, no Cloud Functions) | See ADR-2 |
-| Maps | MapLibre Native Android (`org.maplibre.gl:android-sdk` ≥ 11) [unverified] wrapped in Compose via `AndroidView` | No API key, no billing |
+| Maps | MapLibre Native Android (`org.maplibre.gl:android-sdk` 13.6.0) wrapped in Compose via `AndroidView` | No API key, no billing |
 | Tiles | OpenFreeMap vector style (`https://tiles.openfreemap.org/styles/liberty`) [unverified: free, no key, attribution required]; fallback OSM raster tiles with a proper User-Agent and attribution | See ADR-13 |
 | Location | Google Play services `FusedLocationProviderClient` (`play-services-location` 21.x) inside a `location`-type foreground service | |
 | Images | Coil 3 for display; photos stored as compressed JPEG bytes in Firestore | See ADR-11 (Cloud Storage requires Blaze) |
 | Notifications | Local notifications raised from Firestore listeners (best effort) | See ADR-12 (remote FCM push needs a server) |
-| Backend tooling | Node.js 22 LTS (≥ 20), `firebase-tools` ≥ 14 [unverified], JDK 21 for the emulators [unverified: firebase-tools 14 requires Java 21 for emulators] | |
-| Rules tests | TypeScript + Vitest + `@firebase/rules-unit-testing` ≥ 4 (paired with Firebase JS SDK v11/v12) [unverified] | |
+| Backend tooling | Node.js 22 LTS, `firebase-tools` 15.32.0, JDK 21 for the emulators (verified working) | |
+| Rules tests | TypeScript + Vitest + `@firebase/rules-unit-testing` 5.0.2 (paired with Firebase JS SDK 12.19.0), Vitest 5.0.2, TypeScript 7.0.2 | |
 | Seed | TypeScript script using `firebase-admin` | |
 | Android tests | JUnit 4, `kotlinx-coroutines-test`, Turbine, Truth (or `kotlin.test`), hand-written fakes (MockK only when a fake is impractical), Compose UI test (`ui-test-junit4`), optional Robolectric | |
 
@@ -512,7 +512,7 @@ Transition contract fixture shape (`backend/contracts/order-transitions.json`):
 | Scope | Command (from repo root) | Needs |
 |---|---|---|
 | Android JVM unit tests | `./gradlew testDebugUnitTest` (Windows: `.\gradlew.bat testDebugUnitTest`) | JDK 17 |
-| Security rules + concurrency tests | `npm --prefix backend test` → `firebase emulators:exec --only firestore,auth --project demo-otli "vitest run"` | Node ≥ 20, JDK 21 [unverified], firebase-tools |
+| Security rules + concurrency tests | `npm --prefix backend test` → `firebase emulators:exec --only firestore,auth --project demo-otli "vitest run"` | Node ≥ 22, JDK 21, firebase-tools |
 | Firestore adapter instrumented tests | `npm --prefix backend run test:android` → `firebase emulators:exec --only firestore,auth --project demo-otli "cd .. && ./gradlew connectedDebugAndroidTest"` | running Android emulator or device |
 | Workspace aggregate (Strict TDD gate) | `./gradlew verifyAll` = `testDebugUnitTest` + `lintDebug` + Exec task running `npm --prefix backend test` | both of the above |
 | Lint / typecheck | `./gradlew lintDebug`; `npm --prefix backend run typecheck` (`tsc --noEmit`) | |
@@ -571,7 +571,7 @@ N/A — no routing, shell, subprocess, VCS/PR automation, executable-file classi
 No data migration (greenfield). Rollout per slice:
 
 1. **Slice 1 scaffold task**: create Gradle project and `backend/` package with one passing test each; confirm pinned versions against official pages; run `./gradlew testDebugUnitTest`, `npm --prefix backend test`, and `./gradlew verifyAll` green; then set `strict_tdd: true`, `testing.status: available`, and `rules.apply.tdd: true` in `openspec/config.yaml` and update Engram `sdd/otli-delivery-app/testing-capabilities`. Every later task follows Strict TDD.
-2. Create the Firebase project (Spark), register the Android app, commit `google-services.json`. Deploying rules/indexes (`firebase deploy --only firestore:rules,firestore:indexes`) is a remote operation requiring user authorization; it happens at the end of each slice that changes rules.
+2. Create the Firebase project (Spark), register the Android app, commit `google-services.json` and only then apply the `google-services` Gradle plugin (scaffold task 0.1 deliberately leaves it off; before that, debug builds reach the emulators through explicit `FirebaseOptions` for `demo-otli`, wired in task 1.3.1). Deploying rules/indexes (`firebase deploy --only firestore:rules,firestore:indexes`) is a remote operation requiring user authorization; it happens at the end of each slice that changes rules.
 3. Supabase fallback decision point: end of slice 1 at the latest.
 
 ## Open Questions
@@ -579,4 +579,4 @@ No data migration (greenfield). Rollout per slice:
 - [x] **Q1 (product) — RESOLVED 2026-09-29: user chose the free Spark plan (no billing account); local notifications per ADR-12.**: Remote push (FCM) requires a trusted sender, i.e. Cloud Functions on the Blaze plan (billing account). Is "local notifications while the app is running" acceptable as the MVP's best-effort push, or can the user enable Blaze (with a budget alert) to add an FCM sender? Default in this design: local notifications (ADR-12).
 - [x] **Q2 (product) — RESOLVED 2026-09-29: Spark plan; compressed photos in Firestore per ADR-11.**: Same billing question drives product photos (Cloud Storage now needs Blaze [unverified]). Default: compressed photos stored in Firestore (ADR-11). If Blaze is enabled for Q1, switch photos to Cloud Storage.
 - [ ] **Q3 (technical, validated by tests)**: Rules evaluation plus `getAfter()` pairing is expected to be serializable with concurrent commits; the mandatory concurrency tests are the proof. If the emulator shows any double-claim, fall back to making the claim contend on a single document (e.g. `orders/{id}` only, with `activeOrderId` enforced via a per-courier lock document written in the same transaction).
-- [ ] **Q4 (technical)**: All version numbers and third-party policies marked [unverified] must be confirmed in the slice 1 scaffold task (no docs tool was available during design).
+- [x] **Q4 (technical) — PARTIALLY RESOLVED 2026-09-29 (task 0.1)**: All software versions are verified and pinned (see `gradle/libs.versions.toml`, `backend/package.json`). Third-party pricing, quota and tile-policy claims remain [unverified].
