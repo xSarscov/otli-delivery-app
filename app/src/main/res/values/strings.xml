@@ -9,4 +9,19 @@
     <string name="profile_incomplete_placeholder">Finishing your profile</string>
     <string name="pending_placeholder">Waiting for approval</string>
     <string name="suspended_placeholder">Account suspended</string>
+    <string name="role_customer">Customer</string>
+    <string name="role_merchant">Merchant</string>
+    <string name="role_courier">Courier</string>
+    <string name="role_admin">Admin</string>
+    <string name="label_email">Email</string>
+    <string name="label_password">Password</string>
+    <string name="label_display_name">Full name</string>
+    <string name="label_phone">Phone</string>
+    <string name="label_role">I want to join as</string>
+    <string name="register_title">Create your account</string>
+    <string name="action_register">Create account</string>
+    <string name="register_have_account">Already have an account? Sign in</string>
+    <string name="register_error_missing_fields">Fill in every field to continue.</string>
+    <string name="register_error_weak_password">The password needs at least 6 characters.</string>
+    <string name="register_error_failed">We could not create the account. Check your connection and try again.</string>
 </resources>
