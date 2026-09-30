@@ -67,7 +67,9 @@ if (mode === "vitest") {
   const gradlew = windows ? `${root}/gradlew.bat` : "./gradlew";
   const device = prepareDevice();
   cleanup = device.cleanup;
-  script = `cd ${windows ? "/d " : ""}${root} && ${gradlew} connectedDebugAndroidTest${device.gradleArgs}`;
+  // Seed first: adapter tests sign in as the seeded merchants (fresh emulators start empty).
+  const seed = `npm --prefix ${root}/backend run seed`;
+  script = `cd ${windows ? "/d " : ""}${root} && ${seed} && ${gradlew} connectedDebugAndroidTest${device.gradleArgs}`;
 } else {
   console.error("Usage: run-with-emulators.mjs <vitest|android> [filters]");
   process.exit(2);
