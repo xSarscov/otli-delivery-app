@@ -8,6 +8,7 @@ import com.otli.app.auth.domain.MerchantStoreDetails
 import com.otli.app.auth.domain.ProfileFields
 import com.otli.app.auth.domain.Role
 import com.otli.app.core.di.OtliFirebase
+import com.otli.app.core.firebase.await
 import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking

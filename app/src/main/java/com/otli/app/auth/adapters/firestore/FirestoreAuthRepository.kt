@@ -13,6 +13,7 @@ import com.otli.app.auth.domain.RegistrationDecision
 import com.otli.app.auth.domain.RegistrationPolicy
 import com.otli.app.auth.domain.Role
 import com.otli.app.auth.domain.UserAccount
+import com.otli.app.core.firebase.await
 import com.otli.app.core.result.DomainException
 import com.otli.app.core.result.suspendRunCatching
 import javax.inject.Inject

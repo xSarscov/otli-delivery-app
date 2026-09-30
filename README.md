@@ -58,7 +58,8 @@ Extra commands:
 
 ## Instrumented tests on a device
 
-`npm --prefix backend run test:android` starts the Auth and Firestore emulators and runs
+`npm --prefix backend run test:android` starts the Auth and Firestore emulators, loads the seed
+data (so adapter tests can sign in as `merchant1@otli.test`, password `otli-demo-123`), and runs
 `connectedDebugAndroidTest` against the attached device:
 
 - Exactly one device must be attached, or set `ANDROID_SERIAL` to choose one.
