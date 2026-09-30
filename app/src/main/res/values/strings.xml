@@ -77,6 +77,16 @@
     <string name="merchant_catalog_error_delete">We could not delete that item. Try again.</string>
     <string name="merchant_catalog_error_availability">We could not change the availability. Try again.</string>
     <string name="merchant_catalog_error_photo">We could not use that photo. Pick a different image.</string>
+    <string name="product_editor_title_new">New product</string>
+    <string name="product_editor_title_edit">Edit product</string>
+    <string name="label_product_name">Product name</string>
+    <string name="label_product_price">Price (C$)</string>
+    <string name="label_product_category">Category</string>
+    <string name="product_error_name">Enter a name for the product.</string>
+    <string name="product_error_price">Enter a price greater than zero, for example 45.50.</string>
+    <string name="product_error_category">Choose a category.</string>
+    <string name="product_photo_ready">A new photo will be uploaded when you save.</string>
+    <string name="product_photo_saved">Product photo saved.</string>
     <string name="map_attribution">OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors</string>
     <string name="map_pin_hint">Tap the map to drop a pin on your location.</string>
     <string name="map_pin_selected">Pin: %1$.5f, %2$.5f</string>
