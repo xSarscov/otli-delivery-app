@@ -104,6 +104,51 @@ service cloud.firestore {
       allow create: if validMerchantCreate();
       allow update: if ownerUpdate() || adminStatusMirror();
       allow delete: if false;
+
+      match /categories/{cid} {
+        function validCategory() {
+          let data = request.resource.data;
+          return data.keys().hasOnly(['name', 'sortOrder'])
+            && data.keys().hasAll(['name', 'sortOrder'])
+            && validText(data.name, 1, 60)
+            && data.sortOrder is int;
+        }
+        allow read: if signedIn();
+        allow create, update: if isActiveMerchant() && validCategory();
+        allow delete: if isActiveMerchant();
+      }
+
+      match /products/{pid} {
+        function validProduct() {
+          let data = request.resource.data;
+          return data.keys().hasOnly(['categoryId', 'name', 'description', 'priceCents', 'isAvailable', 'photoVersion', 'updatedAt'])
+            && data.keys().hasAll(['categoryId', 'name', 'description', 'priceCents', 'isAvailable', 'photoVersion', 'updatedAt'])
+            && data.categoryId is string && data.categoryId.size() > 0
+            && validText(data.name, 1, 80)
+            && validText(data.description, 0, 500)
+            && data.priceCents is int && data.priceCents > 0
+            && data.isAvailable is bool
+            && data.photoVersion is int && data.photoVersion >= 0
+            && data.updatedAt == request.time;
+        }
+        allow read: if signedIn();
+        allow create, update: if isActiveMerchant() && validProduct();
+        allow delete: if isActiveMerchant();
+      }
+
+      // Compressed JPEG bytes (max 640 px, quality ~70) stored in Firestore because Cloud Storage needs Blaze.
+      match /productPhotos/{pid} {
+        function validPhoto() {
+          let data = request.resource.data;
+          return data.keys().hasOnly(['jpeg', 'version'])
+            && data.keys().hasAll(['jpeg', 'version'])
+            && data.jpeg is bytes && data.jpeg.size() <= 307200
+            && data.version is int && data.version >= 0;
+        }
+        allow read: if signedIn();
+        allow create, update: if isActiveMerchant() && validPhoto();
+        allow delete: if isActiveMerchant();
+      }
     }
 
     // Everything else stays denied until its slice adds a match block test-first.
