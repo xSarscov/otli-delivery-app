@@ -29,7 +29,8 @@ class FirestoreCatalogRepositoryTest {
     private val repository = FirestoreCatalogRepository(firestore, FirestoreMerchantRepository(firestore))
     private val created = mutableListOf<String>()
 
-    private fun <T> await(block: suspend () -> T): T = runBlocking { withTimeout(30_000) { block() } }
+    // Returns Unit so every `@Test fun x() = await { ... }` compiles to a void JUnit method.
+    private fun await(block: suspend () -> Unit): Unit = runBlocking { withTimeout(30_000) { block() } }
 
     @Before
     fun signInAsSeedMerchant() = await {
