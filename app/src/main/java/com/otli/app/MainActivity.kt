@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
                         session = sessionViewModel.session,
                         signedOut = { SignedOutScreen() },
                         customerHome = { open -> MerchantListScreen(onMerchantClick = open) },
-                        storefront = { StorefrontScreen() },
+                        storefront = { _, onBack -> StorefrontScreen(onBack = onBack) },
                         profileIncomplete = { ProfileIncompleteScreen(onRetry = sessionViewModel::retry) },
                         pending = { role -> PendingApprovalScreen(role) },
                         suspended = { role -> SuspendedScreen(role) },

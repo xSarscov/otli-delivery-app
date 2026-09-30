@@ -36,6 +36,7 @@
     <string name="login_error_failed">We could not sign you in. Check your email and password and try again.</string>
     <string name="action_logout">Sign out</string>
     <string name="action_retry">Try again</string>
+    <string name="action_back">Back</string>
     <string name="gate_profile_incomplete_title">Profile not found</string>
     <string name="gate_profile_incomplete_message">We could not load your profile. Check your connection and try again, or sign out and back in.</string>
     <string name="gate_pending_title">Approval pending</string>

@@ -36,6 +36,7 @@ import com.otli.app.catalog.domain.PriceInput
 import com.otli.app.catalog.domain.Product
 import com.otli.app.core.money.Money
 import com.otli.app.core.theme.OtliTheme
+import com.otli.app.core.ui.OtliTopBar
 
 object StorefrontTags {
     const val LOADING = "storefront-loading"
@@ -54,28 +55,33 @@ private const val UNAVAILABLE_ALPHA = 0.5f
 fun StorefrontContent(
     state: StorefrontUiState,
     onAddToCart: (Product) -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val merchant = state.merchant
-    when {
-        state.isLoading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(Modifier.testTag(StorefrontTags.LOADING))
-        }
-        state.loadFailed -> Message(R.string.storefront_error, modifier)
-        state.notFound || merchant == null -> Message(R.string.storefront_not_found, modifier)
-        else -> LazyColumn(
-            modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item { Header(merchant) }
-            if (state.isClosed) item { ClosedBanner() }
-            for (section in state.sections) {
-                item(key = "category-${section.category.id}") {
-                    Text(section.category.name, style = MaterialTheme.typography.titleLarge)
-                }
-                items(section.items.size, key = { section.items[it].product.id }) { index ->
-                    ProductRow(merchant.id, section.items[index], onAddToCart)
+    Column(modifier.fillMaxSize()) {
+        // The bar is always there, so the user can leave while loading or after an error.
+        OtliTopBar(title = merchant?.name.orEmpty(), onBack = onBack)
+        when {
+            state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(Modifier.testTag(StorefrontTags.LOADING))
+            }
+            state.loadFailed -> Message(R.string.storefront_error)
+            state.notFound || merchant == null -> Message(R.string.storefront_not_found)
+            else -> LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item { Header(merchant) }
+                if (state.isClosed) item { ClosedBanner() }
+                for (section in state.sections) {
+                    item(key = "category-${section.category.id}") {
+                        Text(section.category.name, style = MaterialTheme.typography.titleLarge)
+                    }
+                    items(section.items.size, key = { section.items[it].product.id }) { index ->
+                        ProductRow(merchant.id, section.items[index], onAddToCart)
+                    }
                 }
             }
         }
@@ -83,8 +89,8 @@ fun StorefrontContent(
 }
 
 @Composable
-private fun Message(message: Int, modifier: Modifier) {
-    Box(modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+private fun Message(message: Int) {
+    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
         Text(stringResource(message), style = MaterialTheme.typography.bodyLarge)
     }
 }
@@ -96,7 +102,6 @@ private fun Header(merchant: Merchant) {
             key = PhotoKey.merchantProfile(merchant.id, merchant.photoVersion),
             modifier = Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(12.dp)),
         )
-        Text(merchant.name, style = MaterialTheme.typography.headlineMedium)
         if (merchant.description.isNotBlank()) {
             Text(merchant.description, style = MaterialTheme.typography.bodyMedium)
         }
@@ -172,6 +177,7 @@ private fun StorefrontClosedPreview() {
                 ),
             ),
             onAddToCart = {},
+            onBack = {},
         )
     }
 }

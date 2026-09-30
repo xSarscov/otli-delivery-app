@@ -37,7 +37,9 @@ class CustomerGraphTest {
                         Text("Sol", Modifier.testTag("list-m2").clickable { open("m2") })
                     }
                 },
-                storefront = { merchantId -> Text("storefront-$merchantId", Modifier.testTag("storefront")) },
+                storefront = { merchantId, onBack ->
+                    Text("storefront-$merchantId", Modifier.testTag("storefront").clickable(onClick = onBack))
+                },
             )
         }
         compose.waitForIdle()
@@ -85,6 +87,31 @@ class CustomerGraphTest {
 
         compose.onNodeWithTag("list-m1").assertIsDisplayed()
         compose.onNodeWithTag("storefront").assertDoesNotExist()
+    }
+
+    @Test
+    fun theUpActionGivenToTheStorefrontReturnsToTheList() {
+        launch()
+        compose.onNodeWithTag("list-m2").performClick()
+        compose.onNodeWithText("storefront-m2").assertIsDisplayed()
+
+        compose.onNodeWithTag("storefront").performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithTag("list-m2").assertIsDisplayed()
+        compose.onNodeWithTag("storefront").assertDoesNotExist()
+    }
+
+    @Test
+    fun upFromAStorefrontThenOpeningAnotherMerchantWorksAgain() {
+        launch()
+        compose.onNodeWithTag("list-m1").performClick()
+        compose.onNodeWithTag("storefront").performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithTag("list-m2").performClick()
+
+        compose.onNodeWithText("storefront-m2").assertIsDisplayed()
     }
 
     @Test

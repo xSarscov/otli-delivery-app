@@ -51,7 +51,7 @@ fun RootNavHost(
         HomePlaceholder(R.string.suspended_placeholder, RootTags.suspended(role))
     },
     customerHome: @Composable (onOpenMerchant: (String) -> Unit) -> Unit = { CustomerHomeScreen() },
-    storefront: @Composable (merchantId: String) -> Unit = {
+    storefront: @Composable (merchantId: String, onBack: () -> Unit) -> Unit = { _, _ ->
         HomePlaceholder(R.string.home_customer, RootTags.STOREFRONT)
     },
     merchantHome: @Composable () -> Unit = { MerchantHomeScreen() },
@@ -84,7 +84,7 @@ private fun RootGraph(
     pending: @Composable (Role) -> Unit,
     suspended: @Composable (Role) -> Unit,
     customerHome: @Composable (onOpenMerchant: (String) -> Unit) -> Unit,
-    storefront: @Composable (merchantId: String) -> Unit,
+    storefront: @Composable (merchantId: String, onBack: () -> Unit) -> Unit,
     merchantHome: @Composable () -> Unit,
 ) {
     NavHost(navController, startDestination = start) {
@@ -99,7 +99,9 @@ private fun RootGraph(
             composable<CustomerHome> {
                 customerHome { merchantId -> navController.navigate(StorefrontRoute(merchantId)) }
             }
-            composable<StorefrontRoute> { entry -> storefront(entry.toRoute<StorefrontRoute>().merchantId) }
+            composable<StorefrontRoute> { entry ->
+                storefront(entry.toRoute<StorefrontRoute>().merchantId) { navController.popBackStack() }
+            }
         }
         navigation<MerchantGraph>(startDestination = MerchantHome) {
             composable<MerchantHome> { merchantHome() }
