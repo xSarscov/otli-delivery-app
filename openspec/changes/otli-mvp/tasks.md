@@ -231,11 +231,11 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Test-first: write the contract-parity test RED (table doesn't exist yet), then implement `OrderTransitions` GREEN so it matches the fixture exactly.
   - Acceptance: ordering spec — "Order State Machine With Actor-Authorized Transitions" (all 9 valid transitions), "Merchant cannot progress an order out of sequence".
   - Est. lines: ~120
-- [x] 3.1.2 (branch 03-1a: immutable `Cart` with `CartMerchant`/`CartLine`, `AddResult.ConflictingMerchant(current: CartMerchant)` so the dialog can name the current store, plus `replaceWith`/`setQuantity`/`clear`; 12 tests, mutation-checked) Create `ordering/domain/Cart.kt` (single-merchant invariant, `AddResult` sealed interface: `Added`/`ConflictingMerchant`) and `app/src/test/java/com/otli/app/ordering/domain/CartTest.kt`.
+- [x] 3.1.2 (branch 03-1b: immutable `Cart` with `CartMerchant`/`CartLine`, `AddResult.ConflictingMerchant(current: CartMerchant)` so the dialog can name the current store, plus `replaceWith`/`setQuantity`/`clear`; 12 tests, mutation-checked) Create `ordering/domain/Cart.kt` (single-merchant invariant, `AddResult` sealed interface: `Added`/`ConflictingMerchant`) and `app/src/test/java/com/otli/app/ordering/domain/CartTest.kt`.
   - Test-first: write `CartTest` RED (same-merchant add succeeds silently; different-merchant add returns `ConflictingMerchant` and leaves the cart unchanged until confirmed), then implement GREEN.
   - Acceptance: ordering spec — "Customer adds a product from the same merchant", "Customer adds a product from a different merchant".
   - Est. lines: ~110
-- [x] 3.1.3 (branch 03-1a: `CheckoutCalculator.totals(lines, fee)` over `CartLine`; 6 tests, mutation-checked) Create `ordering/domain/CheckoutCalculator.kt` (`Totals(subtotal, fee, total)`, `total == subtotal + fee`) and `app/src/test/java/com/otli/app/ordering/domain/CheckoutCalculatorTest.kt`.
+- [x] 3.1.3 (branch 03-1b: `CheckoutCalculator.totals(lines, fee)` over `CartLine`; 6 tests, mutation-checked) Create `ordering/domain/CheckoutCalculator.kt` (`Totals(subtotal, fee, total)`, `total == subtotal + fee`) and `app/src/test/java/com/otli/app/ordering/domain/CheckoutCalculatorTest.kt`.
   - Test-first: write the test RED (subtotal from item unit prices × quantity; total = subtotal + fee, using `Money` arithmetic), then implement GREEN.
   - Acceptance: ordering spec — "Order total equals subtotal plus fee at placement time" (domain half).
   - Est. lines: ~80
