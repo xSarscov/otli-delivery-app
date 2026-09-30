@@ -14,6 +14,7 @@ class RecordingAuthRepository : AuthRepository {
 
     val registrations = mutableListOf<Registration>()
     val logins = mutableListOf<Pair<String, String>>()
+    var logoutCount = 0
     var registerOutcome: suspend () -> Result<Unit> = { Result.success(Unit) }
     var loginOutcome: suspend () -> Result<Unit> = { Result.success(Unit) }
 
@@ -36,5 +37,7 @@ class RecordingAuthRepository : AuthRepository {
         return loginOutcome()
     }
 
-    override suspend fun logout() = Unit
+    override suspend fun logout() {
+        logoutCount++
+    }
 }

@@ -24,4 +24,14 @@
     <string name="register_error_missing_fields">Fill in every field to continue.</string>
     <string name="register_error_weak_password">The password needs at least 6 characters.</string>
     <string name="register_error_failed">We could not create the account. Check your connection and try again.</string>
+    <string name="action_logout">Sign out</string>
+    <string name="gate_pending_title">Approval pending</string>
+    <string name="gate_pending_merchant">Your store is waiting for approval by an administrator. You will be able to manage your catalog and receive orders once it is approved.</string>
+    <string name="gate_pending_courier">Your courier account is waiting for approval by an administrator. You will see delivery requests once it is approved.</string>
+    <string name="gate_pending_generic">Your account is waiting for approval by an administrator.</string>
+    <string name="gate_suspended_title">Account suspended</string>
+    <string name="gate_suspended_customer">Your account has been suspended, so you cannot place orders. Contact an administrator for help.</string>
+    <string name="gate_suspended_merchant">Your store account has been suspended, so you cannot receive orders. Contact an administrator for help.</string>
+    <string name="gate_suspended_courier">Your courier account has been suspended, so you cannot claim deliveries. Contact an administrator for help.</string>
+    <string name="gate_suspended_generic">Your account has been suspended. Contact an administrator for help.</string>
 </resources>
