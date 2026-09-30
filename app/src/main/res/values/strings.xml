@@ -23,6 +23,11 @@
     <string name="register_have_account">Already have an account? Sign in</string>
     <string name="register_error_missing_fields">Fill in every field to continue.</string>
     <string name="register_error_weak_password">The password needs at least 6 characters.</string>
+    <string name="label_store_name">Store name</string>
+    <string name="label_store_location">Store location</string>
+    <string name="register_error_store_name_required">Enter the name of your store.</string>
+    <string name="register_error_invalid_phone">Enter a valid Nicaraguan phone number: 8 digits, optionally starting with +505.</string>
+    <string name="register_error_pin_required">Drop a pin on the map to mark your store location.</string>
     <string name="register_error_failed">We could not create the account. Check your connection and try again.</string>
     <string name="login_title">Welcome back</string>
     <string name="action_login">Sign in</string>
