@@ -64,7 +64,10 @@ class FakeMerchantRepository(initial: Merchant? = aMerchant()) : MerchantReposit
         return writeOutcome().onSuccess { merchant.value = merchant.value?.copy(isOpen = open) }
     }
 
-    override fun observeMerchantsList(): Flow<List<Merchant>> = emptyFlow()
+    /** The customer-facing list; replace with a failing or silent flow to test error and loading states. */
+    var merchantsList: Flow<List<Merchant>> = MutableStateFlow(emptyList())
+
+    override fun observeMerchantsList(): Flow<List<Merchant>> = merchantsList
 }
 
 fun aCategory(id: String = "c1", name: String = "Platos", sortOrder: Int = 1) = Category(id, name, sortOrder)
