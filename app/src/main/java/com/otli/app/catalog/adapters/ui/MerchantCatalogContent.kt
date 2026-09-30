@@ -44,9 +44,16 @@ data class MerchantCatalogActions(
     val onCategoryNameChange: (String) -> Unit = {},
     val onSaveCategory: () -> Unit = {},
     val onDismissCategoryEditor: () -> Unit = {},
+    val onProductNameChange: (String) -> Unit = {},
+    val onProductDescriptionChange: (String) -> Unit = {},
+    val onProductPriceChange: (String) -> Unit = {},
+    val onProductCategoryChange: (String) -> Unit = {},
+    val onPickProductPhoto: () -> Unit = {},
+    val onSaveProduct: () -> Unit = {},
+    val onDismissProductEditor: () -> Unit = {},
 )
 
-/** Stateless catalog manager: categories with their products, availability switches and the category editor. */
+/** Stateless catalog manager: categories with their products, availability switches and the category and product editors. */
 @Composable
 fun MerchantCatalogContent(
     state: MerchantCatalogUiState,
@@ -55,6 +62,10 @@ fun MerchantCatalogContent(
 ) {
     if (state.isLoading) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        return
+    }
+    state.productEditor?.let { editor ->
+        ProductEditorForm(editor, state.categories, state.isSaving, actions, modifier)
         return
     }
     LazyColumn(modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
