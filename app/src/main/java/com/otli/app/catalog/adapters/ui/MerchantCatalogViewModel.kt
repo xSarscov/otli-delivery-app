@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.otli.app.auth.application.AuthRepository
 import com.otli.app.catalog.application.CatalogRepository
+import com.otli.app.catalog.application.PhotoCompressor
 import com.otli.app.catalog.domain.CatalogValidation
 import com.otli.app.catalog.domain.Category
 import com.otli.app.catalog.domain.Product
@@ -22,10 +23,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class MerchantCatalogError {
+    NEEDS_CATEGORY,
     CATEGORY_NOT_EMPTY,
     SAVE_FAILED,
     DELETE_FAILED,
     AVAILABILITY_FAILED,
+    PHOTO_FAILED,
 }
 
 /** The category form being edited; [id] is blank for a new category. */
@@ -40,6 +43,7 @@ data class MerchantCatalogUiState(
     val isLoading: Boolean = true,
     val categories: List<Category> = emptyList(),
     val products: List<Product> = emptyList(),
+    val productEditor: ProductEditorState? = null,
     val categoryEditor: CategoryEditorState? = null,
     val isSaving: Boolean = false,
     val error: MerchantCatalogError? = null,
@@ -53,6 +57,7 @@ data class MerchantCatalogUiState(
 @HiltViewModel
 class MerchantCatalogViewModel @Inject constructor(
     private val catalog: CatalogRepository,
+    private val photos: PhotoCompressor,
     auth: AuthRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MerchantCatalogUiState())
@@ -84,6 +89,70 @@ class MerchantCatalogViewModel @Inject constructor(
         val id = merchantId ?: return
         viewModelScope.launch {
             if (catalog.setProductAvailability(id, productId, available).isFailure) fail(MerchantCatalogError.AVAILABILITY_FAILED)
+        }
+    }
+
+    // --- products ---
+
+    fun onAddProduct(categoryId: String?) {
+        val chosen = categoryId ?: _uiState.value.categories.firstOrNull()?.id
+        if (chosen == null) {
+            fail(MerchantCatalogError.NEEDS_CATEGORY)
+            return
+        }
+        _uiState.update { it.copy(productEditor = ProductEditorState.forNew(chosen), error = null) }
+    }
+
+    fun onEditProduct(product: Product) =
+        _uiState.update { it.copy(productEditor = ProductEditorState.from(product), error = null) }
+
+    fun onProductNameChange(value: String) = editProduct { copy(name = value) }
+
+    fun onProductDescriptionChange(value: String) = editProduct { copy(description = value) }
+
+    fun onProductPriceChange(value: String) = editProduct { copy(priceText = value) }
+
+    fun onProductCategoryChange(categoryId: String) = editProduct { copy(categoryId = categoryId) }
+
+    /** [picked] is the raw image; it is compressed now so an unreadable file fails before saving. */
+    fun onProductPhotoPicked(picked: ByteArray) {
+        photos.compress(picked).fold(
+            onSuccess = { jpeg -> editProduct { copy(pendingPhoto = jpeg) } },
+            onFailure = { fail(MerchantCatalogError.PHOTO_FAILED) },
+        )
+    }
+
+    fun onDismissProductEditor() = _uiState.update { it.copy(productEditor = null) }
+
+    fun onSaveProduct() {
+        val id = merchantId ?: return
+        val state = _uiState.value
+        val editor = state.productEditor ?: return
+        if (state.isSaving) return
+        val product = when (val result = editor.validate()) {
+            is ProductEditorResult.Invalid -> {
+                _uiState.update { it.copy(productEditor = editor.copy(errors = result.errors)) }
+                return
+            }
+            is ProductEditorResult.Valid -> result.product
+        }
+        _uiState.update { it.copy(isSaving = true, error = null) }
+        viewModelScope.launch {
+            val result = catalog.upsertProduct(id, product, editor.pendingPhoto)
+            _uiState.update {
+                it.copy(
+                    isSaving = false,
+                    productEditor = if (result.isSuccess) null else it.productEditor,
+                    error = if (result.isFailure) MerchantCatalogError.SAVE_FAILED else null,
+                )
+            }
+        }
+    }
+
+    fun onRemoveProduct(productId: String) {
+        val id = merchantId ?: return
+        viewModelScope.launch {
+            if (catalog.removeProduct(id, productId).isFailure) fail(MerchantCatalogError.DELETE_FAILED)
         }
     }
 
@@ -141,4 +210,7 @@ class MerchantCatalogViewModel @Inject constructor(
 
     private fun fail(error: MerchantCatalogError) = _uiState.update { it.copy(error = error) }
 
+    private fun editProduct(change: ProductEditorState.() -> ProductEditorState) = _uiState.update { state ->
+        state.copy(productEditor = state.productEditor?.change()?.copy(errors = emptySet()), error = null)
+    }
 }
