@@ -43,6 +43,69 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    function validText(value, min, max) {
+      return value is string && value.trim().size() >= min && value.size() <= max;
+    }
+
+    // merchants/{uid}: public storefront profile; catalog lives in subcollections (ADR-11).
+    match /merchants/{mid} {
+      // Writes require the owner's users document (source of truth, ADR-6) to be an active merchant.
+      function isActiveMerchant() {
+        return signedIn()
+          && request.auth.uid == mid
+          && exists(userPath(mid))
+          && get(userPath(mid)).data.role == 'merchant'
+          && get(userPath(mid)).data.status == 'active';
+      }
+      function validLocation(location) {
+        return location is map
+          && location.keys().hasOnly(['lat', 'lng', 'reference'])
+          && location.keys().hasAll(['lat', 'lng', 'reference'])
+          && location.lat is number && location.lat >= -90 && location.lat <= 90
+          && location.lng is number && location.lng >= -180 && location.lng <= 180
+          && validText(location.reference, 0, 200);
+      }
+      function validProfile(data) {
+        return validText(data.name, 1, 80)
+          && validText(data.description, 0, 500)
+          && validText(data.phone, 0, 30)
+          && data.isOpen is bool
+          && (!('photoVersion' in data) || (data.photoVersion is int && data.photoVersion >= 0))
+          && (!('location' in data) || validLocation(data.location));
+      }
+      // Created by the merchant, in the same batch as users/{uid} at registration or later on retry.
+      function validMerchantCreate() {
+        let data = request.resource.data;
+        return signedIn()
+          && request.auth.uid == mid
+          && getAfter(userPath(mid)).data.role == 'merchant'
+          && data.keys().hasOnly(['name', 'description', 'phone', 'status', 'isOpen', 'photoVersion', 'location', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['name', 'description', 'phone', 'status', 'isOpen', 'createdAt', 'updatedAt'])
+          && data.status == 'pending'
+          && data.isOpen == false
+          && data.createdAt == request.time
+          && data.updatedAt == request.time
+          && validProfile(data);
+      }
+      function ownerUpdate() {
+        return isActiveMerchant()
+          && changed().hasOnly(['name', 'description', 'phone', 'isOpen', 'photoVersion', 'location', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time
+          && validProfile(request.resource.data);
+      }
+      function adminStatusMirror() {
+        return isActiveAdmin()
+          && changed().hasOnly(['status', 'updatedAt'])
+          && request.resource.data.status in ['active', 'pending', 'suspended']
+          && (!('updatedAt' in changed()) || request.resource.data.updatedAt == request.time);
+      }
+
+      allow read: if signedIn();
+      allow create: if validMerchantCreate();
+      allow update: if ownerUpdate() || adminStatusMirror();
+      allow delete: if false;
+    }
+
     // Everything else stays denied until its slice adds a match block test-first.
     match /{document=**} {
       allow read, write: if false;
