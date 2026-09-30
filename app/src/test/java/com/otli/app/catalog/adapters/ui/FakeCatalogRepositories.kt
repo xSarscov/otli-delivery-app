@@ -12,7 +12,6 @@ import com.otli.app.catalog.domain.Product
 import com.otli.app.core.money.Money
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emptyFlow
 
 fun aMerchant(
     id: String = "m1",
@@ -128,7 +127,14 @@ class FakeCatalogRepository(
         }
     }
 
-    override fun observeStorefront(merchantId: String): Flow<Storefront?> = emptyFlow()
+    /** What a customer would see; replace with a failing or silent flow to test error and loading states. */
+    var storefront: Flow<Storefront?> = MutableStateFlow(null)
+    val storefrontRequests = mutableListOf<String>()
+
+    override fun observeStorefront(merchantId: String): Flow<Storefront?> {
+        storefrontRequests += merchantId
+        return storefront
+    }
 }
 
 /** Returns the input reversed so tests can tell compressed bytes from picked bytes. */
