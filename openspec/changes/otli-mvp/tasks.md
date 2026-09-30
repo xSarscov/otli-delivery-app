@@ -231,7 +231,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Test-first: write the contract-parity test RED (table doesn't exist yet), then implement `OrderTransitions` GREEN so it matches the fixture exactly.
   - Acceptance: ordering spec — "Order State Machine With Actor-Authorized Transitions" (all 9 valid transitions), "Merchant cannot progress an order out of sequence".
   - Est. lines: ~120
-- [ ] 3.1.2 Create `ordering/domain/Cart.kt` (single-merchant invariant, `AddResult` sealed interface: `Added`/`ConflictingMerchant`) and `app/src/test/java/com/otli/app/ordering/domain/CartTest.kt`.
+- [x] 3.1.2 (branch 03-1a: immutable `Cart` with `CartMerchant`/`CartLine`, `AddResult.ConflictingMerchant(current: CartMerchant)` so the dialog can name the current store, plus `replaceWith`/`setQuantity`/`clear`; 12 tests, mutation-checked) Create `ordering/domain/Cart.kt` (single-merchant invariant, `AddResult` sealed interface: `Added`/`ConflictingMerchant`) and `app/src/test/java/com/otli/app/ordering/domain/CartTest.kt`.
   - Test-first: write `CartTest` RED (same-merchant add succeeds silently; different-merchant add returns `ConflictingMerchant` and leaves the cart unchanged until confirmed), then implement GREEN.
   - Acceptance: ordering spec — "Customer adds a product from the same merchant", "Customer adds a product from a different merchant".
   - Est. lines: ~110
