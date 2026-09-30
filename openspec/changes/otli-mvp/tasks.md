@@ -185,7 +185,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Test-first: write `app/src/androidTest/java/com/otli/app/catalog/adapters/firestore/FirestoreCatalogRepositoryTest.kt` RED against the emulator (create category/product round trip, availability toggle reflected in a listener), then implement GREEN.
   - Acceptance: merchant-catalog spec — "Merchant creates a product with a NIO price", "Merchant marks a product unavailable" (adapter half).
   - Est. lines: ~180
-- [ ] 2.3.2 Create `catalog/adapters/device/ImageCompressor.kt` (resize ≤ 640px, JPEG quality ~70, per ADR-11) and a JVM unit test using a fixture bitmap/byte array asserting the output stays ≤ 300 KB for a representative input.
+- [x] 2.3.2 (branch 02-3g; ImageCompressorTest 8 + ImageScalingTest 4, real JPEG via Robolectric native graphics, mutation-checked; the cap is a constructor parameter so the quality-stepping loop is testable) Create `catalog/adapters/device/ImageCompressor.kt` (resize ≤ 640px, JPEG quality ~70, per ADR-11) and a JVM unit test using a fixture bitmap/byte array asserting the output stays ≤ 300 KB for a representative input.
   - Test-first: write the compressor test RED, then implement GREEN.
   - Acceptance: supports photo upload within the rules-enforced 300 KB cap (ADR-11); no direct spec scenario, but required by "Active merchant edits their profile" (photo field).
   - Est. lines: ~90
