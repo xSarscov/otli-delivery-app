@@ -15,8 +15,13 @@ val localProps = Properties().apply {
     val file = rootProject.file("local.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }
-val useEmulator: String = localProps.getProperty("otli.useEmulator", "true")
-val emulatorHost: String = localProps.getProperty("otli.emulatorHost", "10.0.2.2")
+// Precedence: -Potli.* Gradle property > local.properties > default. The Android emulator
+// reaches the host at 10.0.2.2; a physical device over `adb reverse` reaches it at 127.0.0.1.
+fun otliProp(name: String, default: String): String =
+    (project.findProperty(name) as String?) ?: localProps.getProperty(name, default)
+
+val useEmulator: String = otliProp("otli.useEmulator", "true")
+val emulatorHost: String = otliProp("otli.emulatorHost", "10.0.2.2")
 
 android {
     namespace = "com.otli.app"
@@ -92,6 +97,11 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.truth)
     testImplementation(libs.robolectric)
+
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.truth)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
 }
