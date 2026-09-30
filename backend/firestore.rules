@@ -68,19 +68,20 @@ service cloud.firestore {
       function validProfile(data) {
         return validText(data.name, 1, 80)
           && validText(data.description, 0, 500)
-          && validText(data.phone, 0, 30)
+          && validText(data.phone, 1, 30)
           && data.isOpen is bool
           && (!('photoVersion' in data) || (data.photoVersion is int && data.photoVersion >= 0))
-          && (!('location' in data) || validLocation(data.location));
+          && validLocation(data.location);
       }
       // Created by the merchant, in the same batch as users/{uid} at registration or later on retry.
+      // Registration collects the store name, contact phone and map pin, so all three are required.
       function validMerchantCreate() {
         let data = request.resource.data;
         return signedIn()
           && request.auth.uid == mid
           && getAfter(userPath(mid)).data.role == 'merchant'
           && data.keys().hasOnly(['name', 'description', 'phone', 'status', 'isOpen', 'photoVersion', 'location', 'createdAt', 'updatedAt'])
-          && data.keys().hasAll(['name', 'description', 'phone', 'status', 'isOpen', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['name', 'description', 'phone', 'status', 'isOpen', 'location', 'createdAt', 'updatedAt'])
           && data.status == 'pending'
           && data.isOpen == false
           && data.createdAt == request.time

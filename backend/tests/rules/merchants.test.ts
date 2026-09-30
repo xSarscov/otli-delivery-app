@@ -1,6 +1,6 @@
 import { assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import { describe, expect, it } from "vitest";
-import { merchantDoc, serverTime, useCatalogEnv } from "./catalog-support";
+import { merchantDoc, NAGAROTE_LOCATION, serverTime, useCatalogEnv } from "./catalog-support";
 
 const { as, signedOut, admin } = useCatalogEnv();
 
@@ -32,10 +32,32 @@ describe("merchants/{uid} create", () => {
     await assertSucceeds(batch.commit());
   });
 
-  it("accepts an optional location map", async () => {
+  it("accepts a location with a reference text", async () => {
     await registerUser("new-merchant", "merchant");
     const location = { lat: 12.2, lng: -86.5, reference: "Frente al parque" };
     await assertSucceeds(as("new-merchant").collection("merchants").doc("new-merchant").set(merchantDoc({ location })));
+  });
+
+  it("denies creation without a location pin", async () => {
+    await registerUser("no-pin", "merchant");
+    const { location: _location, ...withoutLocation } = merchantDoc();
+    await assertFails(as("no-pin").collection("merchants").doc("no-pin").set(withoutLocation));
+  });
+
+  it("denies a malformed or out-of-range location", async () => {
+    await registerUser("bad-pin", "merchant");
+    const doc = as("bad-pin").collection("merchants").doc("bad-pin");
+    await assertFails(doc.set(merchantDoc({ location: { lat: 95, lng: -86.5, reference: "" } })));
+    await assertFails(doc.set(merchantDoc({ location: { lat: 12.2, lng: -86.5 } })));
+    await assertFails(doc.set(merchantDoc({ location: "12.2,-86.5" })));
+  });
+
+  it("denies creation without a contact phone or with a blank one", async () => {
+    await registerUser("no-phone", "merchant");
+    const doc = as("no-phone").collection("merchants").doc("no-phone");
+    const { phone: _phone, ...withoutPhone } = merchantDoc();
+    await assertFails(doc.set(withoutPhone));
+    await assertFails(doc.set(merchantDoc({ phone: "   " })));
   });
 
   it("denies self-activating or opening at creation", async () => {
@@ -74,6 +96,11 @@ describe("merchants/{uid} owner update", () => {
   it("lets an active merchant edit name, description, phone and location", async () => {
     await assertSucceeds(merchantA().update({ name: "Nuevo nombre", description: "Otra", phone: "7777", updatedAt: serverTime() }));
     await assertSucceeds(merchantA().update({ location: { lat: 12.2, lng: -86.5, reference: "Esquina" }, updatedAt: serverTime() }));
+  });
+
+  it("keeps the phone and location required on update", async () => {
+    await assertFails(merchantA().update({ phone: "", updatedAt: serverTime() }));
+    await assertFails(merchantA().update({ location: { ...NAGAROTE_LOCATION, lat: 200 }, updatedAt: serverTime() }));
   });
 
   it("lets an active merchant replace the photo version", async () => {
