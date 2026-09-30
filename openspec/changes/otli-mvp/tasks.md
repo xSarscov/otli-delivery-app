@@ -189,7 +189,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Test-first: write the compressor test RED, then implement GREEN.
   - Acceptance: supports photo upload within the rules-enforced 300 KB cap (ADR-11); no direct spec scenario, but required by "Active merchant edits their profile" (photo field).
   - Est. lines: ~90
-- [ ] 2.3.3 Create `catalog/adapters/ui/MerchantProfileScreen.kt`/`Content`/`ViewModel` (edit name/description/photo, open/closed toggle) and its ViewModel test.
+- [ ] 2.3.3 (branch 02-3h: `MerchantProfileViewModel`, `PhotoCompressor` port + DI binding, fakes, 14 ViewModel tests, mutation-checked; branch 02-3i: Content/Screen) Create `catalog/adapters/ui/MerchantProfileScreen.kt`/`Content`/`ViewModel` (edit name/description/photo, open/closed toggle) and its ViewModel test.
   - Test-first: write `MerchantProfileViewModelTest` RED, then implement GREEN.
   - Acceptance: merchant-catalog spec — "Active merchant edits their profile", "Merchant closes the store".
   - Est. lines: ~150

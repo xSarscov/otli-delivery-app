@@ -1,9 +1,11 @@
 package com.otli.app.catalog.di
 
+import com.otli.app.catalog.adapters.device.ImageCompressor
 import com.otli.app.catalog.adapters.firestore.FirestoreCatalogRepository
 import com.otli.app.catalog.adapters.firestore.FirestoreMerchantRepository
 import com.otli.app.catalog.application.CatalogRepository
 import com.otli.app.catalog.application.MerchantRepository
+import com.otli.app.catalog.application.PhotoCompressor
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -20,4 +22,7 @@ abstract class CatalogModule {
     @Binds
     @Singleton
     abstract fun bindCatalogRepository(impl: FirestoreCatalogRepository): CatalogRepository
+
+    @Binds
+    abstract fun bindPhotoCompressor(impl: ImageCompressor): PhotoCompressor
 }
