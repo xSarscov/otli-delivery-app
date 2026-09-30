@@ -1,8 +1,10 @@
 package com.otli.app.catalog.di
 
+import com.otli.app.catalog.adapters.device.BitmapPhotoDecoder
 import com.otli.app.catalog.adapters.device.ImageCompressor
 import com.otli.app.catalog.adapters.firestore.FirestoreCatalogRepository
 import com.otli.app.catalog.adapters.firestore.FirestoreMerchantRepository
+import com.otli.app.catalog.adapters.ui.PhotoDecoder
 import com.otli.app.catalog.application.CatalogRepository
 import com.otli.app.catalog.application.MerchantRepository
 import com.otli.app.catalog.application.PhotoCompressor
@@ -25,4 +27,7 @@ abstract class CatalogModule {
 
     @Binds
     abstract fun bindPhotoCompressor(impl: ImageCompressor): PhotoCompressor
+
+    @Binds
+    abstract fun bindPhotoDecoder(impl: BitmapPhotoDecoder): PhotoDecoder
 }
