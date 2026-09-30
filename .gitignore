@@ -35,3 +35,6 @@ ui-debug.log
 # OS
 .DS_Store
 Thumbs.db
+
+# Kotlin compiler cache
+.kotlin/
