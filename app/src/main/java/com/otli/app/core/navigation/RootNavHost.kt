@@ -37,6 +37,7 @@ fun RootNavHost(
     suspended: @Composable (Role) -> Unit = { role ->
         HomePlaceholder(R.string.suspended_placeholder, RootTags.suspended(role))
     },
+    merchantHome: @Composable () -> Unit = { MerchantHomeScreen() },
 ) {
     val state by session.collectAsStateWithLifecycle()
     val navController = rememberNavController()
@@ -62,7 +63,7 @@ fun RootNavHost(
             composable<CustomerHome> { CustomerHomeScreen() }
         }
         navigation<MerchantGraph>(startDestination = MerchantHome) {
-            composable<MerchantHome> { MerchantHomeScreen() }
+            composable<MerchantHome> { merchantHome() }
         }
         navigation<CourierGraph>(startDestination = CourierHome) {
             composable<CourierHome> { CourierHomeScreen() }

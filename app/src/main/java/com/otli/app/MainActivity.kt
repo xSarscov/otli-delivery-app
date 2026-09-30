@@ -8,6 +8,7 @@ import com.otli.app.auth.adapters.ui.PendingApprovalScreen
 import com.otli.app.auth.adapters.ui.SessionViewModel
 import com.otli.app.auth.adapters.ui.SignedOutScreen
 import com.otli.app.auth.adapters.ui.SuspendedScreen
+import com.otli.app.catalog.adapters.ui.MerchantHomeTabsScreen
 import com.otli.app.core.navigation.RootNavHost
 import com.otli.app.core.theme.OtliTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -25,6 +26,7 @@ class MainActivity : ComponentActivity() {
                     signedOut = { SignedOutScreen() },
                     pending = { role -> PendingApprovalScreen(role) },
                     suspended = { role -> SuspendedScreen(role) },
+                    merchantHome = { MerchantHomeTabsScreen() },
                 )
             }
         }
