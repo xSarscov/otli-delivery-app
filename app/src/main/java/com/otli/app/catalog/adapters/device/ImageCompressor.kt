@@ -2,6 +2,7 @@ package com.otli.app.catalog.adapters.device
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import com.otli.app.catalog.application.PhotoCompressor
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 
@@ -9,12 +10,12 @@ import javax.inject.Inject
  * Turns a picked photo into the small JPEG stored in Firestore (ADR-11): longest edge at most
  * [MAX_EDGE] px, quality [QUALITIES] first entry, stepped down until it fits the 300 KB rules cap.
  */
-class ImageCompressor(private val maxBytes: Int) {
+class ImageCompressor(private val maxBytes: Int) : PhotoCompressor {
     @Inject
     constructor() : this(MAX_BYTES)
 
 
-    fun compress(source: ByteArray): Result<ByteArray> = try {
+    override fun compress(source: ByteArray): Result<ByteArray> = try {
         Result.success(encode(scale(source)))
     } catch (failure: IllegalArgumentException) {
         Result.failure(failure)
