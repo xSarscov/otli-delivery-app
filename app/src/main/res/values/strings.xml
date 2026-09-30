@@ -39,4 +39,8 @@
     <string name="gate_suspended_merchant">Your store account has been suspended, so you cannot receive orders. Contact an administrator for help.</string>
     <string name="gate_suspended_courier">Your courier account has been suspended, so you cannot claim deliveries. Contact an administrator for help.</string>
     <string name="gate_suspended_generic">Your account has been suspended. Contact an administrator for help.</string>
+    <string name="map_attribution">OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors</string>
+    <string name="map_pin_hint">Tap the map to drop a pin on your location.</string>
+    <string name="map_pin_selected">Pin: %1$.5f, %2$.5f</string>
+    <string name="map_pin_clear">Remove pin</string>
 </resources>
