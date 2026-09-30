@@ -1,7 +1,49 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Scaffold: deny everything. Each slice adds its own match blocks test-first.
+    function signedIn() { return request.auth != null; }
+    function userPath(uid) { return /databases/$(database)/documents/users/$(uid); }
+    function isActiveAdmin() {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && get(userPath(request.auth.uid)).data.role == 'admin'
+        && get(userPath(request.auth.uid)).data.status == 'active';
+    }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // users/{uid}: role and account status are the source of truth (ADR-6).
+    match /users/{uid} {
+      function isSelf() { return signedIn() && request.auth.uid == uid; }
+
+      // Status a self-registered account must start with; mirrors RegistrationPolicy (Kotlin).
+      function defaultStatusFor(role) {
+        return (role == 'customer' && request.resource.data.status == 'active')
+          || ((role == 'merchant' || role == 'courier') && request.resource.data.status == 'pending');
+      }
+      function validRegistration() {
+        let data = request.resource.data;
+        return isSelf()
+          && data.keys().hasOnly(['role', 'status', 'displayName', 'email', 'phone', 'createdAt'])
+          && data.keys().hasAll(['role', 'status', 'displayName', 'email', 'phone', 'createdAt'])
+          && defaultStatusFor(data.role)
+          && data.createdAt == request.time;
+      }
+      function profileUpdate() {
+        return isSelf() && changed().hasOnly(['displayName', 'phone']);
+      }
+      function adminStatusUpdate() {
+        return isActiveAdmin()
+          && changed().hasOnly(['status'])
+          && request.resource.data.status in ['active', 'pending', 'suspended'];
+      }
+
+      allow read: if isSelf() || isActiveAdmin();
+      allow create: if validRegistration();
+      allow update: if profileUpdate() || adminStatusUpdate();
+      allow delete: if false;
+    }
+
+    // Everything else stays denied until its slice adds a match block test-first.
     match /{document=**} {
       allow read, write: if false;
     }
