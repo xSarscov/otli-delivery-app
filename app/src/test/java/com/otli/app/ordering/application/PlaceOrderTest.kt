@@ -22,16 +22,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
-private class FakeOrderRepository : OrderRepository {
-    val placed = mutableListOf<OrderDraft>()
-    var outcome: (OrderDraft) -> Result<String> = { Result.success("order-${placed.size}") }
-
-    override suspend fun place(draft: OrderDraft): Result<String> {
-        placed += draft
-        return outcome(draft)
-    }
-}
-
 private class FakeSettingsRepository(var fee: Result<Money> = Result.success(Money(3000))) : SettingsRepository {
     override suspend fun deliveryFee(): Result<Money> = fee
 }
