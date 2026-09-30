@@ -1,0 +1,27 @@
+{
+  "name": "otli-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Firestore security rules, rules tests and seed script for the Otli delivery app",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node scripts/run-with-emulators.mjs vitest",
+    "test:android": "node scripts/run-with-emulators.mjs android",
+    "emulators": "firebase emulators:start --only firestore,auth --project demo-otli --import=./emulator-data --export-on-exit",
+    "seed": "tsx scripts/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.2",
+    "@types/node": "22.20.4",
+    "firebase": "12.19.0",
+    "firebase-admin": "14.5.0",
+    "firebase-tools": "15.32.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.2"
+  }
+}

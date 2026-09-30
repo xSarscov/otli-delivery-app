@@ -1,0 +1,13 @@
+{
+  "allowed": [
+    { "from": "placed", "to": "accepted", "actor": "merchant" },
+    { "from": "placed", "to": "rejected", "actor": "merchant" },
+    { "from": "placed", "to": "cancelled", "actor": "customer" },
+    { "from": "accepted", "to": "preparing", "actor": "merchant" },
+    { "from": "preparing", "to": "ready", "actor": "merchant" },
+    { "from": "ready", "to": "claimed", "actor": "courier" },
+    { "from": "claimed", "to": "picked_up", "actor": "courier" },
+    { "from": "picked_up", "to": "delivered", "actor": "courier" },
+    { "from": "claimed", "to": "ready", "actor": "admin" }
+  ]
+}
