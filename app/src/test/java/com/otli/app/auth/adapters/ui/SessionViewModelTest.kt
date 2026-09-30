@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -24,10 +25,16 @@ import org.junit.Test
 
 private class SessionFakeRepository : AuthRepository {
     val authState = MutableStateFlow<AuthUser?>(null)
-    val document = MutableStateFlow<UserAccount?>(null)
+
+    /** What the next read of the user document finds; every subscription reads it once, like a fresh fetch. */
+    var document: UserAccount? = null
+    var documentReads = 0
 
     override fun observeAuthState(): Flow<AuthUser?> = authState
-    override fun observeUserDocument(uid: String): Flow<UserAccount?> = document
+    override fun observeUserDocument(uid: String): Flow<UserAccount?> = flow {
+        documentReads++
+        emit(document)
+    }
     override suspend fun register(
         email: String,
         password: String,
@@ -52,7 +59,7 @@ class SessionViewModelTest {
     fun exposesTheResolvedSessionStateStartingFromLoading() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         repo.authState.value = AuthUser("u1", "u1@otli.test")
-        repo.document.value = UserAccount("u1", Role.CUSTOMER, AccountStatus.ACTIVE, "Ana", "u1@otli.test", "8888-0000")
+        repo.document = UserAccount("u1",Role.CUSTOMER, AccountStatus.ACTIVE, "Ana", "u1@otli.test", "8888-0000")
         val viewModel = SessionViewModel(ObserveSessionUseCase(repo))
 
         viewModel.session.test {
@@ -65,7 +72,7 @@ class SessionViewModelTest {
     fun followsLogoutBackToSignedOut() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         repo.authState.value = AuthUser("u2", "u2@otli.test")
-        repo.document.value = UserAccount("u2", Role.COURIER, AccountStatus.PENDING, "Luis", "u2@otli.test", "8888-1111")
+        repo.document = UserAccount("u2",Role.COURIER, AccountStatus.PENDING, "Luis", "u2@otli.test", "8888-1111")
         val viewModel = SessionViewModel(ObserveSessionUseCase(repo))
 
         viewModel.session.test {
@@ -73,6 +80,44 @@ class SessionViewModelTest {
             assertThat(awaitItem()).isEqualTo(SessionState.Pending(Role.COURIER))
             repo.logout()
             assertThat(awaitItem()).isEqualTo(SessionState.SignedOut)
+        }
+    }
+
+    @Test
+    fun retryReadsTheUserDocumentAgainAndRecoversOnceItExists() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        repo.authState.value = AuthUser("u3", "u3@otli.test")
+        val viewModel = SessionViewModel(ObserveSessionUseCase(repo))
+
+        viewModel.session.test {
+            assertThat(awaitItem()).isEqualTo(SessionState.Loading)
+            assertThat(awaitItem()).isEqualTo(SessionState.ProfileIncomplete)
+            assertThat(repo.documentReads).isEqualTo(1)
+
+            repo.document = UserAccount("u3", Role.CUSTOMER, AccountStatus.ACTIVE, "Eva", "u3@otli.test", "8888-2222")
+            viewModel.retry()
+
+            assertThat(awaitItem()).isEqualTo(SessionState.Loading)
+            assertThat(awaitItem()).isEqualTo(SessionState.Active(Role.CUSTOMER))
+            assertThat(repo.documentReads).isEqualTo(2)
+        }
+    }
+
+    @Test
+    fun retryWhileTheProfileIsStillMissingReadsAgainAndStaysIncomplete() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        repo.authState.value = AuthUser("u4", "u4@otli.test")
+        val viewModel = SessionViewModel(ObserveSessionUseCase(repo))
+
+        viewModel.session.test {
+            assertThat(awaitItem()).isEqualTo(SessionState.Loading)
+            assertThat(awaitItem()).isEqualTo(SessionState.ProfileIncomplete)
+
+            viewModel.retry()
+
+            assertThat(awaitItem()).isEqualTo(SessionState.Loading)
+            assertThat(awaitItem()).isEqualTo(SessionState.ProfileIncomplete)
+            assertThat(repo.documentReads).isEqualTo(2)
         }
     }
 }

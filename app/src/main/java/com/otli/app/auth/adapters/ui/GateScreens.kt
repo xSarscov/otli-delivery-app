@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -30,6 +31,20 @@ fun PendingApprovalScreen(role: Role, modifier: Modifier = Modifier, viewModel: 
 fun SuspendedScreen(role: Role, modifier: Modifier = Modifier, viewModel: GateViewModel = hiltViewModel()) =
     SuspendedContent(role, onLogout = viewModel::logout, modifier = modifier)
 
+/** Container for the profile-incomplete gate; retry asks the session to resolve again. */
+@Composable
+fun ProfileIncompleteScreen(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: GateViewModel = hiltViewModel(),
+) = ProfileIncompleteContent(onLogout = viewModel::logout, onRetry = onRetry, modifier = modifier)
+
+@Composable
+fun ProfileIncompleteContent(onLogout: () -> Unit, onRetry: () -> Unit, modifier: Modifier = Modifier) =
+    GateContent(R.string.gate_profile_incomplete_title, R.string.gate_profile_incomplete_message, onLogout, modifier) {
+        Button(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+    }
+
 @Composable
 fun PendingApprovalContent(role: Role, onLogout: () -> Unit, modifier: Modifier = Modifier) =
     GateContent(R.string.gate_pending_title, role.pendingMessageRes(), onLogout, modifier)
@@ -44,6 +59,7 @@ private fun GateContent(
     @StringRes message: Int,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
+    primaryAction: @Composable () -> Unit = {},
 ) {
     Column(
         modifier.fillMaxSize().padding(32.dp),
@@ -52,6 +68,7 @@ private fun GateContent(
     ) {
         Text(stringResource(title), style = MaterialTheme.typography.headlineSmall)
         Text(stringResource(message), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+        primaryAction()
         OutlinedButton(onClick = onLogout) { Text(stringResource(R.string.action_logout)) }
     }
 }
@@ -75,6 +92,12 @@ private fun Role.suspendedMessageRes(): Int = when (this) {
 @Composable
 private fun PendingApprovalPreview() {
     OtliTheme { PendingApprovalContent(role = Role.MERCHANT, onLogout = {}) }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ProfileIncompletePreview() {
+    OtliTheme { ProfileIncompleteContent(onLogout = {}, onRetry = {}) }
 }
 
 @Preview(showBackground = true)

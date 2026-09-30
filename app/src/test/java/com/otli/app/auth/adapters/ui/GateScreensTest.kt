@@ -95,4 +95,37 @@ class GateScreensTest {
         compose.setContent { SuspendedContent(role = Role.COURIER, onLogout = {}) }
         compose.onNodeWithText(text(R.string.action_logout)).assertIsEnabled().assertHasClickAction()
     }
+
+    @Test
+    fun profileIncompleteGateExplainsTheProblemInsteadOfShowingAPlaceholder() {
+        compose.setContent { ProfileIncompleteContent(onLogout = {}, onRetry = {}) }
+
+        compose.onNodeWithText(text(R.string.gate_profile_incomplete_title)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.gate_profile_incomplete_message)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.gate_pending_generic)).assertDoesNotExist()
+    }
+
+    @Test
+    fun profileIncompleteGateOffersSignOut() {
+        var logouts = 0
+        var retries = 0
+        compose.setContent { ProfileIncompleteContent(onLogout = { logouts++ }, onRetry = { retries++ }) }
+
+        compose.onNodeWithText(text(R.string.action_logout)).assertIsEnabled().performClick()
+
+        assertThat(logouts).isEqualTo(1)
+        assertThat(retries).isEqualTo(0)
+    }
+
+    @Test
+    fun profileIncompleteGateOffersRetry() {
+        var logouts = 0
+        var retries = 0
+        compose.setContent { ProfileIncompleteContent(onLogout = { logouts++ }, onRetry = { retries++ }) }
+
+        compose.onNodeWithText(text(R.string.action_retry)).assertIsEnabled().performClick()
+
+        assertThat(retries).isEqualTo(1)
+        assertThat(logouts).isEqualTo(0)
+    }
 }
