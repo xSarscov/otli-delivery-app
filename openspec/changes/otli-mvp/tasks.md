@@ -227,7 +227,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 3.1 — Domain
 
-- [ ] 3.1.1 Create `ordering/domain/OrderStatus.kt`, `ordering/domain/Actor.kt`, `ordering/domain/OrderTransitions.kt` (the `allowed: Set<Triple<...>>` table plus `isAllowed(from, to, actor)`) and `app/src/test/java/com/otli/app/ordering/domain/OrderTransitionsContractTest.kt` that parses `backend/contracts/order-transitions.json` (created in task 0.4) and asserts `OrderTransitions.allowed` is exactly equal to the fixture (ADR-14).
+- [x] 3.1.1 (branch 03-1a: 10 contract tests incl. an exhaustive 324-combination parity check; mutation-checked; the fixture is now a declared input of the unit test task so editing it re-runs the parity test) Create `ordering/domain/OrderStatus.kt`, `ordering/domain/Actor.kt`, `ordering/domain/OrderTransitions.kt` (the `allowed: Set<Triple<...>>` table plus `isAllowed(from, to, actor)`) and `app/src/test/java/com/otli/app/ordering/domain/OrderTransitionsContractTest.kt` that parses `backend/contracts/order-transitions.json` (created in task 0.4) and asserts `OrderTransitions.allowed` is exactly equal to the fixture (ADR-14).
   - Test-first: write the contract-parity test RED (table doesn't exist yet), then implement `OrderTransitions` GREEN so it matches the fixture exactly.
   - Acceptance: ordering spec — "Order State Machine With Actor-Authorized Transitions" (all 9 valid transitions), "Merchant cannot progress an order out of sequence".
   - Est. lines: ~120
