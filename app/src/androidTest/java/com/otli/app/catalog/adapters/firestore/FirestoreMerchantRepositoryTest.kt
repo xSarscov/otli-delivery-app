@@ -27,7 +27,8 @@ class FirestoreMerchantRepositoryTest {
     private val firestore = OtliFirebase.firestore(context)
     private val repository = FirestoreMerchantRepository(firestore)
 
-    private fun <T> await(block: suspend () -> T): T = runBlocking { withTimeout(30_000) { block() } }
+    // Returns Unit so every `@Test fun x() = await { ... }` compiles to a void JUnit method.
+    private fun await(block: suspend () -> Unit): Unit = runBlocking { withTimeout(30_000) { block() } }
 
     @Before
     fun signInAsSeedMerchant() = await {
@@ -89,7 +90,10 @@ class FirestoreMerchantRepositoryTest {
 
     @Test
     fun merchantsListHoldsActiveMerchantsOrderedByNameWithoutThePendingOne() = await {
-        val merchants = repository.observeMerchantsList().first { it.isNotEmpty() }
+        // The first snapshot can come from the local cache with only the merchants read earlier;
+        // wait for the list that holds both seeded active merchants.
+        val merchants = repository.observeMerchantsList()
+            .first { list -> list.map { it.id }.containsAll(listOf(MERCHANT_1, MERCHANT_2)) }
 
         val ids = merchants.map { it.id }
         assertThat(ids).containsAtLeast(MERCHANT_1, MERCHANT_2)
