@@ -9,9 +9,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.unit.dp
 import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -30,7 +30,11 @@ class MerchantHomeContentTest {
 
     private fun text(id: Int) = compose.activity.getString(id)
 
-    private fun show(initial: MerchantTab = MerchantTab.CATALOG, onSelected: (MerchantTab) -> Unit = {}) {
+    private fun show(
+        initial: MerchantTab = MerchantTab.CATALOG,
+        onSelected: (MerchantTab) -> Unit = {},
+        onSignOut: () -> Unit = {},
+    ) {
         compose.setContent {
             var selected by remember { mutableStateOf(initial) }
             MerchantHomeContent(
@@ -39,10 +43,33 @@ class MerchantHomeContentTest {
                     selected = it
                     onSelected(it)
                 },
+                onSignOut = onSignOut,
                 catalog = { Text("catalog-slot") },
                 profile = { Text("profile-slot") },
             )
         }
+    }
+
+    @Test
+    fun signingOutFromTheAppBarMenuIsReportedOnEitherTab() {
+        var signOuts = 0
+        show(onSignOut = { signOuts++ })
+
+        compose.onNodeWithContentDescription(text(R.string.action_more_options)).performClick()
+        compose.onNodeWithText(text(R.string.action_logout)).performClick()
+        compose.onNodeWithText(text(R.string.tab_profile)).performClick()
+        compose.onNodeWithContentDescription(text(R.string.action_more_options)).performClick()
+        compose.onNodeWithText(text(R.string.action_logout)).performClick()
+
+        assertThat(signOuts).isEqualTo(2)
+        compose.onNodeWithText("profile-slot").assertIsDisplayed()
+    }
+
+    @Test
+    fun theAppBarShowsTheAppNameAboveTheTabs() {
+        show()
+
+        compose.onNodeWithText(text(R.string.app_name)).assertIsDisplayed()
     }
 
     @Test
@@ -78,6 +105,7 @@ class MerchantHomeContentTest {
     @Test
     fun leavesSystemBarInsetsToTheRootSoTheTabsAreNotPaddedTwice() {
         show()
+        val topWithoutInsets = compose.onNodeWithText("catalog-slot").getUnclippedBoundsInRoot().top
         val statusBar = WindowInsetsCompat.Builder()
             .setInsets(WindowInsetsCompat.Type.statusBars(), Insets.of(0, 96, 0, 0))
             .build()
@@ -85,6 +113,6 @@ class MerchantHomeContentTest {
         compose.waitForIdle()
 
         compose.onNodeWithText(text(R.string.tab_catalog)).assertIsDisplayed()
-        assertThat(compose.onNodeWithText("catalog-slot").getUnclippedBoundsInRoot().top).isLessThan(96.dp)
+        assertThat(compose.onNodeWithText("catalog-slot").getUnclippedBoundsInRoot().top).isEqualTo(topWithoutInsets)
     }
 }
