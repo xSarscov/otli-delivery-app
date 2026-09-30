@@ -147,6 +147,12 @@ class OrderDocumentsTest {
     }
 
     @Test
+    fun aNegativeAmountMakesTheDocumentUnreadableButZeroIsAllowed() {
+        assertThat(OrderDocuments.orderFrom("x", document + mapOf("deliveryFeeCents" to -1L))).isNull()
+        assertThat(OrderDocuments.orderFrom("x", document + mapOf("deliveryFeeCents" to 0L, "totalCents" to 26500L))?.totals?.fee).isEqualTo(Money(0))
+    }
+
+    @Test
     fun acceptingOrAdvancingStampsOnlyTheStatusItsOwnTimestampAndUpdatedAt() {
         val accept = OrderDocuments.transitionUpdate(OrderStatus.ACCEPTED, Actor.MERCHANT, null)
         val ready = OrderDocuments.transitionUpdate(OrderStatus.READY, Actor.MERCHANT, null)
