@@ -35,6 +35,9 @@
     <string name="login_error_missing_fields">Enter your email and password.</string>
     <string name="login_error_failed">We could not sign you in. Check your email and password and try again.</string>
     <string name="action_logout">Sign out</string>
+    <string name="action_retry">Try again</string>
+    <string name="gate_profile_incomplete_title">Profile not found</string>
+    <string name="gate_profile_incomplete_message">We could not load your profile. Check your connection and try again, or sign out and back in.</string>
     <string name="gate_pending_title">Approval pending</string>
     <string name="gate_pending_merchant">Your store is waiting for approval by an administrator. You will be able to manage your catalog and receive orders once it is approved.</string>
     <string name="gate_pending_courier">Your courier account is waiting for approval by an administrator. You will see delivery requests once it is approved.</string>

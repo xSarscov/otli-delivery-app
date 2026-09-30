@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.otli.app.auth.adapters.ui.PendingApprovalScreen
+import com.otli.app.auth.adapters.ui.ProfileIncompleteScreen
 import com.otli.app.auth.adapters.ui.SessionViewModel
 import com.otli.app.auth.adapters.ui.SignedOutScreen
 import com.otli.app.auth.adapters.ui.SuspendedScreen
@@ -38,6 +39,7 @@ class MainActivity : ComponentActivity() {
                         signedOut = { SignedOutScreen() },
                         customerHome = { open -> MerchantListScreen(onMerchantClick = open) },
                         storefront = { StorefrontScreen() },
+                        profileIncomplete = { ProfileIncompleteScreen(onRetry = sessionViewModel::retry) },
                         pending = { role -> PendingApprovalScreen(role) },
                         suspended = { role -> SuspendedScreen(role) },
                         merchantHome = { MerchantHomeTabsScreen() },
