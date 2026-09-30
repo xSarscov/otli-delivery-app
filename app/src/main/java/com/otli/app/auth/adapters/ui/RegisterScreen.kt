@@ -20,6 +20,8 @@ fun RegisterScreen(
         onPasswordChange = viewModel::onPasswordChange,
         onDisplayNameChange = viewModel::onDisplayNameChange,
         onPhoneChange = viewModel::onPhoneChange,
+        onStoreNameChange = viewModel::onStoreNameChange,
+        onPinChange = viewModel::onPinChange,
         onRoleSelected = viewModel::onRoleSelected,
         onSubmit = viewModel::submit,
         onNavigateToLogin = onNavigateToLogin,

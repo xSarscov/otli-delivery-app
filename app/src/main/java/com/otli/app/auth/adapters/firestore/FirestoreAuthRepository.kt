@@ -7,6 +7,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.otli.app.auth.application.AuthRepository
 import com.otli.app.auth.domain.AccountStatus
 import com.otli.app.auth.domain.AuthUser
+import com.otli.app.auth.domain.MerchantStoreDetails
 import com.otli.app.auth.domain.ProfileFields
 import com.otli.app.auth.domain.RegistrationDecision
 import com.otli.app.auth.domain.RegistrationPolicy
@@ -48,7 +49,9 @@ class FirestoreAuthRepository @Inject constructor(
         password: String,
         role: Role,
         profileFields: ProfileFields,
+        merchantStore: MerchantStoreDetails?,
     ): Result<Unit> = suspendRunCatching {
+        require(role != Role.MERCHANT || merchantStore != null) { "Merchant registration needs store details" }
         val status = when (val decision = RegistrationPolicy.initialStatus(role)) {
             is RegistrationDecision.Accepted -> decision.status
             is RegistrationDecision.Rejected -> throw DomainException(decision.error)
@@ -67,6 +70,9 @@ class FirestoreAuthRepository @Inject constructor(
                     "createdAt" to FieldValue.serverTimestamp(),
                 ),
             )
+            if (role == Role.MERCHANT && merchantStore != null) {
+                batch.set(firestore.collection(MERCHANTS).document(user.uid), merchantStore.toDocument(status))
+            }
             batch.commit().await()
         } catch (failure: Throwable) {
             // Do not leave a credential without a profile behind; best effort, and it must
@@ -96,11 +102,23 @@ class FirestoreAuthRepository @Inject constructor(
         )
     }
 
+    private fun MerchantStoreDetails.toDocument(status: AccountStatus) = mapOf(
+        "name" to storeName,
+        "description" to "",
+        "phone" to phone,
+        "status" to status.wire(),
+        "isOpen" to false,
+        "location" to mapOf("lat" to latitude, "lng" to longitude, "reference" to ""),
+        "createdAt" to FieldValue.serverTimestamp(),
+        "updatedAt" to FieldValue.serverTimestamp(),
+    )
+
     private fun Role.wire() = name.lowercase()
 
     private fun AccountStatus.wire() = name.lowercase()
 
     private companion object {
         const val USERS = "users"
+        const val MERCHANTS = "merchants"
     }
 }

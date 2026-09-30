@@ -26,6 +26,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.otli.app.R
 import com.otli.app.auth.domain.Role
+import com.otli.app.core.map.MapPin
+import com.otli.app.core.map.MapPinPicker
+import com.otli.app.core.map.NativePinMapContent
+import com.otli.app.core.map.PinMapContent
 import com.otli.app.core.theme.OtliTheme
 import androidx.compose.ui.semantics.Role as SemanticsRole
 
@@ -37,10 +41,13 @@ fun RegisterContent(
     onPasswordChange: (String) -> Unit,
     onDisplayNameChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
+    onStoreNameChange: (String) -> Unit,
+    onPinChange: (MapPin?) -> Unit,
     onRoleSelected: (Role) -> Unit,
     onSubmit: () -> Unit,
     onNavigateToLogin: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    mapContent: PinMapContent = NativePinMapContent,
 ) {
     Column(
         modifier.verticalScroll(rememberScrollState()).padding(24.dp),
@@ -80,6 +87,17 @@ fun RegisterContent(
             modifier = Modifier.fillMaxWidth(),
         )
         RolePicker(state.availableRoles, selected = state.role, onRoleSelected = onRoleSelected)
+        if (state.role == Role.MERCHANT) {
+            OutlinedTextField(
+                value = state.storeName,
+                onValueChange = onStoreNameChange,
+                label = { Text(stringResource(R.string.label_store_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Text(stringResource(R.string.label_store_location), style = MaterialTheme.typography.titleSmall)
+            MapPinPicker(pin = state.pin, onPinChange = onPinChange, mapContent = mapContent)
+        }
         state.error?.let {
             Text(
                 stringResource(it.messageRes()),
@@ -121,6 +139,9 @@ private fun RolePicker(roles: List<Role>, selected: Role, onRoleSelected: (Role)
 private fun RegisterError.messageRes(): Int = when (this) {
     RegisterError.MISSING_FIELDS -> R.string.register_error_missing_fields
     RegisterError.WEAK_PASSWORD -> R.string.register_error_weak_password
+    RegisterError.STORE_NAME_REQUIRED -> R.string.register_error_store_name_required
+    RegisterError.INVALID_PHONE -> R.string.register_error_invalid_phone
+    RegisterError.PIN_REQUIRED -> R.string.register_error_pin_required
     RegisterError.FAILED -> R.string.register_error_failed
 }
 
@@ -128,6 +149,6 @@ private fun RegisterError.messageRes(): Int = when (this) {
 @Composable
 private fun RegisterContentPreview() {
     OtliTheme {
-        RegisterContent(RegisterUiState(), {}, {}, {}, {}, {}, {}, onNavigateToLogin = {})
+        RegisterContent(RegisterUiState(), {}, {}, {}, {}, {}, {}, {}, {}, onNavigateToLogin = {})
     }
 }

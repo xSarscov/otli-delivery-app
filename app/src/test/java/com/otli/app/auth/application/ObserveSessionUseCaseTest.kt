@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.google.common.truth.Truth.assertThat
 import com.otli.app.auth.domain.AccountStatus
 import com.otli.app.auth.domain.AuthUser
+import com.otli.app.auth.domain.MerchantStoreDetails
 import com.otli.app.auth.domain.ProfileFields
 import com.otli.app.auth.domain.Role
 import com.otli.app.auth.domain.SessionState
@@ -22,8 +23,13 @@ private class FakeAuthRepository : AuthRepository {
 
     override fun observeAuthState(): Flow<AuthUser?> = authState
     override fun observeUserDocument(uid: String): Flow<UserAccount?> = document(uid)
-    override suspend fun register(email: String, password: String, role: Role, profileFields: ProfileFields) =
-        Result.success(Unit)
+    override suspend fun register(
+        email: String,
+        password: String,
+        role: Role,
+        profileFields: ProfileFields,
+        merchantStore: MerchantStoreDetails?,
+    ) = Result.success(Unit)
     override suspend fun login(email: String, password: String) = Result.success(Unit)
     override suspend fun logout() {
         authState.value = null

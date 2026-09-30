@@ -16,6 +16,14 @@ import com.otli.app.R
 
 private val MapHeight = 240.dp
 
+/** Slot that renders the map for a [MapPinPickerState] and reports taps as latitude/longitude. */
+typealias PinMapContent = @Composable (state: MapPinPickerState, onTap: (Double, Double) -> Unit) -> Unit
+
+/** The real MapLibre map; tests substitute their own [PinMapContent]. */
+val NativePinMapContent: PinMapContent = { state, onTap ->
+    PinMapView(state, onTap, Modifier.fillMaxWidth().height(MapHeight))
+}
+
 /**
  * Reusable presentational pin picker: a map the user taps to drop a pin, the OpenFreeMap /
  * OpenStreetMap attribution the tile licence requires, and a way to remove the pin. The caller
@@ -27,8 +35,7 @@ fun MapPinPicker(
     pin: MapPin?,
     onPinChange: (MapPin?) -> Unit,
     modifier: Modifier = Modifier,
-    mapContent: @Composable (state: MapPinPickerState, onTap: (Double, Double) -> Unit) -> Unit =
-        { state, onTap -> PinMapView(state, onTap, Modifier.fillMaxWidth().height(MapHeight)) },
+    mapContent: PinMapContent = NativePinMapContent,
 ) {
     // The camera is positioned from the first pin only, so dropping a pin never moves the map.
     val initialCenter = remember { MapPinPickerState.startingAt(pin).center }

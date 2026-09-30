@@ -2,6 +2,7 @@ package com.otli.app.auth.adapters.ui
 
 import com.otli.app.auth.application.AuthRepository
 import com.otli.app.auth.domain.AuthUser
+import com.otli.app.auth.domain.MerchantStoreDetails
 import com.otli.app.auth.domain.ProfileFields
 import com.otli.app.auth.domain.Role
 import com.otli.app.auth.domain.UserAccount
@@ -10,7 +11,13 @@ import kotlinx.coroutines.flow.emptyFlow
 
 /** Records credential calls; the next outcome for each is configurable, and can be held open. */
 class RecordingAuthRepository : AuthRepository {
-    data class Registration(val email: String, val password: String, val role: Role, val profile: ProfileFields)
+    data class Registration(
+        val email: String,
+        val password: String,
+        val role: Role,
+        val profile: ProfileFields,
+        val store: MerchantStoreDetails? = null,
+    )
 
     val registrations = mutableListOf<Registration>()
     val logins = mutableListOf<Pair<String, String>>()
@@ -27,8 +34,9 @@ class RecordingAuthRepository : AuthRepository {
         password: String,
         role: Role,
         profileFields: ProfileFields,
+        merchantStore: MerchantStoreDetails?,
     ): Result<Unit> {
-        registrations += Registration(email, password, role, profileFields)
+        registrations += Registration(email, password, role, profileFields, merchantStore)
         return registerOutcome()
     }
 
