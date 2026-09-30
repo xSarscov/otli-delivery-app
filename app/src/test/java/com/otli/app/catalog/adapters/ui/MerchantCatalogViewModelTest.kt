@@ -7,6 +7,7 @@ import com.otli.app.catalog.domain.Category
 import com.otli.app.core.money.Money
 import com.otli.app.core.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.flow
 import org.junit.Rule
 import org.junit.Test
 
@@ -29,6 +30,29 @@ class MerchantCatalogViewModelTest {
         assertThat(state.isLoading).isFalse()
         assertThat(state.categories.map { it.name }).containsExactly("Platos", "Bebidas").inOrder()
         assertThat(state.products.map { it.name }).containsExactly("Nacatamal", "Fresco")
+    }
+
+    @Test
+    fun aRejectedCategoriesListenerSurfacesAsALoadErrorInsteadOfCrashing() {
+        catalog.categoriesFeed = flow { throw RuntimeException("PERMISSION_DENIED") }
+
+        val state = viewModel().uiState.value
+
+        assertThat(state.isLoading).isFalse()
+        assertThat(state.error).isEqualTo(MerchantCatalogError.LOAD_FAILED)
+    }
+
+    @Test
+    fun aListenerThatFailsAfterEmittingStillEndsInTheLoadErrorState() {
+        catalog.productsFeed = flow {
+            emit(listOf(aProduct("p9", "c1", "Vigoron")))
+            throw RuntimeException("PERMISSION_DENIED")
+        }
+
+        val state = viewModel().uiState.value
+
+        assertThat(state.error).isEqualTo(MerchantCatalogError.LOAD_FAILED)
+        assertThat(state.isLoading).isFalse()
     }
 
     @Test

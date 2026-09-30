@@ -49,6 +49,9 @@ fun MerchantProfileContent(
         state.isLoading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
+        state.loadFailed -> Box(modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+            Text(stringResource(R.string.merchant_profile_load_failed))
+        }
         state.merchantMissing -> Box(modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
             Text(stringResource(R.string.merchant_profile_missing))
         }

@@ -41,7 +41,10 @@ class FakeMerchantRepository(initial: Merchant? = aMerchant()) : MerchantReposit
     val photos = mutableListOf<ByteArray>()
     var writeOutcome: suspend () -> Result<Unit> = { Result.success(Unit) }
 
-    override fun observeMerchant(merchantId: String): Flow<Merchant?> = merchant
+    /** What the profile listener delivers; replace with a failing flow to test error states. */
+    var merchantFeed: Flow<Merchant?> = merchant
+
+    override fun observeMerchant(merchantId: String): Flow<Merchant?> = merchantFeed
 
     override suspend fun updateProfile(
         merchantId: String,
@@ -96,7 +99,11 @@ class FakeCatalogRepository(
     val availabilityChanges = mutableListOf<Pair<String, Boolean>>()
     var writeOutcome: suspend () -> Result<Unit> = { Result.success(Unit) }
 
-    override fun observeCategories(merchantId: String): Flow<List<Category>> = categories
+    /** What the category and product listeners deliver; replace with failing flows to test error states. */
+    var categoriesFeed: Flow<List<Category>> = this.categories
+    var productsFeed: Flow<List<Product>> = this.products
+
+    override fun observeCategories(merchantId: String): Flow<List<Category>> = categoriesFeed
 
     override suspend fun upsertCategory(merchantId: String, category: Category): Result<Unit> {
         categoryWrites += category
@@ -108,7 +115,7 @@ class FakeCatalogRepository(
         return writeOutcome()
     }
 
-    override fun observeProducts(merchantId: String): Flow<List<Product>> = products
+    override fun observeProducts(merchantId: String): Flow<List<Product>> = productsFeed
 
     override suspend fun upsertProduct(merchantId: String, product: Product, photoJpeg: ByteArray?): Result<Unit> {
         productWrites += ProductWrite(merchantId, product, photoJpeg)

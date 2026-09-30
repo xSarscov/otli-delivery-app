@@ -14,6 +14,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -28,6 +29,7 @@ data class MerchantProfileUiState(
     val isLoading: Boolean = true,
     val merchantId: String = "",
     val merchantMissing: Boolean = false,
+    val loadFailed: Boolean = false,
     val name: String = "",
     val description: String = "",
     val phone: String = "",
@@ -67,6 +69,8 @@ class MerchantProfileViewModel @Inject constructor(
                     merchantId = uid
                     merchants.observeMerchant(uid)
                 }
+                // A rejected listener (e.g. rules deny reads after sign-out) must never crash the app.
+                .catch { _uiState.update { it.copy(isLoading = false, loadFailed = true) } }
                 .collect(::onMerchant)
         }
     }

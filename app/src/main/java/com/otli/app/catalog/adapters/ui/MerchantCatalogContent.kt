@@ -196,4 +196,5 @@ private fun MerchantCatalogError.messageRes(): Int = when (this) {
     MerchantCatalogError.DELETE_FAILED -> R.string.merchant_catalog_error_delete
     MerchantCatalogError.AVAILABILITY_FAILED -> R.string.merchant_catalog_error_availability
     MerchantCatalogError.PHOTO_FAILED -> R.string.merchant_catalog_error_photo
+    MerchantCatalogError.LOAD_FAILED -> R.string.merchant_catalog_error_load
 }

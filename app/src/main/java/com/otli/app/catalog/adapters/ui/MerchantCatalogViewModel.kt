@@ -14,6 +14,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -29,6 +30,7 @@ enum class MerchantCatalogError {
     DELETE_FAILED,
     AVAILABILITY_FAILED,
     PHOTO_FAILED,
+    LOAD_FAILED,
 }
 
 /** The category form being edited; [id] is blank for a new category. */
@@ -77,6 +79,8 @@ class MerchantCatalogViewModel @Inject constructor(
                         categories to products
                     }
                 }
+                // A rejected listener (e.g. rules deny reads after sign-out) must never crash the app.
+                .catch { _uiState.update { it.copy(isLoading = false, error = MerchantCatalogError.LOAD_FAILED) } }
                 .collect { (categories, products) ->
                     _uiState.update { it.copy(isLoading = false, categories = categories, products = products) }
                 }

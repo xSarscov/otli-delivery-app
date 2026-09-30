@@ -11,6 +11,7 @@ import com.otli.app.auth.domain.SessionState
 import com.otli.app.auth.domain.UserAccount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -21,8 +22,12 @@ private class FakeAuthRepository : AuthRepository {
     fun document(uid: String): MutableStateFlow<UserAccount?> =
         documents.getOrPut(uid) { MutableStateFlow(null) }
 
-    override fun observeAuthState(): Flow<AuthUser?> = authState
-    override fun observeUserDocument(uid: String): Flow<UserAccount?> = document(uid)
+    /** When set, the listener for that uid fails like a rules-rejected snapshot listener. */
+    var failingDocument: ((String) -> Flow<UserAccount?>)? = null
+    var authFeed: Flow<AuthUser?> = authState
+
+    override fun observeAuthState(): Flow<AuthUser?> = authFeed
+    override fun observeUserDocument(uid: String): Flow<UserAccount?> = failingDocument?.invoke(uid) ?: document(uid)
     override suspend fun register(
         email: String,
         password: String,
@@ -107,6 +112,45 @@ class ObserveSessionUseCaseTest {
 
             repo.logout()
             assertThat(awaitItem()).isEqualTo(SessionState.SignedOut)
+        }
+    }
+
+    @Test
+    fun aRejectedUserDocumentListenerFallsBackToTheRecoverableProfileIncompleteState() = runTest {
+        repo.authState.value = AuthUser("m1", "m1@otli.test")
+        repo.failingDocument = { flow { throw RuntimeException("PERMISSION_DENIED") } }
+        useCase().test {
+            assertThat(awaitItem()).isEqualTo(SessionState.Loading)
+            assertThat(awaitItem()).isEqualTo(SessionState.ProfileIncomplete)
+        }
+    }
+
+    @Test
+    fun aListenerRejectedDuringSignOutDoesNotStopTheSessionFromReachingSignedOut() = runTest {
+        repo.authState.value = AuthUser("m1", "m1@otli.test")
+        repo.failingDocument = { _ ->
+            flow {
+                emit(account("m1", Role.MERCHANT, AccountStatus.ACTIVE))
+                throw RuntimeException("PERMISSION_DENIED")
+            }
+        }
+        useCase().test {
+            assertThat(awaitItem()).isEqualTo(SessionState.Loading)
+            assertThat(awaitItem()).isEqualTo(SessionState.Active(Role.MERCHANT))
+            assertThat(awaitItem()).isEqualTo(SessionState.ProfileIncomplete)
+
+            repo.logout()
+            assertThat(awaitItem()).isEqualTo(SessionState.SignedOut)
+        }
+    }
+
+    @Test
+    fun aFailingAuthStateListenerResolvesToSignedOut() = runTest {
+        repo.authFeed = flow { throw RuntimeException("auth listener failed") }
+        useCase().test {
+            assertThat(awaitItem()).isEqualTo(SessionState.Loading)
+            assertThat(awaitItem()).isEqualTo(SessionState.SignedOut)
+            awaitComplete()
         }
     }
 }
