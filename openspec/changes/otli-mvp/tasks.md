@@ -177,7 +177,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 - [x] 2.3.0a Tighten `merchants/{uid}` rules: `name`, `phone` and `location` are required at create (and stay valid on update); fixtures and seed already carry them.
   - Test-first: `backend/tests/rules/merchants.test.ts` RED first (missing location, blank/missing phone, malformed pin, phone/location kept valid on update), then rules GREEN; mutation-checked. Run: `npm --prefix backend test -- merchants`.
   - Acceptance: auth-roles spec — "Merchant registers with store details", "Merchant registration is refused without complete store details" (rules half).
-- [ ] 2.3.0b `NicaraguanPhone` pure validator/normalizer and `MapPinPickerState` state holder (default centre Nagarote, pin set/clear, lat/lng result), JVM tests.
+- [x] 2.3.0b `NicaraguanPhone` pure validator/normalizer and `MapPinPickerState` state holder (default centre Nagarote, pin set/clear, lat/lng result), JVM tests. (branch 02-3b; mutation-checked: dropping the digit check and the coordinate range check each fail a test)
 - [ ] 2.3.0c `MapPinPicker` composable behind a thin `PinMapView` MapLibre adapter (OpenFreeMap liberty style, attribution visible, centred on Nagarote).
 - [ ] 2.3.0d Registration wiring: `AuthRepository.register` takes optional merchant store details; `RegisterViewModel`/`RegisterContent` collect store name + phone + pin for merchants; `FirestoreAuthRepository` writes `merchants/{uid}` in the same batch (androidTest updated; device GREEN pending).
 
