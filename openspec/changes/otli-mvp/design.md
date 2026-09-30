@@ -48,7 +48,7 @@ quota and tile-policy claims remain **[unverified]** until checked on the listed
 | Maps | MapLibre Native Android (`org.maplibre.gl:android-sdk` 13.6.0) wrapped in Compose via `AndroidView` | No API key, no billing |
 | Tiles | OpenFreeMap vector style (`https://tiles.openfreemap.org/styles/liberty`) [unverified: free, no key, attribution required]; fallback OSM raster tiles with a proper User-Agent and attribution | See ADR-13 |
 | Location | Google Play services `FusedLocationProviderClient` (`play-services-location` 21.x) inside a `location`-type foreground service | |
-| Images | Coil 3 for display; photos stored as compressed JPEG bytes in Firestore | See ADR-11 (Cloud Storage requires Blaze) |
+| Images | Own `PhotoLoader` (BitmapFactory decode + byte-bounded LRU keyed by id + `photoVersion`) instead of Coil; photos stored as compressed JPEG bytes in Firestore | See ADR-11 (Cloud Storage requires Blaze) and its display note |
 | Notifications | Local notifications raised from Firestore listeners (best effort) | See ADR-12 (remote FCM push needs a server) |
 | Backend tooling | Node.js 22 LTS, `firebase-tools` 15.32.0, JDK 21 for the emulators (verified working) | |
 | Rules tests | TypeScript + Vitest + `@firebase/rules-unit-testing` 5.0.2 (paired with Firebase JS SDK 12.19.0), Vitest 5.0.2, TypeScript 7.0.2 | |
@@ -134,7 +134,8 @@ Android API levels (`https://developer.android.com/tools/releases/platforms`).
 
 **Choice**: The app resizes a picked photo to max 640 px and JPEG quality ~70, and stores it in `merchants/{mid}/productPhotos/{pid}` as a Firestore `Bytes` field; rules cap it at 300 KB. Products carry `photoVersion` so Coil cache keys change on replacement. The merchant profile photo follows the same pattern, stored at `merchants/{mid}/productPhotos/profile` (a fixed id that cannot collide with generated product ids) with `merchants/{mid}.photoVersion` bumped on replacement.
 **Alternatives considered**: Cloud Storage for Firebase (new default buckets require the Blaze plan since late 2024 [unverified — confirm on the FAQ linked above]); external free image host (third-party account and API key in the app); URL-only field (poor UX).
-**Rationale**: Zero extra services, same rules model. Cost: one read per photo fetch (mitigated by Coil disk cache + Firestore offline cache) and storage within the 1 GiB Spark quota (≈ 3,000+ photos).
+**Display (decided in PR 2.4)**: Coil is not used. The bytes never come from a URL, so Coil would need a custom fetcher plus a key mapper for `id + photoVersion`, on top of a new dependency. A small `PhotoLoader` (about 60 lines: fetch through the `PhotoSource` port, decode with `BitmapFactory` on `Dispatchers.Default`, LRU memory cache capped at 12 MB keyed by `merchantId/photoId/photoVersion`) covers the need and keeps JVM tests on fakes. Offline persistence comes from the Firestore cache; there is no separate disk cache.
+**Rationale**: Zero extra services, same rules model. Cost: one read per photo fetch (mitigated by the in-memory photo cache + Firestore offline cache) and storage within the 1 GiB Spark quota (≈ 3,000+ photos).
 
 ### ADR-12: Notifications are local, driven by Firestore listeners (best effort)
 

@@ -208,11 +208,11 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 2.4 — Customer browsing UI
 
-- [ ] 2.4.1 Create `catalog/adapters/ui/MerchantListScreen.kt`/`Content`/`ViewModel` (lists merchants with open/closed indicator) and its test.
+- [x] 2.4.1 (branch 02-4d: `MerchantListViewModel` 5 tests + `MerchantListContent` 6 tests, mutation-checked; merchant photos through `StorePhoto`, see 02-4b/02-4c: `PhotoKey`/`PhotoSource` port, `PhotoLoader` LRU cache + `BitmapPhotoDecoder`, `FirestorePhotoSource` (androidTest pending device GREEN), `StorePhoto` + `LocalPhotoLoader`; Coil not added, see design ADR-11 display note) Create `catalog/adapters/ui/MerchantListScreen.kt`/`Content`/`ViewModel` (lists merchants with open/closed indicator) and its test.
   - Test-first: write `MerchantListViewModelTest` RED, then implement GREEN.
   - Acceptance: merchant-catalog spec — "Customer browses merchants list".
   - Est. lines: ~140
-- [ ] 2.4.2 Create `catalog/adapters/ui/StorefrontScreen.kt`/`Content`/`ViewModel` (categories + available products; closed-store banner; unavailable products visually distinct and not addable) and its test.
+- [x] 2.4.2 (branch 02-4e: `StorefrontViewModel`, `canAddToCart` false for a closed store and for unavailable products, 11 tests; branch 02-4f: `StorefrontContent`/`Screen`, closed banner, dimmed and labelled unavailable rows, 7 tests; branch 02-4g: customer graph (merchant list -> storefront, back works) in `RootNavHost` + `MainActivity`, 5 tests; merchant profile now shows the stored photo, 3 tests; all mutation-checked) Create `catalog/adapters/ui/StorefrontScreen.kt`/`Content`/`ViewModel` (categories + available products; closed-store banner; unavailable products visually distinct and not addable) and its test.
   - Test-first: write `StorefrontViewModelTest` RED (closed store → `canAddToCart=false` for every product; unavailable product → not addable even if store open), then implement GREEN.
   - Acceptance: merchant-catalog spec — "Customer browses an open merchant's available products", "Customer sees a closed store is unavailable for ordering".
   - Est. lines: ~180

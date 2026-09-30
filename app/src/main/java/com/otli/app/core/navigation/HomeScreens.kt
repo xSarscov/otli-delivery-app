@@ -19,6 +19,7 @@ object RootTags {
     const val LOADING = "root-loading"
     const val SIGNED_OUT = "root-signed-out"
     const val PROFILE_INCOMPLETE = "root-profile-incomplete"
+    const val STOREFRONT = "root-storefront"
 
     fun pending(role: Role) = "root-pending-${role.name.lowercase()}"
 

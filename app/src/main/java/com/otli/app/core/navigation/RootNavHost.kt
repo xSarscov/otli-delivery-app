@@ -50,6 +50,10 @@ fun RootNavHost(
     suspended: @Composable (Role) -> Unit = { role ->
         HomePlaceholder(R.string.suspended_placeholder, RootTags.suspended(role))
     },
+    customerHome: @Composable (onOpenMerchant: (String) -> Unit) -> Unit = { CustomerHomeScreen() },
+    storefront: @Composable (merchantId: String) -> Unit = {
+        HomePlaceholder(R.string.home_customer, RootTags.STOREFRONT)
+    },
     merchantHome: @Composable () -> Unit = { MerchantHomeScreen() },
 ) {
     val state by session.collectAsStateWithLifecycle()
@@ -66,7 +70,7 @@ fun RootNavHost(
 
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(Modifier.fillMaxSize().windowInsetsPadding(windowInsets)) {
-            RootGraph(navController, start, signedOut, profileIncomplete, pending, suspended, merchantHome)
+            RootGraph(navController, start, signedOut, profileIncomplete, pending, suspended, customerHome, storefront, merchantHome)
         }
     }
 }
@@ -79,6 +83,8 @@ private fun RootGraph(
     profileIncomplete: @Composable () -> Unit,
     pending: @Composable (Role) -> Unit,
     suspended: @Composable (Role) -> Unit,
+    customerHome: @Composable (onOpenMerchant: (String) -> Unit) -> Unit,
+    storefront: @Composable (merchantId: String) -> Unit,
     merchantHome: @Composable () -> Unit,
 ) {
     NavHost(navController, startDestination = start) {
@@ -90,7 +96,10 @@ private fun RootGraph(
         composable<Gate.PendingApproval> { entry -> pending(entry.toRoute<Gate.PendingApproval>().role) }
         composable<Gate.Suspended> { entry -> suspended(entry.toRoute<Gate.Suspended>().role) }
         navigation<CustomerGraph>(startDestination = CustomerHome) {
-            composable<CustomerHome> { CustomerHomeScreen() }
+            composable<CustomerHome> {
+                customerHome { merchantId -> navController.navigate(StorefrontRoute(merchantId)) }
+            }
+            composable<StorefrontRoute> { entry -> storefront(entry.toRoute<StorefrontRoute>().merchantId) }
         }
         navigation<MerchantGraph>(startDestination = MerchantHome) {
             composable<MerchantHome> { merchantHome() }

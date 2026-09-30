@@ -24,6 +24,9 @@ object Gate {
 
 @Serializable data object CustomerHome
 
+/** A merchant's storefront; [merchantId] is also the argument key read by the storefront ViewModel. */
+@Serializable data class StorefrontRoute(val merchantId: String)
+
 @Serializable data object MerchantGraph
 
 @Serializable data object MerchantHome
