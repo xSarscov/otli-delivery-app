@@ -4,7 +4,9 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -80,5 +82,17 @@ class GateScreensTest {
         compose.setContent { SuspendedContent(role = Role.COURIER, onLogout = { logouts++ }) }
         compose.onNodeWithText(text(R.string.action_logout)).performClick()
         assertThat(logouts).isEqualTo(1)
+    }
+
+    @Test
+    fun signOutIsAnEnabledClickableActionOnThePendingGate() {
+        compose.setContent { PendingApprovalContent(role = Role.MERCHANT, onLogout = {}) }
+        compose.onNodeWithText(text(R.string.action_logout)).assertIsEnabled().assertHasClickAction()
+    }
+
+    @Test
+    fun signOutIsAnEnabledClickableActionOnTheSuspendedGate() {
+        compose.setContent { SuspendedContent(role = Role.COURIER, onLogout = {}) }
+        compose.onNodeWithText(text(R.string.action_logout)).assertIsEnabled().assertHasClickAction()
     }
 }

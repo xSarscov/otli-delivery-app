@@ -202,8 +202,8 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### UI follow-ups (found in the on-device manual check, 2026-09-30)
 
-- [ ] F.1 Edge-to-edge insets: screen content (e.g. the registration form) draws under the status bar. Apply system-bar insets (`Modifier.safeDrawingPadding()`/`Scaffold` insets) at the root and cover it with a Compose UI test.
-- [ ] F.2 Gate "Sign out" button renders with low-contrast, disabled-looking text. Fix the button colors against `OtliTheme` and assert the enabled state in `GateScreensTest`.
+- [x] F.1 (branch 02-4a: `RootNavHost` applies `safeDrawing` insets once, `enableEdgeToEdge()` in `MainActivity`, merchant tabs no longer pad the status bar; `RootSurfaceTest` + `MerchantHomeContentTest`, mutation-checked; device check pending) Edge-to-edge insets: screen content (e.g. the registration form) draws under the status bar. Apply system-bar insets (`Modifier.safeDrawingPadding()`/`Scaffold` insets) at the root and cover it with a Compose UI test.
+- [x] F.2 (branch 02-4a: root cause was no themed surface, so in dark mode buttons kept the dark primary on the light window background; `RootNavHost` now wraps the graph in a `Surface(background)`, which fixes every outlined/text button; pixel test in `RootSurfaceTest`, enabled/clickable assertions in `GateScreensTest`; device check pending) Gate "Sign out" button renders with low-contrast, disabled-looking text. Fix the button colors against `OtliTheme` and assert the enabled state in `GateScreensTest`.
 - [ ] F.3 `ProfileIncomplete` gate has no sign-out or retry action (noted in PR 1.4).
 
 ### PR 2.4 — Customer browsing UI
