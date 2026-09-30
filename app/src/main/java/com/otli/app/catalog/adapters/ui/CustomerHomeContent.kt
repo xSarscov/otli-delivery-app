@@ -1,0 +1,27 @@
+package com.otli.app.catalog.adapters.ui
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.otli.app.R
+import com.otli.app.auth.adapters.ui.SignOutMenuContent
+import com.otli.app.core.ui.OtliTopBar
+
+/** Stateless customer home: the merchant list under an app bar that offers Sign out. */
+@Composable
+fun CustomerHomeContent(
+    state: MerchantListUiState,
+    onMerchantClick: (String) -> Unit,
+    onSignOut: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.fillMaxSize()) {
+        OtliTopBar(
+            title = stringResource(R.string.app_name),
+            actions = { SignOutMenuContent(onSignOut) },
+        )
+        MerchantListContent(state = state, onMerchantClick = onMerchantClick, modifier = Modifier.weight(1f))
+    }
+}
