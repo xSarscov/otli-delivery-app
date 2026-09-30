@@ -110,4 +110,17 @@
     <string name="product_unavailable">Not available</string>
     <string name="storefront_not_found">We could not find that store.</string>
     <string name="storefront_error">We could not load this store. Check your connection and try again.</string>
+    <string name="cart_title">Your cart</string>
+    <string name="cart_open">Open cart</string>
+    <string name="cart_open_with_count">Open cart, %1$d items</string>
+    <string name="cart_empty">Your cart is empty. Add something from a store.</string>
+    <string name="cart_from_store">From %1$s</string>
+    <string name="cart_subtotal">Subtotal</string>
+    <string name="cart_checkout">Checkout</string>
+    <string name="cart_increase">Add one %1$s</string>
+    <string name="cart_decrease">Remove one %1$s</string>
+    <string name="cart_remove">Remove %1$s from the cart</string>
+    <string name="replace_cart_title">Start a new cart?</string>
+    <string name="replace_cart_message">Your cart has items from %1$s. Clear it and add %2$s from %3$s instead?</string>
+    <string name="replace_cart_confirm">Clear and add</string>
 </resources>
