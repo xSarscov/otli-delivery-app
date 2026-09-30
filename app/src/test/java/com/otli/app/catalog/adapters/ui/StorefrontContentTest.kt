@@ -1,11 +1,13 @@
 package com.otli.app.catalog.adapters.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -44,8 +46,8 @@ class StorefrontContentTest {
     private fun item(product: Product, storeOpen: Boolean) =
         StorefrontItem(product, canAddToCart = storeOpen && product.isAvailable)
 
-    private fun show(state: StorefrontUiState, onAdd: (Product) -> Unit = {}) {
-        compose.setContent { StorefrontContent(state = state, onAddToCart = onAdd) }
+    private fun show(state: StorefrontUiState, onAdd: (Product) -> Unit = {}, onBack: () -> Unit = {}) {
+        compose.setContent { StorefrontContent(state = state, onAddToCart = onAdd, onBack = onBack) }
     }
 
     @Test
@@ -118,5 +120,42 @@ class StorefrontContentTest {
 
         compose.onNodeWithText(text(R.string.storefront_error)).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.storefront_not_found)).assertDoesNotExist()
+    }
+
+    @Test
+    fun theTopBarShowsTheStoreNameOnceAndAnUpArrowLeadsBack() {
+        var ups = 0
+        show(stateOf(open = true), onBack = { ups++ })
+
+        compose.onAllNodesWithText("Comedor Marta").assertCountEquals(1)
+        compose.onNodeWithContentDescription(text(R.string.action_back)).assertIsDisplayed().performClick()
+
+        assertThat(ups).isEqualTo(1)
+    }
+
+    @Test
+    fun theUpArrowStaysAvailableWhileLoadingSoTheUserIsNeverTrapped() {
+        var ups = 0
+        show(StorefrontUiState(isLoading = true), onBack = { ups++ })
+
+        compose.onNodeWithContentDescription(text(R.string.action_back)).performClick()
+
+        assertThat(ups).isEqualTo(1)
+    }
+
+    @Test
+    fun theUpArrowStaysAvailableWhenTheStoreCannotBeShown() {
+        var ups = 0
+        show(StorefrontUiState(isLoading = false, notFound = true), onBack = { ups++ })
+        compose.onNodeWithContentDescription(text(R.string.action_back)).performClick()
+        assertThat(ups).isEqualTo(1)
+    }
+
+    @Test
+    fun theUpArrowStaysAvailableAfterALoadFailure() {
+        var ups = 0
+        show(StorefrontUiState(isLoading = false, loadFailed = true), onBack = { ups++ })
+        compose.onNodeWithContentDescription(text(R.string.action_back)).performClick()
+        assertThat(ups).isEqualTo(1)
     }
 }

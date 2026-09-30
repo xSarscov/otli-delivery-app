@@ -80,6 +80,7 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.core)
 
     // Pin coroutines explicitly: Firebase/AndroidX pull an older core transitively,
     // and the instrumented test APK must see the same version it was compiled against.

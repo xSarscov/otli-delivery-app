@@ -10,10 +10,11 @@ import com.otli.app.catalog.domain.Product
 /** Container: wires [StorefrontViewModel]; [onAddToCart] is supplied by the cart in Slice 3. */
 @Composable
 fun StorefrontScreen(
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     onAddToCart: (Product) -> Unit = {},
     viewModel: StorefrontViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    StorefrontContent(state = state, onAddToCart = onAddToCart, modifier = modifier)
+    StorefrontContent(state = state, onAddToCart = onAddToCart, onBack = onBack, modifier = modifier)
 }
