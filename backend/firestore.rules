@@ -152,6 +152,64 @@ service cloud.firestore {
       }
     }
 
+    // settings/app: platform configuration. Orders snapshot its flat delivery fee at placement (ADR-10).
+    // Clients only read it; the Admin fee editor and its write rule arrive in Slice 6.
+    match /settings/app {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // orders/{orderId}: created by an active customer; the fee is a snapshot that later settings changes never touch.
+    match /orders/{orderId} {
+      function isActiveCustomer() {
+        return signedIn()
+          && exists(userPath(request.auth.uid))
+          && get(userPath(request.auth.uid)).data.role == 'customer'
+          && get(userPath(request.auth.uid)).data.status == 'active';
+      }
+      function merchantDoc(merchantId) {
+        return get(/databases/$(database)/documents/merchants/$(merchantId)).data;
+      }
+      function validPin(pin) {
+        return pin is map
+          && pin.keys().hasOnly(['lat', 'lng', 'reference'])
+          && pin.keys().hasAll(['lat', 'lng', 'reference'])
+          && pin.lat is number && pin.lat >= -90 && pin.lat <= 90
+          && pin.lng is number && pin.lng >= -180 && pin.lng <= 180
+          && validText(pin.reference, 0, 200);
+      }
+      // Rules cannot loop over items, so only the aggregates are checked (ADR-10); the merchant reviews prices on accept.
+      function validPlacement() {
+        let data = request.resource.data;
+        let fee = get(/databases/$(database)/documents/settings/app).data.deliveryFeeCents;
+        return isActiveCustomer()
+          && data.keys().hasOnly(['customerId', 'customerName', 'customerPhone', 'merchantId', 'merchantName', 'pickup', 'dropoff',
+            'items', 'subtotalCents', 'deliveryFeeCents', 'totalCents', 'paymentMethod', 'status', 'courierId', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['customerId', 'customerName', 'customerPhone', 'merchantId', 'merchantName', 'pickup', 'dropoff',
+            'items', 'subtotalCents', 'deliveryFeeCents', 'totalCents', 'paymentMethod', 'status', 'courierId', 'createdAt', 'updatedAt'])
+          && data.customerId == request.auth.uid
+          && validText(data.customerName, 1, 80)
+          && validText(data.customerPhone, 1, 30)
+          && validText(data.merchantName, 1, 80)
+          && data.merchantId is string && data.merchantId.size() > 0
+          && merchantDoc(data.merchantId).status == 'active'
+          && merchantDoc(data.merchantId).isOpen == true
+          && validPin(data.pickup)
+          && validPin(data.dropoff)
+          && data.items is list && data.items.size() >= 1 && data.items.size() <= 30
+          && data.subtotalCents is int && data.subtotalCents > 0
+          && data.deliveryFeeCents == fee
+          && data.totalCents == data.subtotalCents + data.deliveryFeeCents
+          && data.paymentMethod == 'cash'
+          && data.status == 'placed'
+          && data.courierId == null
+          && data.createdAt == request.time
+          && data.updatedAt == request.time;
+      }
+
+      allow create: if validPlacement();
+    }
+
     // Everything else stays denied until its slice adds a match block test-first.
     match /{document=**} {
       allow read, write: if false;
