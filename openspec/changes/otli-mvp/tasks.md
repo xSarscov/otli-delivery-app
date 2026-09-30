@@ -144,11 +144,11 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 2.1 — Domain
 
-- [ ] 2.1.1 Create `catalog/domain/Merchant.kt` (name, description, photo ref, `isOpen`, location), `catalog/domain/Category.kt`, `catalog/domain/Product.kt` (name, `Money` price, `isAvailable`, `photoVersion`), and validation functions (non-blank name, positive price) in `catalog/domain/CatalogValidation.kt`.
+- [x] 2.1.1 Create `catalog/domain/Merchant.kt` (name, description, photo ref, `isOpen`, location), `catalog/domain/Category.kt`, `catalog/domain/Product.kt` (name, `Money` price, `isAvailable`, `photoVersion`), and validation functions (non-blank name, positive price) in `catalog/domain/CatalogValidation.kt`.
   - Test-first: write `app/src/test/java/com/otli/app/catalog/domain/CatalogValidationTest.kt` RED (blank name rejected, zero/negative price rejected, valid product accepted), then implement GREEN.
   - Acceptance: merchant-catalog spec — "Merchant creates a product with a NIO price" (validation half; persistence is PR 2.2/2.3).
   - Est. lines: ~110
-- [ ] 2.1.2 Create `catalog/application/MerchantRepository.kt` and `catalog/application/CatalogRepository.kt` ports (`observeMerchant`, `updateProfile`, `setOpen`, `observeCategories`, `upsertCategory`, `removeCategory`, `observeProducts`, `upsertProduct`, `removeProduct`, `setProductAvailability`, `observeMerchantsList`, `observeStorefront(merchantId)`).
+- [x] 2.1.2 Create `catalog/application/MerchantRepository.kt` and `catalog/application/CatalogRepository.kt` ports (`observeMerchant`, `updateProfile`, `setOpen`, `observeCategories`, `upsertCategory`, `removeCategory`, `observeProducts`, `upsertProduct`, `removeProduct`, `setProductAvailability`, `observeMerchantsList`, `observeStorefront(merchantId)`).
   - Test-first: N/A (interfaces).
   - Acceptance: compiles; consumed by PR 2.3/2.4.
   - Est. lines: ~70
