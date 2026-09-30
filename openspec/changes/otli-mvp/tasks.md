@@ -157,11 +157,11 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 2.2 — Firestore rules for catalog collections
 
-- [ ] 2.2.1 Extend `backend/firestore.rules` with `merchants/{uid}` (owner create with `status='pending'`/`isOpen=false`, owner update of profile fields, Admin update of `status`, read by any signed-in user), `merchants/{uid}/categories/{cid}` (active-owner CRUD), `merchants/{uid}/products/{pid}` (active-owner CRUD, `priceCents > 0` enforced), `merchants/{uid}/productPhotos/{pid}` (active-owner write, `jpeg` bytes ≤ 300 KB). Add the `merchants(status ASC, name ASC)` composite index.
+- [x] 2.2.1 Extend `backend/firestore.rules` with `merchants/{uid}` (owner create with `status='pending'`/`isOpen=false`, owner update of profile fields, Admin update of `status`, read by any signed-in user), `merchants/{uid}/categories/{cid}` (active-owner CRUD), `merchants/{uid}/products/{pid}` (active-owner CRUD, `priceCents > 0` enforced), `merchants/{uid}/productPhotos/{pid}` (active-owner write, `jpeg` bytes ≤ 300 KB). Add the `merchants(status ASC, name ASC)` composite index.
   - Test-first: write `backend/tests/rules/merchants.test.ts` and `backend/tests/rules/catalog.test.ts` RED first (owner CRUD succeeds; cross-merchant write denied; oversized photo denied; non-owner read still allowed), then extend rules GREEN.
   - Acceptance: merchant-catalog spec — "Merchant creates a product with a NIO price", "Merchant cannot manage another merchant's catalog", "Merchant closes the store" (rules half).
   - Est. lines: ~340
-- [ ] 2.2.2 Extend `backend/scripts/seed.ts`: two `active` merchants (one `isOpen=true`, one `isOpen=false`), 2 categories and ~5 products each per ADR-15, one `pending` merchant (for the Slice 6 approval demo).
+- [x] 2.2.2 Extend `backend/scripts/seed.ts`: two `active` merchants (one `isOpen=true`, one `isOpen=false`), 2 categories and ~5 products each per ADR-15, one `pending` merchant (for the Slice 6 approval demo).
   - Test-first: N/A (seed script) — acceptance is a manual re-run staying idempotent.
   - Acceptance: unblocks Slices 3–5 catalog browsing before Slice 6's approval UI exists.
   - Est. lines: ~50
