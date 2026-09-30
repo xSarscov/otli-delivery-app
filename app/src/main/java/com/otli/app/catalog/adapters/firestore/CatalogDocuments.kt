@@ -82,6 +82,9 @@ internal object CatalogDocuments {
     fun photoData(jpeg: ByteArray, version: Int): Map<String, Any> =
         mapOf("jpeg" to Blob.fromBytes(jpeg), "version" to version)
 
+    /** The JPEG bytes of a `productPhotos` document, or null when the field is absent or not a blob. */
+    fun photoBytesFrom(data: Map<String, Any?>?): ByteArray? = (data?.get("jpeg") as? Blob)?.toBytes()
+
     /** The version only moves when a new photo is written, so caches are invalidated exactly then. */
     fun nextPhotoVersion(current: Int, hasNewPhoto: Boolean): Int = if (hasNewPhoto) current + 1 else current
 

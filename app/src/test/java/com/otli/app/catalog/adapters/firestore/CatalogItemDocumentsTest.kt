@@ -90,4 +90,19 @@ class CatalogItemDocumentsTest {
         assertThat(CatalogDocuments.nextPhotoVersion(current = 3, hasNewPhoto = false)).isEqualTo(3)
         assertThat(CatalogDocuments.nextPhotoVersion(current = 0, hasNewPhoto = true)).isEqualTo(1)
     }
+
+    @Test
+    fun photoBytesAreReadBackFromTheStoredBlob() {
+        val data = CatalogDocuments.photoData(byteArrayOf(9, 8, 7), version = 4)
+
+        assertThat(CatalogDocuments.photoBytesFrom(data)).isEqualTo(byteArrayOf(9, 8, 7))
+        assertThat(CatalogDocuments.photoBytesFrom(CatalogDocuments.photoData(byteArrayOf(1), 1))).isEqualTo(byteArrayOf(1))
+    }
+
+    @Test
+    fun aPhotoDocumentWithoutUsableBytesYieldsNull() {
+        assertThat(CatalogDocuments.photoBytesFrom(null)).isNull()
+        assertThat(CatalogDocuments.photoBytesFrom(mapOf("version" to 2))).isNull()
+        assertThat(CatalogDocuments.photoBytesFrom(mapOf("jpeg" to "not-a-blob"))).isNull()
+    }
 }
