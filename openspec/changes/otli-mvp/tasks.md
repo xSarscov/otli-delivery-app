@@ -193,7 +193,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Test-first: write `MerchantProfileViewModelTest` RED, then implement GREEN.
   - Acceptance: merchant-catalog spec — "Active merchant edits their profile", "Merchant closes the store".
   - Est. lines: ~150
-- [ ] 2.3.4 Create `catalog/adapters/ui/MerchantCatalogScreen.kt`/`Content`/`ViewModel` (category/product CRUD list, availability toggle) and its ViewModel test.
+- [ ] 2.3.4 (branch 02-3j: `PriceInput` parser/formatter + `ProductEditorState` validation, 14 JVM tests, mutation-checked; 02-3k: MerchantCatalogViewModel; 02-3l: Content/Screen; 02-3m: merchant home wiring) Create `catalog/adapters/ui/MerchantCatalogScreen.kt`/`Content`/`ViewModel` (category/product CRUD list, availability toggle) and its ViewModel test.
   - Test-first: write `MerchantCatalogViewModelTest` RED, then implement GREEN.
   - Acceptance: merchant-catalog spec — "Merchant creates a product with a NIO price", "Merchant marks a product unavailable", "Merchant cannot manage another merchant's catalog" (UI never offers another merchant's items — no cross-merchant screen path exists).
   - Est. lines: ~190
