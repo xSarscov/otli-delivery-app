@@ -132,7 +132,7 @@ Android API levels (`https://developer.android.com/tools/releases/platforms`).
 
 ### ADR-11: Product photos as compressed bytes in Firestore
 
-**Choice**: The app resizes a picked photo to max 640 px and JPEG quality ~70, and stores it in `merchants/{mid}/productPhotos/{pid}` as a Firestore `Bytes` field; rules cap it at 300 KB. Products carry `photoVersion` so Coil cache keys change on replacement.
+**Choice**: The app resizes a picked photo to max 640 px and JPEG quality ~70, and stores it in `merchants/{mid}/productPhotos/{pid}` as a Firestore `Bytes` field; rules cap it at 300 KB. Products carry `photoVersion` so Coil cache keys change on replacement. The merchant profile photo follows the same pattern, stored at `merchants/{mid}/productPhotos/profile` (a fixed id that cannot collide with generated product ids) with `merchants/{mid}.photoVersion` bumped on replacement.
 **Alternatives considered**: Cloud Storage for Firebase (new default buckets require the Blaze plan since late 2024 [unverified — confirm on the FAQ linked above]); external free image host (third-party account and API key in the app); URL-only field (poor UX).
 **Rationale**: Zero extra services, same rules model. Cost: one read per photo fetch (mitigated by Coil disk cache + Firestore offline cache) and storage within the 1 GiB Spark quota (≈ 3,000+ photos).
 
@@ -214,7 +214,7 @@ All timestamps are server timestamps (`FieldValue.serverTimestamp()`), which rul
 | Path | Fields | Written by | Read by |
 |---|---|---|---|
 | `users/{uid}` | `role` (`customer`\|`merchant`\|`courier`\|`admin`), `status` (`active`\|`pending`\|`suspended`), `displayName`, `email`, `phone`, `createdAt`, `fcmToken?` (reserved) | self on create (role ≠ admin; status fixed by role), self for profile fields, Admin for `status` | self, Admin |
-| `merchants/{uid}` | `name`, `description`, `phone`, `status` (mirror of user status for listing), `isOpen`, `location {lat,lng,reference}`, `createdAt`, `updatedAt` | owner on create (`status='pending'`, `isOpen=false`), owner (not `status`), Admin (`status`) | any signed-in user |
+| `merchants/{uid}` | `name`, `description`, `phone`, `status` (mirror of user status for listing), `isOpen`, `location {lat,lng,reference}` (required), `photoVersion?` (int, 0/absent = none), `createdAt`, `updatedAt` | owner on create (`status='pending'`, `isOpen=false`; `name`, `phone` and `location` required), owner (not `status`), Admin (`status`) | any signed-in user |
 | `merchants/{uid}/categories/{cid}` | `name`, `sortOrder` | active owner | signed-in |
 | `merchants/{uid}/products/{pid}` | `categoryId`, `name`, `description`, `priceCents` (int > 0), `isAvailable`, `photoVersion` (int, 0 = none), `updatedAt` | active owner | signed-in |
 | `merchants/{uid}/productPhotos/{pid}` | `jpeg` (Bytes ≤ 300 KB), `version` | active owner | signed-in |
@@ -396,7 +396,7 @@ users/{uid} listener ────┘    (SignedOut | Loading | ProfileIncomplete
                                Pending | Suspended | Active(role))
 ```
 
-Registration writes `users/{uid}` (+ `merchants/{uid}` or `couriers/{uid}`) in one batch right after Auth sign-up. If that batch fails, the next login lands on `ProfileIncomplete`, which retries the batch.
+Registration writes `users/{uid}` (+ `merchants/{uid}` or `couriers/{uid}`) in one batch right after Auth sign-up. Merchant self-registration collects store name, contact phone (8 digits, optional +505) and a map pin (accepted change 2026-09-30); description, photo and hours are edited later in the merchant profile. If that batch fails, the next login lands on `ProfileIncomplete`, which retries the batch.
 
 ### Live tracking and quota estimate
 

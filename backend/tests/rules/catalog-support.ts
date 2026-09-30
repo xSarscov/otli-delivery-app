@@ -9,14 +9,21 @@ export const bytesOf = (size: number) => firebase.firestore.Blob.fromUint8Array(
 
 export const KB = 1024;
 
-/** A valid `merchants/{uid}` create payload; tests override one field at a time. */
+/** Where Nagarote's centre is; a valid pin for tests. */
+export const NAGAROTE_LOCATION = { lat: 12.2656, lng: -86.5664, reference: "" };
+
+/**
+ * A valid `merchants/{uid}` create payload; tests override one field at a time. Name, phone and
+ * location are required at creation (merchant registration collects them).
+ */
 export function merchantDoc(overrides: Record<string, unknown> = {}) {
   return {
     name: "Comedor Nagarote",
     description: "Comida tipica",
-    phone: "8888-1111",
+    phone: "88881111",
     status: "pending",
     isOpen: false,
+    location: NAGAROTE_LOCATION,
     createdAt: serverTime(),
     updatedAt: serverTime(),
     ...overrides,

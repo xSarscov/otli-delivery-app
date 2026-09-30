@@ -30,6 +30,20 @@ Merchant, or Courier. The system MUST NOT allow self-registration as Admin.
 - THEN the account status is set to `pending`
 - AND the merchant cannot access merchant-catalog management features until an Admin approves the account
 
+#### Scenario: Merchant registers with store details
+
+- GIVEN a new user registers choosing the Merchant role
+- WHEN the user submits a store name, a contact phone (8 digits, optional +505 prefix) and a location pin on the map
+- THEN the system MUST create the account and the merchant profile together, so the profile exists with its status `pending` and the store closed
+- AND description, photo and hours are NOT collected at registration; the merchant edits them later in the merchant profile
+
+#### Scenario: Merchant registration is refused without complete store details
+
+- GIVEN a new user registering as a Merchant
+- WHEN the store name, the contact phone or the map pin is missing, or the phone is not a valid Nicaraguan number
+- THEN the system MUST NOT create the account
+- AND the system MUST tell the user which detail to fix
+
 #### Scenario: Courier registers and starts pending
 
 - GIVEN a new user registers choosing the Courier role

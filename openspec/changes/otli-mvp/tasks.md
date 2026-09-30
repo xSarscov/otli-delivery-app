@@ -170,6 +170,17 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 2.3 — Merchant management UI
 
+> **Accepted change (user decision 2026-09-30): merchant registration collects store details.** Merchant self-registration now collects **store name + contact phone + location (map pin)** and creates `merchants/{uid}` (`pending`) in the same batch as `users/{uid}`. Rules make name, phone and location required at merchant create. Description, photo and hours are edited later in the merchant profile (2.3.3). Adds a reusable `MapPinPicker` (also used by customer checkout in Slice 3) and a Nicaraguan phone validator. Spec delta: `auth-roles` (two merchant-registration scenarios); design delta: data-model row, registration note and ADR-11 merchant photo path. Because UI estimates ran about 3x low, PR 2.3 is delivered as stacked branches 02-3a ... 02-3g instead of the 2.3a/2.3b split below.
+>
+> Branch plan: 3a rules + docs (2.3.0a) | 3b phone validator + pin picker state holder (2.3.0b) | 3c MapPinPicker composable + MapLibre adapter (2.3.0c) | 3d registration wiring (2.3.0d) | 3e Firestore merchant/catalog adapters + DI (2.3.1) | 3f image compressor (2.3.2) | 3g merchant profile UI (2.3.3) | 3h merchant catalog UI (2.3.4).
+
+- [x] 2.3.0a Tighten `merchants/{uid}` rules: `name`, `phone` and `location` are required at create (and stay valid on update); fixtures and seed already carry them.
+  - Test-first: `backend/tests/rules/merchants.test.ts` RED first (missing location, blank/missing phone, malformed pin, phone/location kept valid on update), then rules GREEN; mutation-checked. Run: `npm --prefix backend test -- merchants`.
+  - Acceptance: auth-roles spec — "Merchant registers with store details", "Merchant registration is refused without complete store details" (rules half).
+- [ ] 2.3.0b `NicaraguanPhone` pure validator/normalizer and `MapPinPickerState` state holder (default centre Nagarote, pin set/clear, lat/lng result), JVM tests.
+- [ ] 2.3.0c `MapPinPicker` composable behind a thin `PinMapView` MapLibre adapter (OpenFreeMap liberty style, attribution visible, centred on Nagarote).
+- [ ] 2.3.0d Registration wiring: `AuthRepository.register` takes optional merchant store details; `RegisterViewModel`/`RegisterContent` collect store name + phone + pin for merchants; `FirestoreAuthRepository` writes `merchants/{uid}` in the same batch (androidTest updated; device GREEN pending).
+
 - [ ] 2.3.1 Create `catalog/adapters/firestore/FirestoreMerchantRepository.kt` and `FirestoreCatalogRepository.kt` implementing the ports from 2.1.2, plus `catalog/di/CatalogModule.kt`.
   - Test-first: write `app/src/androidTest/java/com/otli/app/catalog/adapters/firestore/FirestoreCatalogRepositoryTest.kt` RED against the emulator (create category/product round trip, availability toggle reflected in a listener), then implement GREEN.
   - Acceptance: merchant-catalog spec — "Merchant creates a product with a NIO price", "Merchant marks a product unavailable" (adapter half).
