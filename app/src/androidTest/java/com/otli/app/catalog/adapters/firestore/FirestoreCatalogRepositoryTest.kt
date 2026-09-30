@@ -92,6 +92,17 @@ class FirestoreCatalogRepositoryTest {
     }
 
     @Test
+    fun theStoredPhotoCanBeFetchedThroughThePhotoSource() = await {
+        val jpeg = byteArrayOf(4, 5, 6)
+        val product = createProduct("Test Foto Leida", 2000, photo = jpeg)
+
+        val source = FirestorePhotoSource(firestore)
+
+        assertThat(source.fetch(MERCHANT_1, product.id)).isEqualTo(jpeg)
+        assertThat(source.fetch(MERCHANT_1, "no-such-photo")).isNull()
+    }
+
+    @Test
     fun availabilityToggleIsReflectedInTheProductListener() = await {
         repository.setProductAvailability(MERCHANT_1, "prod-vigoron", true).getOrThrow()
 
