@@ -110,6 +110,15 @@ class MerchantProfileViewModelTest {
     }
 
     @Test
+    fun exposesTheMerchantIdSoTheProfilePhotoCanBeLoaded() {
+        assertThat(viewModel().uiState.value.merchantId).isEqualTo("m1")
+
+        merchants.merchant.value = aMerchant(id = "m2", photoVersion = 3)
+
+        assertThat(viewModel().uiState.value.merchantId).isEqualTo("m2")
+    }
+
+    @Test
     fun aLaterRemoteChangeUpdatesTheOpenFlagButNeverOverwritesEdits() {
         val viewModel = viewModel()
         viewModel.onNameChange("Editando")

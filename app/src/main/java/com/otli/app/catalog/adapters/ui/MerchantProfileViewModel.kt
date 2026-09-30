@@ -26,6 +26,7 @@ enum class MerchantProfileError { NAME_REQUIRED, INVALID_PHONE, SAVE_FAILED, TOG
 
 data class MerchantProfileUiState(
     val isLoading: Boolean = true,
+    val merchantId: String = "",
     val merchantMissing: Boolean = false,
     val name: String = "",
     val description: String = "",
@@ -139,6 +140,7 @@ class MerchantProfileViewModel @Inject constructor(
             val withLive = state.copy(
                 isLoading = false,
                 merchantMissing = false,
+                merchantId = merchant.id,
                 isOpen = merchant.isOpen,
                 photoVersion = merchant.photoVersion,
             )
