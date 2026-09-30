@@ -5,6 +5,7 @@ import com.otli.app.auth.adapters.ui.RecordingAuthRepository
 import com.otli.app.auth.domain.AuthUser
 import com.otli.app.core.testing.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.flow
 import org.junit.Rule
 import org.junit.Test
 
@@ -27,6 +28,29 @@ class MerchantProfileViewModelTest {
         assertThat(state.description).isEqualTo("Comida tipica")
         assertThat(state.phone).isEqualTo("+50588880101")
         assertThat(state.isOpen).isTrue()
+    }
+
+    @Test
+    fun aRejectedProfileListenerSurfacesAsALoadFailureInsteadOfCrashing() {
+        merchants.merchantFeed = flow { throw RuntimeException("PERMISSION_DENIED") }
+
+        val state = viewModel().uiState.value
+
+        assertThat(state.isLoading).isFalse()
+        assertThat(state.loadFailed).isTrue()
+    }
+
+    @Test
+    fun aListenerThatFailsAfterEmittingStillEndsInTheLoadFailureState() {
+        merchants.merchantFeed = flow {
+            emit(aMerchant(name = "Comedor Marta"))
+            throw RuntimeException("PERMISSION_DENIED")
+        }
+
+        val state = viewModel().uiState.value
+
+        assertThat(state.loadFailed).isTrue()
+        assertThat(state.isLoading).isFalse()
     }
 
     @Test

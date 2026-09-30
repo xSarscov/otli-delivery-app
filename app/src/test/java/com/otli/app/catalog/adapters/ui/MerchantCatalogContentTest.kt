@@ -150,6 +150,7 @@ class MerchantCatalogContentTest {
             MerchantCatalogError.DELETE_FAILED to R.string.merchant_catalog_error_delete,
             MerchantCatalogError.AVAILABILITY_FAILED to R.string.merchant_catalog_error_availability,
             MerchantCatalogError.PHOTO_FAILED to R.string.merchant_catalog_error_photo,
+            MerchantCatalogError.LOAD_FAILED to R.string.merchant_catalog_error_load,
         )
         for ((error, message) in cases) {
             show(loaded.copy(error = error), MerchantCatalogActions(onDismissError = { dismissed = true }))

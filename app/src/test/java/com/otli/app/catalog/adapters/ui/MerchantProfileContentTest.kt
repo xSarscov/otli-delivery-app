@@ -88,6 +88,14 @@ class MerchantProfileContentTest {
     }
 
     @Test
+    fun aFailedProfileLoadShowsAMessageAndNoForm() {
+        show(MerchantProfileUiState(isLoading = false, loadFailed = true))
+
+        compose.onNodeWithText(text(R.string.merchant_profile_load_failed)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.action_save)).assertDoesNotExist()
+    }
+
+    @Test
     fun savePhotoAndOpenToggleInvokeTheirCallbacks() {
         var saved = false
         var picked = false

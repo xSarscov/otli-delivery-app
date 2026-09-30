@@ -54,6 +54,7 @@
     <string name="label_store_description">Description</string>
     <string name="label_store_open">Store is open</string>
     <string name="merchant_profile_title">Your store</string>
+    <string name="merchant_profile_load_failed">We could not load your store profile. Check your connection and try again.</string>
     <string name="merchant_profile_missing">We could not find your store profile.</string>
     <string name="merchant_profile_saved">Profile saved.</string>
     <string name="merchant_photo_none">No store photo yet.</string>
@@ -81,6 +82,7 @@
     <string name="merchant_catalog_error_save">We could not save your changes. Check your connection and try again.</string>
     <string name="merchant_catalog_error_delete">We could not delete that item. Try again.</string>
     <string name="merchant_catalog_error_availability">We could not change the availability. Try again.</string>
+    <string name="merchant_catalog_error_load">We could not load your catalog. Check your connection and try again.</string>
     <string name="merchant_catalog_error_photo">We could not use that photo. Pick a different image.</string>
     <string name="product_editor_title_new">New product</string>
     <string name="product_editor_title_edit">Edit product</string>

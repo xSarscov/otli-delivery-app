@@ -6,6 +6,7 @@ import com.otli.app.auth.domain.UserAccount
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -27,9 +28,14 @@ class ObserveSessionUseCase @Inject constructor(private val repository: AuthRepo
                 } else {
                     repository.observeUserDocument(user.uid)
                         .map(::toSessionState)
+                        // The rules reject this read once the user signs out, before the auth state
+                        // flips. Fall back to the recoverable gate (it offers retry and sign out); the
+                        // auth change then replaces this inner flow with SignedOut.
+                        .catch { emit(SessionState.ProfileIncomplete) }
                         .onStart { emit(SessionState.Loading) }
                 }
             }
+            .catch { emit(SessionState.SignedOut) }
             .onStart { emit(SessionState.Loading) }
             .distinctUntilChanged()
 
