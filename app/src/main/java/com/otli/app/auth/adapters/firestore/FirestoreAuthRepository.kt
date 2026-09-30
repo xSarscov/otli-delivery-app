@@ -13,10 +13,13 @@ import com.otli.app.auth.domain.RegistrationPolicy
 import com.otli.app.auth.domain.Role
 import com.otli.app.auth.domain.UserAccount
 import com.otli.app.core.result.DomainException
+import com.otli.app.core.result.suspendRunCatching
 import javax.inject.Inject
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.withContext
 
 /** Firebase Auth for credentials, `users/{uid}` in Firestore for role and status (ADR-6). */
 class FirestoreAuthRepository @Inject constructor(
@@ -45,7 +48,7 @@ class FirestoreAuthRepository @Inject constructor(
         password: String,
         role: Role,
         profileFields: ProfileFields,
-    ): Result<Unit> = runCatching {
+    ): Result<Unit> = suspendRunCatching {
         val status = when (val decision = RegistrationPolicy.initialStatus(role)) {
             is RegistrationDecision.Accepted -> decision.status
             is RegistrationDecision.Rejected -> throw DomainException(decision.error)
@@ -65,15 +68,16 @@ class FirestoreAuthRepository @Inject constructor(
                 ),
             )
             batch.commit().await()
-        } catch (failure: Exception) {
-            // Do not leave a credential without a profile behind; best effort.
-            runCatching { user.delete().await() }
+        } catch (failure: Throwable) {
+            // Do not leave a credential without a profile behind; best effort, and it must
+            // finish even when this failure is a cancellation.
+            withContext(NonCancellable) { suspendRunCatching { user.delete().await() } }
             auth.signOut()
             throw failure
         }
     }
 
-    override suspend fun login(email: String, password: String): Result<Unit> = runCatching {
+    override suspend fun login(email: String, password: String): Result<Unit> = suspendRunCatching {
         auth.signInWithEmailAndPassword(email, password).await()
         Unit
     }
