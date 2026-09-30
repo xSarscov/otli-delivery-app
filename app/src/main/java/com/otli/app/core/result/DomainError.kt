@@ -11,3 +11,6 @@ sealed interface DomainError {
     /** The referenced entity does not exist. */
     data class NotFound(val what: String) : DomainError
 }
+
+/** Carrier for a [DomainError] inside a failed `Result`, so callers can map it back. */
+class DomainException(val error: DomainError) : Exception(error.toString())

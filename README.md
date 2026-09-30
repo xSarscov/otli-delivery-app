@@ -32,7 +32,10 @@ Planning artifacts live in `openspec/changes/otli-mvp/` (proposal, specs, design
    On Windows use the escaped drive form `sdk.dir=C\:/Users/<you>/AppData/Local/Android/Sdk`
    (plain `C:\...` is rejected by Android lint).
 2. Optional emulator wiring in the same file (defaults shown):
-   `otli.useEmulator=true` and `otli.emulatorHost=10.0.2.2` (use your LAN IP on a physical device).
+   `otli.useEmulator=true` and `otli.emulatorHost=10.0.2.2`. `10.0.2.2` is how the Android emulator
+   reaches the PC; a physical phone over USB uses `127.0.0.1` together with `adb reverse` (see
+   "Instrumented tests on a device"). Any `otli.*` value can also be passed as `-Potli.emulatorHost=...`
+   on the Gradle command line, which takes precedence over `local.properties`.
 3. Install backend dependencies: `npm --prefix backend install`.
 
 ## The four test commands
@@ -53,6 +56,24 @@ Extra commands:
 - Backend typecheck: `npm --prefix backend run typecheck`.
 - Instrumented adapter tests (needs a running Android emulator or device): `npm --prefix backend run test:android`.
 
+## Instrumented tests on a device
+
+`npm --prefix backend run test:android` starts the Auth and Firestore emulators and runs
+`connectedDebugAndroidTest` against the attached device:
+
+- Exactly one device must be attached, or set `ANDROID_SERIAL` to choose one.
+- For a physical device the script runs `adb reverse tcp:8080 tcp:8080` and `tcp:9099 tcp:9099`,
+  builds with `-Potli.emulatorHost=127.0.0.1`, and removes the reverse mappings afterwards. For an
+  Android emulator (`emulator-*` serial) nothing is reversed and the default `10.0.2.2` is used.
+- Debug builds allow cleartext HTTP to 127.0.0.1, 10.0.2.2 and localhost only
+  (`app/src/debug/res/xml/network_security_config.xml`), because the Auth emulator has no TLS.
+  Release builds are unaffected.
+- Some vendors block installs over USB. On Xiaomi/HyperOS enable "Install via USB" (and "USB debugging
+  (Security settings)") in Developer options and accept the prompt on the phone; otherwise the run
+  fails with `INSTALL_FAILED_USER_RESTRICTED`. The script exits non-zero in that case, because Gradle
+  itself would still report BUILD SUCCESSFUL.
+- Gradle uninstalls the app and test APKs when the run ends.
+
 ## Running the emulators and seed data
 
 1. Start the emulators: `npm --prefix backend run emulators` (Auth 9099, Firestore 8080, UI 4000).
@@ -68,6 +89,6 @@ The emulator project id is `demo-otli`; no real Firebase project is needed for d
 
 No real Firebase project exists yet. The `google-services` Gradle plugin is deliberately not applied
 and no `google-services.json` is committed. Debug builds are designed to reach the emulators through
-explicit `FirebaseOptions` (project `demo-otli`, placeholder app id and API key) wired in task 1.3.1.
+explicit `FirebaseOptions` (project `demo-otli`, placeholder app id and API key) in `core/di/OtliFirebase.kt`.
 The real project, `google-services.json`, rules deployment and production seed are task 6.5 and each
 step needs explicit user authorization.
