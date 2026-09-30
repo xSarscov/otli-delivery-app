@@ -68,6 +68,11 @@ kotlin {
     jvmToolchain(17)
 }
 
+// OrderTransitionsContractTest reads this shared fixture (ADR-14); declaring it makes a fixture edit re-run the tests.
+tasks.withType<Test>().configureEach {
+    inputs.file(rootProject.file("backend/contracts/order-transitions.json")).withPropertyName("orderTransitionsContract")
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(platform(libs.firebase.bom))
