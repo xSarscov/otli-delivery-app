@@ -3,7 +3,6 @@ package com.otli.app.catalog.adapters.ui
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -27,7 +26,7 @@ fun MerchantHomeContent(
     profile: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier.fillMaxSize().statusBarsPadding()) {
+    Column(modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = selected.ordinal) {
             Tab(
                 selected = selected == MerchantTab.CATALOG,

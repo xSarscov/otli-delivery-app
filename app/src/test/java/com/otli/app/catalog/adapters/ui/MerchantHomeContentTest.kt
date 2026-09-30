@@ -7,9 +7,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.common.truth.Truth.assertThat
 import com.otli.app.R
 import org.junit.Rule
@@ -68,5 +73,18 @@ class MerchantHomeContentTest {
         compose.onNodeWithText(text(R.string.tab_catalog)).performClick()
 
         compose.onNodeWithText("catalog-slot").assertIsDisplayed()
+    }
+
+    @Test
+    fun leavesSystemBarInsetsToTheRootSoTheTabsAreNotPaddedTwice() {
+        show()
+        val statusBar = WindowInsetsCompat.Builder()
+            .setInsets(WindowInsetsCompat.Type.statusBars(), Insets.of(0, 96, 0, 0))
+            .build()
+        compose.runOnUiThread { ViewCompat.dispatchApplyWindowInsets(compose.activity.window.decorView, statusBar) }
+        compose.waitForIdle()
+
+        compose.onNodeWithText(text(R.string.tab_catalog)).assertIsDisplayed()
+        assertThat(compose.onNodeWithText("catalog-slot").getUnclippedBoundsInRoot().top).isLessThan(96.dp)
     }
 }
