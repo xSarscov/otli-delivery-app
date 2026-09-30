@@ -31,9 +31,9 @@ interface SeedUser {
 
 const SEED_USERS: SeedUser[] = [
   { uid: "seed-admin", email: "admin@otli.test", role: "admin", status: "active", displayName: "Otli Admin", phone: "8888-0000" },
-  { uid: "seed-merchant-1", email: "merchant1@otli.test", role: "merchant", status: "active", displayName: "Doña Marta", phone: "8888-0101" },
-  { uid: "seed-merchant-2", email: "merchant2@otli.test", role: "merchant", status: "active", displayName: "Don Chepe", phone: "8888-0102" },
-  { uid: "seed-merchant-pending", email: "merchant-pending@otli.test", role: "merchant", status: "pending", displayName: "Nuevo Comercio", phone: "8888-0103" },
+  { uid: "seed-merchant-1", email: "merchant1@otli.test", role: "merchant", status: "active", displayName: "Doña Marta", phone: "+50588880101" },
+  { uid: "seed-merchant-2", email: "merchant2@otli.test", role: "merchant", status: "active", displayName: "Don Chepe", phone: "+50588880102" },
+  { uid: "seed-merchant-pending", email: "merchant-pending@otli.test", role: "merchant", status: "pending", displayName: "Nuevo Comercio", phone: "+50588880103" },
   { uid: "seed-customer-1", email: "customer1@otli.test", role: "customer", status: "active", displayName: "Ana Lopez", phone: "8888-0201" },
 ];
 
@@ -67,7 +67,7 @@ const SEED_MERCHANTS: SeedMerchant[] = [
     uid: "seed-merchant-1",
     name: "Comedor Doña Marta",
     description: "Comida típica nicaragüense",
-    phone: "8888-0101",
+    phone: "+50588880101",
     status: "active",
     isOpen: true,
     location: { lat: 12.2667, lng: -86.5667, reference: "Frente al parque central de Nagarote" },
@@ -87,7 +87,7 @@ const SEED_MERCHANTS: SeedMerchant[] = [
     uid: "seed-merchant-2",
     name: "Pizzería Don Chepe",
     description: "Pizzas y bebidas frías",
-    phone: "8888-0102",
+    phone: "+50588880102",
     status: "active",
     isOpen: false,
     location: { lat: 12.2681, lng: -86.5642, reference: "Una cuadra al norte de la iglesia" },
@@ -108,7 +108,7 @@ const SEED_MERCHANTS: SeedMerchant[] = [
     uid: "seed-merchant-pending",
     name: "Nuevo Comercio",
     description: "Esperando aprobación",
-    phone: "8888-0103",
+    phone: "+50588880103",
     status: "pending",
     isOpen: false,
     location: { lat: 12.2650, lng: -86.5690, reference: "Barrio San Antonio" },
