@@ -57,7 +57,7 @@ const user = (role: string, status: string) => ({
 
 /**
  * Boots the rules environment once per test file and, before every test, resets Firestore to:
- * users admin-1, customer-1, customer-2, customer-pending, customer-suspended,
+ * users admin-1, courier-1, customer-1, customer-2, customer-pending, customer-suspended,
  * merchant-a / merchant-b (active), merchant-pending, merchant-suspended; settings/app with the flat fee;
  * active merchants merchant-a (open) and merchant-b (closed), each with category `cat-1`,
  * product `prod-1` and a photo document; plus pending and suspended merchant profiles.
@@ -83,6 +83,7 @@ export function useCatalogEnv() {
       await db.collection("users").doc("admin-1").set(user("admin", "active"));
       await db.collection("users").doc("customer-1").set(user("customer", "active"));
       await db.collection("users").doc("customer-2").set(user("customer", "active"));
+      await db.collection("users").doc("courier-1").set(user("courier", "active"));
       await db.collection("users").doc("customer-pending").set(user("customer", "pending"));
       await db.collection("users").doc("customer-suspended").set(user("customer", "suspended"));
       // The flat delivery fee orders snapshot at placement (C$ 30.00), as in the seed.

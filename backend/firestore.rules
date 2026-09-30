@@ -207,7 +207,46 @@ service cloud.firestore {
           && data.updatedAt == request.time;
       }
 
+      function isActiveMerchant() {
+        return signedIn()
+          && exists(userPath(request.auth.uid))
+          && get(userPath(request.auth.uid)).data.role == 'merchant'
+          && get(userPath(request.auth.uid)).data.status == 'active';
+      }
+      function moves(from, to) { return resource.data.status == from && request.resource.data.status == to; }
+      function stamped(field) { return request.resource.data[field] == request.time && request.resource.data.updatedAt == request.time; }
+
+      // Each transition touches only its own fields, so the placed snapshot (items, totals, fee) stays immutable.
+      function merchantStep() {
+        return isActiveMerchant() && resource.data.merchantId == request.auth.uid
+          && ((moves('placed', 'accepted') && changed().hasOnly(['status', 'acceptedAt', 'updatedAt']) && stamped('acceptedAt'))
+            || (moves('accepted', 'preparing') && changed().hasOnly(['status', 'preparingAt', 'updatedAt']) && stamped('preparingAt'))
+            || (moves('preparing', 'ready') && changed().hasOnly(['status', 'readyAt', 'updatedAt']) && stamped('readyAt')));
+      }
+      function merchantReject() {
+        return isActiveMerchant() && resource.data.merchantId == request.auth.uid
+          && moves('placed', 'rejected')
+          && changed().hasOnly(['status', 'rejectReason', 'rejectedAt', 'updatedAt'])
+          && stamped('rejectedAt')
+          && validText(request.resource.data.rejectReason, 1, 200);
+      }
+      function customerCancel() {
+        return isActiveCustomer() && resource.data.customerId == request.auth.uid
+          && moves('placed', 'cancelled')
+          && changed().hasOnly(['status', 'cancelledBy', 'cancelledAt', 'updatedAt'])
+          && stamped('cancelledAt')
+          && request.resource.data.cancelledBy == 'customer';
+      }
+      // Courier claim, pick-up, deliver and the Admin release/cancel are implemented in Slices 4 and 6.
+      function courierStep() { return false; }
+      function adminStep() { return false; }
+
+      // The owner customer, the addressed merchant and Admin. Couriers (pool and assigned order) join in Slice 4.
+      allow read: if signedIn()
+        && (resource.data.customerId == request.auth.uid || resource.data.merchantId == request.auth.uid || isActiveAdmin());
       allow create: if validPlacement();
+      allow update: if merchantStep() || merchantReject() || customerCancel() || courierStep() || adminStep();
+      allow delete: if false;
     }
 
     // Everything else stays denied until its slice adds a match block test-first.
