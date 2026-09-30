@@ -23,7 +23,7 @@ function requireEmulatorEnv(env: NodeJS.ProcessEnv): void {
 interface SeedUser {
   uid: string;
   email: string;
-  role: "admin" | "merchant";
+  role: "admin" | "merchant" | "customer";
   status: "active" | "pending";
   displayName: string;
   phone: string;
@@ -34,7 +34,11 @@ const SEED_USERS: SeedUser[] = [
   { uid: "seed-merchant-1", email: "merchant1@otli.test", role: "merchant", status: "active", displayName: "Doña Marta", phone: "8888-0101" },
   { uid: "seed-merchant-2", email: "merchant2@otli.test", role: "merchant", status: "active", displayName: "Don Chepe", phone: "8888-0102" },
   { uid: "seed-merchant-pending", email: "merchant-pending@otli.test", role: "merchant", status: "pending", displayName: "Nuevo Comercio", phone: "8888-0103" },
+  { uid: "seed-customer-1", email: "customer1@otli.test", role: "customer", status: "active", displayName: "Ana Lopez", phone: "8888-0201" },
 ];
+
+// The flat delivery fee (NIO centavos) that orders snapshot at placement (ADR-10, ADR-15): C$ 30.00.
+const DELIVERY_FEE_CENTS = 3000;
 
 interface SeedProduct {
   id: string;
@@ -156,6 +160,14 @@ async function upsertMerchant(merchant: SeedMerchant): Promise<void> {
   }
 }
 
+/** Upserts `settings/app`; re-running resets the fee to the seed value, like every other seeded document. */
+async function upsertSettings(): Promise<void> {
+  await getFirestore()
+    .collection("settings")
+    .doc("app")
+    .set({ deliveryFeeCents: DELIVERY_FEE_CENTS, updatedAt: FieldValue.serverTimestamp(), updatedBy: "seed-admin" }, { merge: true });
+}
+
 async function main(): Promise<void> {
   requireEmulatorEnv(process.env);
   initializeApp({ projectId: PROJECT_ID });
@@ -167,6 +179,8 @@ async function main(): Promise<void> {
     await upsertMerchant(merchant);
     console.log(`${merchant.uid}: merchants/${merchant.uid} upserted with ${merchant.categories.length} categories and ${merchant.products.length} products`);
   }
+  await upsertSettings();
+  console.log(`settings/app upserted with deliveryFeeCents=${DELIVERY_FEE_CENTS}`);
 }
 
 main().catch((error) => {

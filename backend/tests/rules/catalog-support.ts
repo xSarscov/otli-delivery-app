@@ -9,6 +9,8 @@ export const bytesOf = (size: number) => firebase.firestore.Blob.fromUint8Array(
 
 export const KB = 1024;
 
+export const DELIVERY_FEE_CENTS = 3000;
+
 /** Where Nagarote's centre is; a valid pin for tests. */
 export const NAGAROTE_LOCATION = { lat: 12.2656, lng: -86.5664, reference: "" };
 
@@ -55,7 +57,8 @@ const user = (role: string, status: string) => ({
 
 /**
  * Boots the rules environment once per test file and, before every test, resets Firestore to:
- * users admin-1, customer-1, merchant-a / merchant-b (active), merchant-pending, merchant-suspended;
+ * users admin-1, customer-1, customer-2, customer-pending, customer-suspended,
+ * merchant-a / merchant-b (active), merchant-pending, merchant-suspended; settings/app with the flat fee;
  * active merchants merchant-a (open) and merchant-b (closed), each with category `cat-1`,
  * product `prod-1` and a photo document; plus pending and suspended merchant profiles.
  */
@@ -79,6 +82,11 @@ export function useCatalogEnv() {
       const db = context.firestore();
       await db.collection("users").doc("admin-1").set(user("admin", "active"));
       await db.collection("users").doc("customer-1").set(user("customer", "active"));
+      await db.collection("users").doc("customer-2").set(user("customer", "active"));
+      await db.collection("users").doc("customer-pending").set(user("customer", "pending"));
+      await db.collection("users").doc("customer-suspended").set(user("customer", "suspended"));
+      // The flat delivery fee orders snapshot at placement (C$ 30.00), as in the seed.
+      await db.collection("settings").doc("app").set({ deliveryFeeCents: DELIVERY_FEE_CENTS, updatedAt: new Date(), updatedBy: "admin-1" });
       await db.collection("users").doc("merchant-a").set(user("merchant", "active"));
       await db.collection("users").doc("merchant-b").set(user("merchant", "active"));
       await db.collection("users").doc("merchant-pending").set(user("merchant", "pending"));
