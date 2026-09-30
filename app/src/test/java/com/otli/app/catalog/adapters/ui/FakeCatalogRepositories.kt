@@ -1,10 +1,15 @@
 package com.otli.app.catalog.adapters.ui
 
 import com.otli.app.auth.domain.AccountStatus
+import com.otli.app.catalog.application.CatalogRepository
 import com.otli.app.catalog.application.MerchantRepository
 import com.otli.app.catalog.application.PhotoCompressor
+import com.otli.app.catalog.application.Storefront
+import com.otli.app.catalog.domain.Category
 import com.otli.app.catalog.domain.Merchant
 import com.otli.app.catalog.domain.MerchantLocation
+import com.otli.app.catalog.domain.Product
+import com.otli.app.core.money.Money
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -60,6 +65,67 @@ class FakeMerchantRepository(initial: Merchant? = aMerchant()) : MerchantReposit
     }
 
     override fun observeMerchantsList(): Flow<List<Merchant>> = emptyFlow()
+}
+
+fun aCategory(id: String = "c1", name: String = "Platos", sortOrder: Int = 1) = Category(id, name, sortOrder)
+
+fun aProduct(
+    id: String = "p1",
+    categoryId: String = "c1",
+    name: String = "Nacatamal",
+    price: Long = 12000,
+    isAvailable: Boolean = true,
+    photoVersion: Int = 0,
+) = Product(id, categoryId, name, "desc", Money(price), isAvailable, photoVersion)
+
+/** In-memory catalog: successful writes update the live lists, like Firestore listeners would. */
+class FakeCatalogRepository(
+    categories: List<Category> = listOf(aCategory("c1", "Platos", 1), aCategory("c2", "Bebidas", 2)),
+    products: List<Product> = listOf(aProduct("p1", "c1"), aProduct("p2", "c2", "Fresco", 2500, isAvailable = false)),
+) : CatalogRepository {
+    data class ProductWrite(val merchantId: String, val product: Product, val photo: ByteArray?)
+
+    val categories = MutableStateFlow(categories)
+    val products = MutableStateFlow(products)
+    val categoryWrites = mutableListOf<Category>()
+    val productWrites = mutableListOf<ProductWrite>()
+    val removedCategories = mutableListOf<String>()
+    val removedProducts = mutableListOf<String>()
+    val availabilityChanges = mutableListOf<Pair<String, Boolean>>()
+    var writeOutcome: suspend () -> Result<Unit> = { Result.success(Unit) }
+
+    override fun observeCategories(merchantId: String): Flow<List<Category>> = categories
+
+    override suspend fun upsertCategory(merchantId: String, category: Category): Result<Unit> {
+        categoryWrites += category
+        return writeOutcome()
+    }
+
+    override suspend fun removeCategory(merchantId: String, categoryId: String): Result<Unit> {
+        removedCategories += categoryId
+        return writeOutcome()
+    }
+
+    override fun observeProducts(merchantId: String): Flow<List<Product>> = products
+
+    override suspend fun upsertProduct(merchantId: String, product: Product, photoJpeg: ByteArray?): Result<Unit> {
+        productWrites += ProductWrite(merchantId, product, photoJpeg)
+        return writeOutcome()
+    }
+
+    override suspend fun removeProduct(merchantId: String, productId: String): Result<Unit> {
+        removedProducts += productId
+        return writeOutcome()
+    }
+
+    override suspend fun setProductAvailability(merchantId: String, productId: String, available: Boolean): Result<Unit> {
+        availabilityChanges += productId to available
+        return writeOutcome().onSuccess {
+            products.value = products.value.map { if (it.id == productId) it.copy(isAvailable = available) else it }
+        }
+    }
+
+    override fun observeStorefront(merchantId: String): Flow<Storefront?> = emptyFlow()
 }
 
 /** Returns the input reversed so tests can tell compressed bytes from picked bytes. */
