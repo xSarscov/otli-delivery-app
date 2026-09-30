@@ -98,4 +98,9 @@
     <string name="merchant_list_error">We could not load the stores. Check your connection and try again.</string>
     <string name="merchant_status_open">Open</string>
     <string name="merchant_status_closed">Closed</string>
+    <string name="storefront_closed_banner">This store is closed right now. You can look at the menu, but you cannot add items until it opens.</string>
+    <string name="storefront_add">Add</string>
+    <string name="product_unavailable">Not available</string>
+    <string name="storefront_not_found">We could not find that store.</string>
+    <string name="storefront_error">We could not load this store. Check your connection and try again.</string>
 </resources>
