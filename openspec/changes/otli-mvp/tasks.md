@@ -127,7 +127,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Test-first: write `app/src/test/java/com/otli/app/core/navigation/RootNavHostRoutingTest.kt` RED (Robolectric + Compose UI test, using a fake session `StateFlow`: each `SessionState` value routes to the expected graph/screen and no other role's screen is reachable), then implement GREEN.
   - Acceptance: auth-roles spec — "Each role reaches its own home", "A user cannot perform another role's action" (UI-level: no navigation path exists to another role's screens).
   - Est. lines: ~180
-- [ ] 1.4.2 Create `auth/adapters/ui/RegisterScreen.kt` (container) + `RegisterContent.kt` (presentational: role picker excluding Admin, email/password/profile fields) + `RegisterViewModel.kt` (`StateFlow<RegisterUiState>`) and `app/src/test/java/com/otli/app/auth/adapters/ui/RegisterViewModelTest.kt`.
+- [x] 1.4.2 Create `auth/adapters/ui/RegisterScreen.kt` (container) + `RegisterContent.kt` (presentational: role picker excluding Admin, email/password/profile fields) + `RegisterViewModel.kt` (`StateFlow<RegisterUiState>`) and `app/src/test/java/com/otli/app/auth/adapters/ui/RegisterViewModelTest.kt`.
   - Test-first: write the ViewModel test RED (submitting with Admin as a role is impossible because it's not in the picker's domain — assert the picker's role list excludes Admin; successful submit calls `AuthRepository.register`; failure maps to an error message), then implement GREEN.
   - Acceptance: auth-roles spec — "Admin accounts are never created through self-registration".
   - Est. lines: ~150
