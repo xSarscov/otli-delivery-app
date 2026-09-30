@@ -178,7 +178,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Test-first: `backend/tests/rules/merchants.test.ts` RED first (missing location, blank/missing phone, malformed pin, phone/location kept valid on update), then rules GREEN; mutation-checked. Run: `npm --prefix backend test -- merchants`.
   - Acceptance: auth-roles spec — "Merchant registers with store details", "Merchant registration is refused without complete store details" (rules half).
 - [x] 2.3.0b `NicaraguanPhone` pure validator/normalizer and `MapPinPickerState` state holder (default centre Nagarote, pin set/clear, lat/lng result), JVM tests. (branch 02-3b; mutation-checked: dropping the digit check and the coordinate range check each fail a test)
-- [ ] 2.3.0c `MapPinPicker` composable behind a thin `PinMapView` MapLibre adapter (OpenFreeMap liberty style, attribution visible, centred on Nagarote). (branch 02-3c: composable, attribution and pin behaviour JVM-tested with a fake map slot, 7 tests, mutation-checked; **left unchecked: native MapLibre rendering, tap-to-pin and scroll-gesture handling still need a manual device check**)
+- [x] 2.3.0c `MapPinPicker` composable behind a thin `PinMapView` MapLibre adapter (OpenFreeMap liberty style, attribution visible, centred on Nagarote). (branch 02-3c: composable, attribution and pin behaviour JVM-tested with a fake map slot, 7 tests, mutation-checked; **left unchecked: native MapLibre rendering, tap-to-pin and scroll-gesture handling still need a manual device check**)
 - [x] 2.3.0d Registration wiring: `AuthRepository.register` takes optional merchant store details; `RegisterViewModel`/`RegisterContent` collect store name + phone + pin for merchants; `FirestoreAuthRepository` writes `merchants/{uid}` in the same batch (androidTest updated; device GREEN pending). (branch 02-3d: JVM part GREEN - RegisterViewModelTest 13, RegisterContentTest 6, mutation-checked; the merchant phone field doubles as the store contact phone and is stored normalized; **left unchecked: `FirestoreAuthRepositoryTest` gained 3 tests (merchant profile written pending/closed with store details, merchant without details fails with no session, customer writes no merchant doc) that still need device GREEN**)
 
 - [x] 2.3.1 (branch 02-3e: `FirestoreMerchantRepository`, `CatalogDocuments` mapper (JVM-tested, 6 tests, mutation-checked), `CatalogModule` merchant binding, `FirestoreMerchantRepositoryTest` androidTest, `test:android` now seeds first, TaskAwait moved to `core/firebase`; branch 02-3f: `FirestoreCatalogRepository` + category/product/photo mapping (9 JVM tests, mutation-checked) + `FirestoreCatalogRepositoryTest` androidTest (8 tests). Both adapters are written; **unchecked until both land and the androidTests are device GREEN**) Create `catalog/adapters/firestore/FirestoreMerchantRepository.kt` and `FirestoreCatalogRepository.kt` implementing the ports from 2.1.2, plus `catalog/di/CatalogModule.kt`.
@@ -199,6 +199,12 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Est. lines: ~190
 
 **PR 2.3** = tasks 2.3.1–2.3.4 (~610 lines — split at merge into 2.3a (2.3.1+2.3.2, ~270 lines) and 2.3b (2.3.3+2.3.4, ~340 lines)). Verify: `./gradlew testDebugUnitTest` + `npm --prefix backend run test:android`.
+
+### UI follow-ups (found in the on-device manual check, 2026-09-30)
+
+- [ ] F.1 Edge-to-edge insets: screen content (e.g. the registration form) draws under the status bar. Apply system-bar insets (`Modifier.safeDrawingPadding()`/`Scaffold` insets) at the root and cover it with a Compose UI test.
+- [ ] F.2 Gate "Sign out" button renders with low-contrast, disabled-looking text. Fix the button colors against `OtliTheme` and assert the enabled state in `GateScreensTest`.
+- [ ] F.3 `ProfileIncomplete` gate has no sign-out or retry action (noted in PR 1.4).
 
 ### PR 2.4 — Customer browsing UI
 
