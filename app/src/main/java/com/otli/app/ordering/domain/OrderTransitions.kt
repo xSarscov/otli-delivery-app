@@ -34,4 +34,8 @@ object OrderTransitions {
     )
 
     fun isAllowed(from: OrderStatus, to: OrderStatus, actor: Actor): Boolean = Triple(from, to, actor) in allowed
+
+    /** The one forward step a merchant takes from [from] (rejecting is a separate choice), or null when they have none. */
+    fun merchantAdvance(from: OrderStatus): OrderStatus? =
+        OrderStatus.entries.firstOrNull { it != OrderStatus.REJECTED && isAllowed(from, it, Actor.MERCHANT) }
 }
