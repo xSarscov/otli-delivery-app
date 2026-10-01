@@ -11,6 +11,7 @@ import com.otli.app.auth.adapters.ui.GateViewModel
 @Composable
 fun MerchantListScreen(
     onMerchantClick: (String) -> Unit,
+    onOpenOrders: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MerchantListViewModel = hiltViewModel(),
     session: GateViewModel = hiltViewModel(),
@@ -19,6 +20,7 @@ fun MerchantListScreen(
     CustomerHomeContent(
         state = state,
         onMerchantClick = onMerchantClick,
+        onOpenOrders = onOpenOrders,
         onSignOut = session::logout,
         modifier = modifier,
     )
