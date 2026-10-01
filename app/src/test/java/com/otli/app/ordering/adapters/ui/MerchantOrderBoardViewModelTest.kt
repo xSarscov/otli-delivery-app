@@ -175,4 +175,113 @@ class MerchantOrderBoardViewModelTest {
 
         assertThat(viewModel.uiState.value.error).isNull()
     }
+
+    // --- rejecting with a reason ---
+
+    @Test
+    fun rejectingNeedsAReasonAndNothingIsSentWithoutOne() {
+        orders.orders.value = listOf(anOrder("o1", OrderStatus.PLACED))
+        val viewModel = viewModel()
+
+        viewModel.startReject("o1")
+        assertThat(viewModel.uiState.value.rejecting).isEqualTo("o1")
+
+        viewModel.confirmReject()
+        viewModel.setRejectReason("   ")
+        viewModel.confirmReject()
+
+        assertThat(orders.transitions).isEmpty()
+        assertThat(viewModel.uiState.value.rejectReasonMissing).isTrue()
+        assertThat(viewModel.uiState.value.rejecting).isEqualTo("o1")
+    }
+
+    @Test
+    fun typingAReasonClearsTheMissingReasonMessage() {
+        orders.orders.value = listOf(anOrder("o1", OrderStatus.PLACED))
+        val viewModel = viewModel()
+        viewModel.startReject("o1")
+        viewModel.confirmReject()
+
+        viewModel.setRejectReason("N")
+
+        assertThat(viewModel.uiState.value.rejectReasonMissing).isFalse()
+    }
+
+    @Test
+    fun aReasonIsTrimmedSentAndClosesTheDialog() {
+        orders.orders.value = listOf(anOrder("o1", OrderStatus.PLACED))
+        val viewModel = viewModel()
+        viewModel.startReject("o1")
+        viewModel.setRejectReason("  No hay nacatamales  ")
+
+        viewModel.confirmReject()
+
+        assertThat(orders.transitions).containsExactly(transition("o1", OrderStatus.REJECTED, "No hay nacatamales"))
+        assertThat(viewModel.uiState.value.rejecting).isNull()
+        assertThat(viewModel.uiState.value.rejectReason).isEmpty()
+    }
+
+    @Test
+    fun aRefusedRejectionKeepsTheDialogOpenWithTheReasonAndShowsAnError() {
+        orders.orders.value = listOf(anOrder("o1", OrderStatus.PLACED))
+        orders.transitionOutcome = { Result.failure(IllegalStateException("denied")) }
+        val viewModel = viewModel()
+        viewModel.startReject("o1")
+        viewModel.setRejectReason("No hay")
+
+        viewModel.confirmReject()
+
+        assertThat(viewModel.uiState.value.rejecting).isEqualTo("o1")
+        assertThat(viewModel.uiState.value.rejectReason).isEqualTo("No hay")
+        assertThat(viewModel.uiState.value.error).isEqualTo(OrderBoardError.ACTION_FAILED)
+    }
+
+    @Test
+    fun dismissingTheDialogForgetsTheReason() {
+        orders.orders.value = listOf(anOrder("o1", OrderStatus.PLACED))
+        val viewModel = viewModel()
+        viewModel.startReject("o1")
+        viewModel.setRejectReason("No hay")
+
+        viewModel.dismissReject()
+
+        assertThat(viewModel.uiState.value.rejecting).isNull()
+        assertThat(viewModel.uiState.value.rejectReason).isEmpty()
+        assertThat(viewModel.uiState.value.rejectReasonMissing).isFalse()
+    }
+
+    @Test
+    fun onlyAPlacedOrderCanBeRejected() {
+        orders.orders.value = listOf(anOrder("o1", OrderStatus.ACCEPTED))
+        val viewModel = viewModel()
+
+        viewModel.startReject("o1")
+        viewModel.startReject("unknown")
+
+        assertThat(viewModel.uiState.value.rejecting).isNull()
+    }
+
+    @Test
+    fun theDialogClosesAndForgetsTheReasonWhenTheOrderIsNoLongerWaiting() = ordersLeaveWhileRejecting { viewModel ->
+        viewModel.setRejectReason("No hay")
+    }.let { viewModel ->
+        assertThat(viewModel.uiState.value.rejecting).isNull()
+        assertThat(viewModel.uiState.value.rejectReason).isEmpty()
+    }
+
+    @Test
+    fun theDialogForgetsAPendingMissingReasonMessageWhenTheOrderIsNoLongerWaiting() = ordersLeaveWhileRejecting { viewModel ->
+        viewModel.confirmReject()
+    }.let { viewModel ->
+        assertThat(viewModel.uiState.value.rejectReasonMissing).isFalse()
+    }
+
+    private fun ordersLeaveWhileRejecting(typing: (MerchantOrderBoardViewModel) -> Unit): MerchantOrderBoardViewModel {
+        orders.orders.value = listOf(anOrder("o1", OrderStatus.PLACED))
+        val viewModel = viewModel()
+        viewModel.startReject("o1")
+        typing(viewModel)
+        orders.orders.value = listOf(anOrder("o1", OrderStatus.CANCELLED))
+        return viewModel
+    }
 }
