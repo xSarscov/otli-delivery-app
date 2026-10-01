@@ -42,6 +42,21 @@ class CustomerOrdersViewModelTest {
     }
 
     @Test
+    fun theNewestOrderIsFirstInBothSectionsWhateverTheSnapshotOrder() {
+        orders.orders.value = listOf(
+            anOrder("active-1", OrderStatus.PLACED, createdAtMillis = 1_000L),
+            anOrder("active-2", OrderStatus.READY, createdAtMillis = 2_000L),
+            anOrder("past-1", OrderStatus.DELIVERED, createdAtMillis = 500L),
+            anOrder("past-2", OrderStatus.REJECTED, createdAtMillis = 900L),
+        )
+
+        val state = viewModel().uiState.value
+
+        assertThat(state.active.map { it.id }).containsExactly("active-2", "active-1").inOrder()
+        assertThat(state.past.map { it.id }).containsExactly("past-2", "past-1").inOrder()
+    }
+
+    @Test
     fun eachCustomerOnlySeesTheirOwnOrders() {
         orders.orders.value = listOf(
             anOrder("mine", OrderStatus.PLACED, customerId = "customer-2"),

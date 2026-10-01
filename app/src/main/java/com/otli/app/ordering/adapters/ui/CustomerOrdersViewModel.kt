@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.otli.app.auth.application.AuthRepository
 import com.otli.app.ordering.application.OrderRepository
 import com.otli.app.ordering.domain.Order
+import com.otli.app.ordering.domain.OrderOrdering
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -48,7 +49,7 @@ class CustomerOrdersViewModel @Inject constructor(
                 // A rejected listener (e.g. the rules deny reads after sign-out) must never crash the app.
                 .catch { _uiState.update { it.copy(isLoading = false, loadFailed = true) } }
                 .collect { list ->
-                    val (past, active) = list.partition { it.status.isTerminal }
+                    val (past, active) = OrderOrdering.newestFirst(list).partition { it.status.isTerminal }
                     _uiState.value = CustomerOrdersUiState(isLoading = false, active = active, past = past)
                 }
         }

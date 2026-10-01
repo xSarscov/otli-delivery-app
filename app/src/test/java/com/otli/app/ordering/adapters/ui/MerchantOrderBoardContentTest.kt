@@ -15,8 +15,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.google.common.truth.Truth.assertThat
 import com.otli.app.R
+import com.otli.app.core.time.FixedClock
 import com.otli.app.ordering.application.anOrder
 import com.otli.app.ordering.domain.OrderStatus
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.Locale
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,6 +36,13 @@ class MerchantOrderBoardContentTest {
     val compose = createAndroidComposeRule<ComponentActivity>()
 
     private fun text(id: Int, vararg args: Any) = compose.activity.getString(id, *args)
+
+    private val zone = ZoneId.of("America/Managua")
+
+    private fun millisAt(day: Int, hour: Int, minute: Int) =
+        ZonedDateTime.of(2026, 9, day, hour, minute, 0, 0, zone).toInstant().toEpochMilli()
+
+    private val placedAtFormatter = PlacedAtFormatter(FixedClock(millisAt(30, 15, 0)), zone, Locale.US)
 
     private class Events {
         val advanced = mutableListOf<String>()
@@ -52,6 +63,7 @@ class MerchantOrderBoardContentTest {
                 onConfirmReject = { events.confirmed++ },
                 onDismissReject = { events.dismissedReject++ },
                 onDismissError = { events.dismissedError++ },
+                placedAt = placedAtFormatter,
                 reasonField = { value, onChange, _ ->
                     Text("reason:$value", Modifier.testTag(ReasonTag).clickable { onChange("Sin gas") })
                 },
@@ -208,5 +220,25 @@ class MerchantOrderBoardContentTest {
         show(loaded().copy(error = OrderBoardError.LOAD_FAILED))
 
         compose.onNodeWithText(text(R.string.board_error_load)).assertIsDisplayed()
+    }
+
+    @Test
+    fun everyCardShowsWhenItsOrderWasPlaced() {
+        show(
+            loaded(
+                incoming = listOf(anOrder("o1", OrderStatus.PLACED, createdAtMillis = millisAt(30, 11, 4))),
+                inProgress = listOf(anOrder("o2", OrderStatus.ACCEPTED, createdAtMillis = millisAt(29, 9, 15))),
+            ),
+        )
+
+        compose.onNodeWithText(text(R.string.order_placed_at, "11:04")).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.order_placed_at_date, "29 Sep", "09:15")).assertIsDisplayed()
+    }
+
+    @Test
+    fun anOrderWhoseTimestampIsPendingSaysItWasJustPlaced() {
+        show(loaded(incoming = listOf(anOrder("o1", OrderStatus.PLACED, createdAtMillis = 0L))))
+
+        compose.onNodeWithText(text(R.string.order_placed_just_now)).assertIsDisplayed()
     }
 }

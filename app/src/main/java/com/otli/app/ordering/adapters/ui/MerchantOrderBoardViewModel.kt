@@ -6,6 +6,7 @@ import com.otli.app.auth.application.AuthRepository
 import com.otli.app.ordering.application.OrderRepository
 import com.otli.app.ordering.domain.Actor
 import com.otli.app.ordering.domain.Order
+import com.otli.app.ordering.domain.OrderOrdering
 import com.otli.app.ordering.domain.OrderStatus
 import com.otli.app.ordering.domain.OrderTransitions
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,9 +27,9 @@ enum class OrderBoardError { LOAD_FAILED, ACTION_FAILED }
 
 data class MerchantOrderBoardUiState(
     val isLoading: Boolean = true,
-    /** Orders waiting for the merchant's answer, oldest first. */
+    /** Orders waiting for the merchant's answer, newest first. */
     val incoming: List<Order> = emptyList(),
-    /** Accepted orders up to the ones already with a courier, oldest first. */
+    /** Accepted orders up to the ones already with a courier, newest first. */
     val inProgress: List<Order> = emptyList(),
     /** The order whose rejection dialog is open. */
     val rejecting: String? = null,
@@ -110,13 +111,13 @@ class MerchantOrderBoardViewModel @Inject constructor(
         with(_uiState.value) { (incoming + inProgress).firstOrNull { it.id == orderId } }
 
     private fun show(state: MerchantOrderBoardUiState, list: List<Order>): MerchantOrderBoardUiState {
-        val oldestFirst = list.sortedBy { it.createdAtMillis }
-        val incoming = oldestFirst.filter { it.status == OrderStatus.PLACED }
+        val newestFirst = OrderOrdering.newestFirst(list)
+        val incoming = newestFirst.filter { it.status == OrderStatus.PLACED }
         val stillWaiting = state.rejecting != null && incoming.any { it.id == state.rejecting }
         return state.copy(
             isLoading = false,
             incoming = incoming,
-            inProgress = oldestFirst.filter { it.status in IN_PROGRESS },
+            inProgress = newestFirst.filter { it.status in IN_PROGRESS },
             rejecting = state.rejecting.takeIf { stillWaiting },
             rejectReason = if (stillWaiting) state.rejectReason else "",
             rejectReasonMissing = stillWaiting && state.rejectReasonMissing,

@@ -9,8 +9,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.google.common.truth.Truth.assertThat
 import com.otli.app.R
+import com.otli.app.core.time.FixedClock
 import com.otli.app.ordering.application.anOrder
 import com.otli.app.ordering.domain.OrderStatus
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.Locale
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +29,13 @@ class CustomerOrdersContentTest {
 
     private fun text(id: Int, vararg args: Any) = compose.activity.getString(id, *args)
 
+    private val zone = ZoneId.of("America/Managua")
+
+    private fun millisAt(day: Int, hour: Int, minute: Int) =
+        ZonedDateTime.of(2026, 9, day, hour, minute, 0, 0, zone).toInstant().toEpochMilli()
+
+    private val placedAtFormatter = PlacedAtFormatter(FixedClock(millisAt(30, 15, 0)), zone, Locale.US)
+
     private class Events {
         val opened = mutableListOf<String>()
         var backs = 0
@@ -32,7 +43,12 @@ class CustomerOrdersContentTest {
 
     private fun show(state: CustomerOrdersUiState, events: Events = Events()): Events {
         compose.setContent {
-            CustomerOrdersContent(state = state, onOrderClick = { events.opened += it }, onBack = { events.backs++ })
+            CustomerOrdersContent(
+                state = state,
+                onOrderClick = { events.opened += it },
+                onBack = { events.backs++ },
+                placedAt = placedAtFormatter,
+            )
         }
         return events
     }
@@ -128,5 +144,31 @@ class CustomerOrdersContentTest {
         compose.onNodeWithText("Pulperia Sol").performClick()
 
         assertThat(events.opened).containsExactly("o1", "o2").inOrder()
+    }
+
+    @Test
+    fun anOrderPlacedTodayShowsItsLocalTime() {
+        show(CustomerOrdersUiState(isLoading = false, active = listOf(anOrder("o1", createdAtMillis = millisAt(30, 11, 4)))))
+
+        compose.onNodeWithText(text(R.string.order_placed_at, "11:04")).assertIsDisplayed()
+    }
+
+    @Test
+    fun anOrderFromAnEarlierDayShowsItsDateAndTime() {
+        show(
+            CustomerOrdersUiState(
+                isLoading = false,
+                past = listOf(anOrder("o2", OrderStatus.DELIVERED, createdAtMillis = millisAt(29, 18, 30))),
+            ),
+        )
+
+        compose.onNodeWithText(text(R.string.order_placed_at_date, "29 Sep", "18:30")).assertIsDisplayed()
+    }
+
+    @Test
+    fun anOrderWhoseTimestampIsPendingSaysItWasJustPlaced() {
+        show(CustomerOrdersUiState(isLoading = false, active = listOf(anOrder("o1", createdAtMillis = 0L))))
+
+        compose.onNodeWithText(text(R.string.order_placed_just_now)).assertIsDisplayed()
     }
 }

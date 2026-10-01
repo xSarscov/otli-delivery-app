@@ -64,12 +64,13 @@ fun MerchantOrderBoardContent(
     onDismissReject: () -> Unit,
     onDismissError: () -> Unit,
     modifier: Modifier = Modifier,
+    placedAt: PlacedAtFormatter = rememberPlacedAtFormatter(),
     reasonField: ReasonField = NativeReasonField,
 ) {
     Box(modifier.fillMaxSize()) {
         when {
             state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center).testTag(OrderBoardTags.LOADING))
-            else -> Board(state, onAdvance, onStartReject, onDismissError)
+            else -> Board(state, placedAt, onAdvance, onStartReject, onDismissError)
         }
     }
     if (state.rejecting != null) {
@@ -80,6 +81,7 @@ fun MerchantOrderBoardContent(
 @Composable
 private fun Board(
     state: MerchantOrderBoardUiState,
+    placedAt: PlacedAtFormatter,
     onAdvance: (String) -> Unit,
     onStartReject: (String) -> Unit,
     onDismissError: () -> Unit,
@@ -96,7 +98,7 @@ private fun Board(
         if (state.incoming.isNotEmpty()) {
             item { SectionTitle(R.string.board_incoming_title) }
             items(state.incoming, key = { it.id }) { order ->
-                OrderCard(order) {
+                OrderCard(order, placedAt) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         val idle = order.id !in state.busy
                         Button(onClick = { onAdvance(order.id) }, enabled = idle) { Text(stringResource(R.string.board_accept)) }
@@ -110,7 +112,7 @@ private fun Board(
         if (state.inProgress.isNotEmpty()) {
             item { SectionTitle(R.string.board_in_progress_title) }
             items(state.inProgress, key = { it.id }) { order ->
-                OrderCard(order) { StepAction(order, enabled = order.id !in state.busy, onAdvance) }
+                OrderCard(order, placedAt) { StepAction(order, enabled = order.id !in state.busy, onAdvance) }
             }
         }
     }
@@ -120,10 +122,11 @@ private fun Board(
 private fun SectionTitle(title: Int) = Text(stringResource(title), style = MaterialTheme.typography.titleLarge)
 
 @Composable
-private fun OrderCard(order: Order, actions: @Composable () -> Unit) {
+private fun OrderCard(order: Order, placedAt: PlacedAtFormatter, actions: @Composable () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(order.customerName, style = MaterialTheme.typography.titleMedium)
+            Text(placedAtText(order, placedAt), style = MaterialTheme.typography.labelLarge)
             Text(itemsSummary(order), style = MaterialTheme.typography.bodyMedium)
             Text(
                 stringResource(R.string.board_order_total, stringResource(R.string.price_nio, PriceInput.format(order.totals.total))),

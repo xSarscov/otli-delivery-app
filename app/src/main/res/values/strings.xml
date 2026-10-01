@@ -161,6 +161,9 @@
     <string name="board_incoming_title">New orders</string>
     <string name="board_in_progress_title">In progress</string>
     <string name="board_empty">No orders yet. New orders show up here as soon as customers place them.</string>
+    <string name="order_placed_at">Placed %1$s</string>
+    <string name="order_placed_at_date">Placed %1$s, %2$s</string>
+    <string name="order_placed_just_now">Placed just now</string>
     <string name="board_order_total">Total %1$s</string>
     <string name="board_accept">Accept</string>
     <string name="board_reject">Reject</string>
