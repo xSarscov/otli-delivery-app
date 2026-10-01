@@ -71,8 +71,8 @@ class FirestoreAuthRepository @Inject constructor(
                     "createdAt" to FieldValue.serverTimestamp(),
                 ),
             )
-            if (role == Role.MERCHANT && merchantStore != null) {
-                batch.set(firestore.collection(MERCHANTS).document(user.uid), merchantStore.toDocument(status))
+            RegistrationDocuments.profileDocuments(role, status, merchantStore).forEach { document ->
+                batch.set(firestore.collection(document.collection).document(user.uid), document.data)
             }
             batch.commit().await()
         } catch (failure: Throwable) {
@@ -103,23 +103,11 @@ class FirestoreAuthRepository @Inject constructor(
         )
     }
 
-    private fun MerchantStoreDetails.toDocument(status: AccountStatus) = mapOf(
-        "name" to storeName,
-        "description" to "",
-        "phone" to phone,
-        "status" to status.wire(),
-        "isOpen" to false,
-        "location" to mapOf("lat" to latitude, "lng" to longitude, "reference" to ""),
-        "createdAt" to FieldValue.serverTimestamp(),
-        "updatedAt" to FieldValue.serverTimestamp(),
-    )
-
     private fun Role.wire() = name.lowercase()
 
     private fun AccountStatus.wire() = name.lowercase()
 
     private companion object {
         const val USERS = "users"
-        const val MERCHANTS = "merchants"
     }
 }

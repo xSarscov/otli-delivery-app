@@ -112,6 +112,26 @@ class FirestoreAuthRepositoryTest {
     }
 
     @Test
+    fun courierRegistrationWritesAnOfflineCourierDocumentWithNoActiveOrder() = await {
+        repository.register(uniqueEmail(), PASSWORD, Role.COURIER, profile).getOrThrow()
+        val uid = checkNotNull(auth.currentUser).uid
+
+        val courier = firestore.collection("couriers").document(uid).get().await()
+        assertThat(courier.exists()).isTrue()
+        assertThat(courier.getBoolean("isOnline")).isFalse()
+        assertThat(courier.get("activeOrderId")).isNull()
+        assertThat(courier.getTimestamp("updatedAt")).isNotNull()
+    }
+
+    @Test
+    fun merchantRegistrationWritesNoCourierDocument() = await {
+        repository.register(uniqueEmail(), PASSWORD, Role.MERCHANT, profile, store).getOrThrow()
+        val uid = checkNotNull(auth.currentUser).uid
+
+        assertThat(firestore.collection("couriers").document(uid).get().await().exists()).isFalse()
+    }
+
+    @Test
     fun adminSelfRegistrationIsRejectedAndCreatesNoSession() = await {
         val result = repository.register(uniqueEmail(), PASSWORD, Role.ADMIN, profile)
         assertThat(result.isFailure).isTrue()
