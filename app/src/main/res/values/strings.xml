@@ -191,4 +191,10 @@
     <string name="tracking_cancel">Cancel order</string>
     <string name="tracking_cancel_hint">You can only cancel while the store has not answered yet.</string>
     <string name="tracking_cancel_failed">We could not cancel the order. It may have been answered already; check its status.</string>
+    <string name="my_orders_action">My orders</string>
+    <string name="my_orders_title">My orders</string>
+    <string name="my_orders_active">In progress</string>
+    <string name="my_orders_past">Past orders</string>
+    <string name="my_orders_empty">You have not placed any orders yet.</string>
+    <string name="my_orders_load_failed">We could not load your orders. Check your connection and try again.</string>
 </resources>

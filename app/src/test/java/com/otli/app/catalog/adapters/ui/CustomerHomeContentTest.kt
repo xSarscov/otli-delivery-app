@@ -32,8 +32,11 @@ class CustomerHomeContentTest {
         state: MerchantListUiState = loaded,
         onOpen: (String) -> Unit = {},
         onSignOut: () -> Unit = {},
+        onOpenOrders: () -> Unit = {},
     ) {
-        compose.setContent { CustomerHomeContent(state, onMerchantClick = onOpen, onSignOut = onSignOut) }
+        compose.setContent {
+            CustomerHomeContent(state, onMerchantClick = onOpen, onOpenOrders = onOpenOrders, onSignOut = onSignOut)
+        }
     }
 
     @Test
@@ -42,6 +45,26 @@ class CustomerHomeContentTest {
 
         compose.onNodeWithText(text(R.string.app_name)).assertIsDisplayed()
         compose.onNodeWithText("Comedor Marta").assertIsDisplayed()
+    }
+
+    @Test
+    fun myOrdersIsOneTapAwayInTheAppBar() {
+        var opened = 0
+        show(onOpenOrders = { opened++ })
+
+        compose.onNodeWithText(text(R.string.my_orders_action)).performClick()
+
+        assertThat(opened).isEqualTo(1)
+    }
+
+    @Test
+    fun myOrdersStaysReachableWhileTheListLoads() {
+        var opened = 0
+        show(MerchantListUiState(isLoading = true), onOpenOrders = { opened++ })
+
+        compose.onNodeWithText(text(R.string.my_orders_action)).performClick()
+
+        assertThat(opened).isEqualTo(1)
     }
 
     @Test

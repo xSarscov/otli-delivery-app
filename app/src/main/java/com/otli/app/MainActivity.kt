@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
                         signedOut = { SignedOutScreen() },
                         customerHome = { open ->
                             RequestNotificationPermission()
-                            MerchantListScreen(onMerchantClick = open)
+                            MerchantListScreen(onMerchantClick = open, onOpenOrders = {})
                         },
                         storefront = { _, onBack -> StorefrontScreen(onBack = onBack) },
                         profileIncomplete = { ProfileIncompleteScreen(onRetry = sessionViewModel::retry) },
