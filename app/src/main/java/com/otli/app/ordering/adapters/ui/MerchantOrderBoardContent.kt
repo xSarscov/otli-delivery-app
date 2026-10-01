@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,19 +37,43 @@ object OrderBoardTags {
     const val LOADING = "order-board-loading"
 }
 
+/**
+ * The text input of the rejection dialog. It is a slot because a text field inside a dialog window
+ * never lets Robolectric go idle (the JVM test runs out of memory); the real field is checked on a device.
+ */
+typealias ReasonField = @Composable (value: String, onValueChange: (String) -> Unit, isError: Boolean) -> Unit
+
+val NativeReasonField: ReasonField = { value, onValueChange, isError ->
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(stringResource(R.string.board_reject_reason_label)) },
+        isError = isError,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
 /** Stateless merchant order board: new orders to answer, then the orders already under way. */
 @Composable
 fun MerchantOrderBoardContent(
     state: MerchantOrderBoardUiState,
     onAdvance: (String) -> Unit,
+    onStartReject: (String) -> Unit,
+    onRejectReasonChange: (String) -> Unit,
+    onConfirmReject: () -> Unit,
+    onDismissReject: () -> Unit,
     onDismissError: () -> Unit,
     modifier: Modifier = Modifier,
+    reasonField: ReasonField = NativeReasonField,
 ) {
     Box(modifier.fillMaxSize()) {
         when {
             state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center).testTag(OrderBoardTags.LOADING))
-            else -> Board(state, onAdvance, onDismissError)
+            else -> Board(state, onAdvance, onStartReject, onDismissError)
         }
+    }
+    if (state.rejecting != null) {
+        RejectDialog(state, reasonField, onRejectReasonChange, onConfirmReject, onDismissReject)
     }
 }
 
@@ -54,6 +81,7 @@ fun MerchantOrderBoardContent(
 private fun Board(
     state: MerchantOrderBoardUiState,
     onAdvance: (String) -> Unit,
+    onStartReject: (String) -> Unit,
     onDismissError: () -> Unit,
 ) {
     LazyColumn(
@@ -69,8 +97,12 @@ private fun Board(
             item { SectionTitle(R.string.board_incoming_title) }
             items(state.incoming, key = { it.id }) { order ->
                 OrderCard(order) {
-                    Button(onClick = { onAdvance(order.id) }, enabled = order.id !in state.busy) {
-                        Text(stringResource(R.string.board_accept))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val idle = order.id !in state.busy
+                        Button(onClick = { onAdvance(order.id) }, enabled = idle) { Text(stringResource(R.string.board_accept)) }
+                        OutlinedButton(onClick = { onStartReject(order.id) }, enabled = idle) {
+                            Text(stringResource(R.string.board_reject))
+                        }
                     }
                 }
             }
@@ -126,6 +158,38 @@ private fun ErrorRow(error: OrderBoardError, onDismiss: () -> Unit) {
     }
 }
 
+@Composable
+private fun RejectDialog(
+    state: MerchantOrderBoardUiState,
+    reasonField: ReasonField,
+    onReasonChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.board_reject_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                reasonField(state.rejectReason, onReasonChange, state.rejectReasonMissing)
+                if (state.rejectReasonMissing) {
+                    Text(
+                        stringResource(R.string.board_reject_reason_required),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onConfirm, enabled = state.rejecting !in state.busy) {
+                Text(stringResource(R.string.board_reject_confirm))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+    )
+}
+
 @Preview(showBackground = true, heightDp = 700)
 @Composable
 private fun MerchantOrderBoardPreview() {
@@ -137,7 +201,12 @@ private fun MerchantOrderBoardPreview() {
                 inProgress = listOf(sampleOrder("o2", OrderStatus.ACCEPTED), sampleOrder("o3", OrderStatus.READY)),
             ),
             onAdvance = {},
+            onStartReject = {},
+            onRejectReasonChange = {},
+            onConfirmReject = {},
+            onDismissReject = {},
             onDismissError = {},
+            reasonField = { _, _, _ -> Text("") },
         )
     }
 }

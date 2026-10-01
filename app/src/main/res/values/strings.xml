@@ -163,8 +163,13 @@
     <string name="board_empty">No orders yet. New orders show up here as soon as customers place them.</string>
     <string name="board_order_total">Total %1$s</string>
     <string name="board_accept">Accept</string>
+    <string name="board_reject">Reject</string>
     <string name="board_start_preparing">Start preparing</string>
     <string name="board_mark_ready">Mark ready</string>
     <string name="board_error_load">We could not load the orders. Check your connection.</string>
     <string name="board_error_action">That did not go through. The order may have changed, so check it and try again.</string>
+    <string name="board_reject_title">Reject this order?</string>
+    <string name="board_reject_reason_label">Reason for the customer</string>
+    <string name="board_reject_reason_required">Write a reason so the customer knows why.</string>
+    <string name="board_reject_confirm">Reject order</string>
 </resources>

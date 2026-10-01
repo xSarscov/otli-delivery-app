@@ -1,7 +1,12 @@
 package com.otli.app.ordering.adapters.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -18,6 +23,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+private const val ReasonTag = "reason-field"
+
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w360dp-h2400dp")
 class MerchantOrderBoardContentTest {
@@ -28,6 +35,10 @@ class MerchantOrderBoardContentTest {
 
     private class Events {
         val advanced = mutableListOf<String>()
+        val rejectStarted = mutableListOf<String>()
+        val reasons = mutableListOf<String>()
+        var confirmed = 0
+        var dismissedReject = 0
         var dismissedError = 0
     }
 
@@ -36,7 +47,14 @@ class MerchantOrderBoardContentTest {
             MerchantOrderBoardContent(
                 state = state,
                 onAdvance = { events.advanced += it },
+                onStartReject = { events.rejectStarted += it },
+                onRejectReasonChange = { events.reasons += it },
+                onConfirmReject = { events.confirmed++ },
+                onDismissReject = { events.dismissedReject++ },
                 onDismissError = { events.dismissedError++ },
+                reasonField = { value, onChange, _ ->
+                    Text("reason:$value", Modifier.testTag(ReasonTag).clickable { onChange("Sin gas") })
+                },
             )
         }
         return events
@@ -74,11 +92,14 @@ class MerchantOrderBoardContentTest {
     }
 
     @Test
-    fun acceptReportsTheOrder() {
+    fun acceptAndRejectReportTheOrder() {
         val events = show(loaded(incoming = listOf(anOrder("o1", OrderStatus.PLACED))))
 
         compose.onNodeWithText(text(R.string.board_accept)).performClick()
+        compose.onNodeWithText(text(R.string.board_reject)).performClick()
+
         assertThat(events.advanced).containsExactly("o1")
+        assertThat(events.rejectStarted).containsExactly("o1")
     }
 
     @Test
@@ -86,6 +107,7 @@ class MerchantOrderBoardContentTest {
         show(loaded(incoming = listOf(anOrder("o1", OrderStatus.PLACED))).copy(busy = setOf("o1")))
 
         compose.onNodeWithText(text(R.string.board_accept)).assertIsNotEnabled()
+        compose.onNodeWithText(text(R.string.board_reject)).assertIsNotEnabled()
     }
 
     @Test
@@ -123,6 +145,52 @@ class MerchantOrderBoardContentTest {
         compose.onNodeWithText(text(R.string.order_status_claimed)).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.board_mark_ready)).assertDoesNotExist()
         compose.onNodeWithText(text(R.string.board_start_preparing)).assertDoesNotExist()
+    }
+
+    @Test
+    fun theRejectionDialogAsksForAReasonAndReportsWhatIsTyped() {
+        val events = show(loaded(incoming = listOf(anOrder("o1", OrderStatus.PLACED))).copy(rejecting = "o1"))
+
+        compose.onNodeWithText(text(R.string.board_reject_title)).assertIsDisplayed()
+        compose.onNodeWithTag(ReasonTag).performClick()
+        compose.onNodeWithText(text(R.string.board_reject_confirm)).performClick()
+        compose.onNodeWithText(text(R.string.action_cancel)).performClick()
+
+        assertThat(events.reasons).containsExactly("Sin gas")
+        assertThat(events.confirmed).isEqualTo(1)
+        assertThat(events.dismissedReject).isEqualTo(1)
+    }
+
+    @Test
+    fun theRejectionDialogShowsWhatIsTypedAndExplainsWhyAReasonIsNeeded() {
+        show(loaded(incoming = listOf(anOrder("o1", OrderStatus.PLACED))).copy(rejecting = "o1", rejectReason = "Sin", rejectReasonMissing = true))
+
+        compose.onNodeWithText("reason:Sin").assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.board_reject_reason_required)).assertIsDisplayed()
+    }
+
+    @Test
+    fun theRejectionDialogStaysQuietAboutTheReasonUntilItIsMissing() {
+        show(loaded(incoming = listOf(anOrder("o1", OrderStatus.PLACED))).copy(rejecting = "o1"))
+
+        compose.onNodeWithText(text(R.string.board_reject_title)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.board_reject_reason_required)).assertDoesNotExist()
+    }
+
+    @Test
+    fun noDialogShowsUntilARejectionStarts() {
+        show(loaded(incoming = listOf(anOrder("o1", OrderStatus.PLACED))))
+
+        compose.onNodeWithText(text(R.string.board_reject_title)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.board_reject_reason_required)).assertDoesNotExist()
+    }
+
+    @Test
+    fun theRejectionConfirmButtonIsDisabledWhileTheStepIsInFlight() {
+        show(loaded(incoming = listOf(anOrder("o1", OrderStatus.PLACED))).copy(rejecting = "o1", busy = setOf("o1")))
+
+        compose.onNodeWithText(text(R.string.board_reject_confirm)).assertIsNotEnabled()
+        compose.onNodeWithText(text(R.string.action_cancel)).assertIsEnabled()
     }
 
     @Test
