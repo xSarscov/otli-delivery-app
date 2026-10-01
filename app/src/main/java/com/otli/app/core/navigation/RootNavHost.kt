@@ -50,9 +50,21 @@ fun RootNavHost(
     suspended: @Composable (Role) -> Unit = { role ->
         HomePlaceholder(R.string.suspended_placeholder, RootTags.suspended(role))
     },
-    customerHome: @Composable (onOpenMerchant: (String) -> Unit) -> Unit = { CustomerHomeScreen() },
-    storefront: @Composable (merchantId: String, onBack: () -> Unit) -> Unit = { _, _ ->
+    customerHome: @Composable (onOpenMerchant: (String) -> Unit, onOpenOrders: () -> Unit) -> Unit = { _, _ -> CustomerHomeScreen() },
+    storefront: @Composable (merchantId: String, onBack: () -> Unit, onOpenCart: () -> Unit) -> Unit = { _, _, _ ->
         HomePlaceholder(R.string.home_customer, RootTags.STOREFRONT)
+    },
+    cart: @Composable (onBack: () -> Unit, onCheckout: () -> Unit) -> Unit = { _, _ ->
+        HomePlaceholder(R.string.home_customer, RootTags.CART)
+    },
+    checkout: @Composable (onBack: () -> Unit, onPlaced: (orderId: String) -> Unit) -> Unit = { _, _ ->
+        HomePlaceholder(R.string.home_customer, RootTags.CHECKOUT)
+    },
+    customerOrders: @Composable (onBack: () -> Unit, onOpenOrder: (orderId: String) -> Unit) -> Unit = { _, _ ->
+        HomePlaceholder(R.string.home_customer, RootTags.CUSTOMER_ORDERS)
+    },
+    orderTracking: @Composable (orderId: String, onBack: () -> Unit) -> Unit = { _, _ ->
+        HomePlaceholder(R.string.home_customer, RootTags.ORDER_TRACKING)
     },
     merchantHome: @Composable () -> Unit = { MerchantHomeScreen() },
 ) {
@@ -70,10 +82,24 @@ fun RootNavHost(
 
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(Modifier.fillMaxSize().windowInsetsPadding(windowInsets)) {
-            RootGraph(navController, start, signedOut, profileIncomplete, pending, suspended, customerHome, storefront, merchantHome)
+            RootGraph(
+                navController, start, signedOut, profileIncomplete, pending, suspended,
+                CustomerSlots(customerHome, storefront, cart, checkout, customerOrders, orderTracking),
+                merchantHome,
+            )
         }
     }
 }
+
+/** The customer-graph screens, supplied by the app so this host stays free of feature code. */
+private class CustomerSlots(
+    val home: @Composable (onOpenMerchant: (String) -> Unit, onOpenOrders: () -> Unit) -> Unit,
+    val storefront: @Composable (merchantId: String, onBack: () -> Unit, onOpenCart: () -> Unit) -> Unit,
+    val cart: @Composable (onBack: () -> Unit, onCheckout: () -> Unit) -> Unit,
+    val checkout: @Composable (onBack: () -> Unit, onPlaced: (orderId: String) -> Unit) -> Unit,
+    val orders: @Composable (onBack: () -> Unit, onOpenOrder: (orderId: String) -> Unit) -> Unit,
+    val tracking: @Composable (orderId: String, onBack: () -> Unit) -> Unit,
+)
 
 @Composable
 private fun RootGraph(
@@ -83,8 +109,7 @@ private fun RootGraph(
     profileIncomplete: @Composable () -> Unit,
     pending: @Composable (Role) -> Unit,
     suspended: @Composable (Role) -> Unit,
-    customerHome: @Composable (onOpenMerchant: (String) -> Unit) -> Unit,
-    storefront: @Composable (merchantId: String, onBack: () -> Unit) -> Unit,
+    customer: CustomerSlots,
     merchantHome: @Composable () -> Unit,
 ) {
     NavHost(navController, startDestination = start) {
@@ -97,10 +122,35 @@ private fun RootGraph(
         composable<Gate.Suspended> { entry -> suspended(entry.toRoute<Gate.Suspended>().role) }
         navigation<CustomerGraph>(startDestination = CustomerHome) {
             composable<CustomerHome> {
-                customerHome { merchantId -> navController.navigate(StorefrontRoute(merchantId)) }
+                customer.home(
+                    { merchantId -> navController.navigate(StorefrontRoute(merchantId)) },
+                    { navController.navigate(CustomerOrdersRoute) },
+                )
             }
             composable<StorefrontRoute> { entry ->
-                storefront(entry.toRoute<StorefrontRoute>().merchantId) { navController.popBackStack() }
+                customer.storefront(
+                    entry.toRoute<StorefrontRoute>().merchantId,
+                    { navController.popBackStack() },
+                    { navController.navigate(CartRoute) },
+                )
+            }
+            composable<CartRoute> {
+                customer.cart({ navController.popBackStack() }, { navController.navigate(CheckoutRoute) })
+            }
+            composable<CheckoutRoute> {
+                customer.checkout(
+                    { navController.popBackStack() },
+                    { orderId ->
+                        // The cart is empty now, so back from the tracking goes home, not to the checkout.
+                        navController.navigate(OrderTrackingRoute(orderId)) { popUpTo<CustomerHome>() }
+                    },
+                )
+            }
+            composable<CustomerOrdersRoute> {
+                customer.orders({ navController.popBackStack() }, { orderId -> navController.navigate(OrderTrackingRoute(orderId)) })
+            }
+            composable<OrderTrackingRoute> { entry ->
+                customer.tracking(entry.toRoute<OrderTrackingRoute>().orderId) { navController.popBackStack() }
             }
         }
         navigation<MerchantGraph>(startDestination = MerchantHome) {

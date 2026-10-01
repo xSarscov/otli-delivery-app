@@ -27,6 +27,15 @@ object Gate {
 /** A merchant's storefront; [merchantId] is also the argument key read by the storefront ViewModel. */
 @Serializable data class StorefrontRoute(val merchantId: String)
 
+/** The cart, checkout, the order list and one order's tracking; [orderId] is the argument key read by the tracking ViewModel. */
+@Serializable data object CartRoute
+
+@Serializable data object CheckoutRoute
+
+@Serializable data object CustomerOrdersRoute
+
+@Serializable data class OrderTrackingRoute(val orderId: String)
+
 @Serializable data object MerchantGraph
 
 @Serializable data object MerchantHome
