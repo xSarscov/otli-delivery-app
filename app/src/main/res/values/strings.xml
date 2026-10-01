@@ -123,4 +123,25 @@
     <string name="replace_cart_title">Start a new cart?</string>
     <string name="replace_cart_message">Your cart has items from %1$s. Clear it and add %2$s from %3$s instead?</string>
     <string name="replace_cart_confirm">Clear and add</string>
+    <string name="checkout_title">Checkout</string>
+    <string name="checkout_fee">Delivery fee</string>
+    <string name="checkout_fee_unknown">Not available yet</string>
+    <string name="checkout_total">Total</string>
+    <string name="checkout_location_title">Where should we deliver?</string>
+    <string name="checkout_reference_label">Address reference</string>
+    <string name="checkout_reference_hint">For example: two blocks south of the central park, blue house.</string>
+    <string name="checkout_cash_label">I will pay in cash on delivery</string>
+    <string name="checkout_place">Place order</string>
+    <string name="checkout_error_pin">Drop a pin on the map to show where to deliver.</string>
+    <string name="checkout_error_reference">Write a reference so the courier can find you.</string>
+    <string name="checkout_error_cash">Confirm that you will pay in cash on delivery.</string>
+    <string name="checkout_error_fee_changed">The delivery fee changed to C$ %1$s. Review the new total and place your order again.</string>
+    <string name="checkout_error_fee_unavailable">We could not read the delivery fee. Check your connection and try again.</string>
+    <string name="checkout_error_profile">We could not load your profile. Check your connection and try again.</string>
+    <string name="checkout_error_empty">Your cart is empty.</string>
+    <string name="checkout_error_too_many_items">An order can hold at most %1$d different products. Remove some from your cart.</string>
+    <string name="checkout_error_store_closed">%1$s is closed right now, so the order was not placed.</string>
+    <string name="checkout_error_store_unavailable">%1$s is not available right now.</string>
+    <string name="checkout_error_items_unavailable">These items are no longer available: %1$s. Remove them from your cart to continue.</string>
+    <string name="checkout_error_failed">We could not place the order. Check your connection and try again.</string>
 </resources>
