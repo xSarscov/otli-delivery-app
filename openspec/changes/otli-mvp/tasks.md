@@ -271,15 +271,15 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 3.4 — Cart and checkout UI
 
-- [ ] 3.4.1 Create `ordering/application/OrderRepository.kt` port and `ordering/adapters/firestore/FirestoreOrderRepository.kt` (`place`, `observe`, `observeForCustomer`, `observeForMerchant`, `transition`), plus `ordering/di/OrderingModule.kt`.
+- [x] 3.4.1 (branches 03-4a..03-4c: order read model, `observe`/`observeForCustomer`/`observeForMerchant`/`transition` on the port, `OrderDocuments` mapping and `FirestoreOrderRepository`; `OrderingModule` binds it; the androidTest `FirestoreOrderRepositoryTest` is compile-checked only, its device run is pending) Create `ordering/application/OrderRepository.kt` port and `ordering/adapters/firestore/FirestoreOrderRepository.kt` (`place`, `observe`, `observeForCustomer`, `observeForMerchant`, `transition`), plus `ordering/di/OrderingModule.kt`.
   - Test-first: write `app/src/androidTest/java/com/otli/app/ordering/adapters/firestore/FirestoreOrderRepositoryTest.kt` RED against the emulator (place → observe round trip; transition denied when rules reject it), then implement GREEN.
   - Acceptance: ordering spec — "Real-time visibility of state changes" (adapter half — listener delivers updates).
   - Est. lines: ~190
-- [ ] 3.4.2 Create `ordering/adapters/ui/CartScreen.kt`/`Content`/`ViewModel` (add/remove items, cross-merchant confirm dialog wired to `Cart.AddResult`) and its test.
+- [x] 3.4.2 (branches 03-4d..03-4g: shared in-memory `CartStore`, `CartViewModel`, `CartContent`/`CartScreen` with the replace-cart dialog, `StorefrontWithCart`; navigation wired in 03-5k) Create `ordering/adapters/ui/CartScreen.kt`/`Content`/`ViewModel` (add/remove items, cross-merchant confirm dialog wired to `Cart.AddResult`) and its test.
   - Test-first: write `CartViewModelTest` RED, then implement GREEN.
   - Acceptance: ordering spec — "Customer adds a product from the same merchant", "Customer adds a product from a different merchant" (UI half).
   - Est. lines: ~160
-- [ ] 3.4.3 Create `ordering/adapters/ui/CheckoutScreen.kt`/`Content`/`ViewModel` (MapLibre `AndroidView` pin picker from `tracking/adapters/ui/MapStyle.kt` — created here since checkout is the first map consumer — textual reference field, cash-confirmation checkbox, calls `PlaceOrder`) and its test.
+- [x] 3.4.3 (branches 03-4h..03-4i and 03-5k: `CheckoutForm` validation, `CheckoutViewModel` (fee re-read with second confirmation, places the order, clears the cart on success), `CheckoutContent` with the `MapPinPicker` from `core/map` as a slot, `CheckoutScreen` (03-5k) that hands the placed order id to navigation, which opens the tracking screen with the checkout removed from the back stack; the pin picker lives in `core/map`, not `tracking/adapters/ui/MapStyle.kt`) Create `ordering/adapters/ui/CheckoutScreen.kt`/`Content`/`ViewModel` (MapLibre `AndroidView` pin picker from `tracking/adapters/ui/MapStyle.kt` — created here since checkout is the first map consumer — textual reference field, cash-confirmation checkbox, calls `PlaceOrder`) and its test.
   - Test-first: write `CheckoutViewModelTest` RED (missing pin blocks submission; complete form calls `PlaceOrder` and surfaces its rejection reasons), then implement GREEN.
   - Acceptance: ordering spec — "Customer completes checkout with pin and reference", "Checkout is blocked without a pin".
   - Est. lines: ~220
@@ -288,15 +288,15 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 3.5 — Merchant order board, customer tracking screen, local notifications
 
-- [ ] 3.5.1 Create `core/notification/NotificationPort.kt` (interface) and `ordering/adapters/notification/LocalOrderNotifier.kt` (raises an Android notification when an observed order's status changes, per ADR-12) and a unit test using a fake `Flow<Order>` asserting one notification per distinct status change (no duplicate on unrelated field updates).
+- [x] 3.5.1 (branches 03-5a..03-5c: `NotificationPort`/`OrderNotice`, `LocalOrderNotifier` (baseline list never notifies; one notice per distinct status change; merchants only for new `placed` orders; listener errors end the watch quietly), `AndroidNotificationPort` (channel `orders`, dropped silently when notifications are off), `NotificationPermission` + `RequestNotificationPermission` asked once on the customer and merchant homes, `OrderNotificationCoordinator` started from `OtliApplication` for the signed-in active customer/merchant; local only, no FCM) Create `core/notification/NotificationPort.kt` (interface) and `ordering/adapters/notification/LocalOrderNotifier.kt` (raises an Android notification when an observed order's status changes, per ADR-12) and a unit test using a fake `Flow<Order>` asserting one notification per distinct status change (no duplicate on unrelated field updates).
   - Test-first: write the notifier test RED, then implement GREEN.
   - Acceptance: proposal — "Best-effort push notifications for order status changes"; ADR-12.
   - Est. lines: ~110
-- [ ] 3.5.2 Create `ordering/adapters/ui/MerchantOrderBoardScreen.kt`/`Content`/`ViewModel` (incoming `placed` orders with accept/reject/reason dialog, in-progress orders with preparing→ready actions) and its test.
+- [x] 3.5.2 (branches 03-5d..03-5f: `MerchantOrderBoardViewModel` (live board, accept / start preparing / mark ready through `OrderTransitions.merchantAdvance`, reject needs a trimmed non-blank reason, in-flight guard, `.catch`), `MerchantOrderBoardContent` + reject dialog with the reason field as a slot, `MerchantOrderBoardScreen`, Orders as the first merchant tab) Create `ordering/adapters/ui/MerchantOrderBoardScreen.kt`/`Content`/`ViewModel` (incoming `placed` orders with accept/reject/reason dialog, in-progress orders with preparing→ready actions) and its test.
   - Test-first: write `MerchantOrderBoardViewModelTest` RED, then implement GREEN.
   - Acceptance: ordering spec — "Merchant rejects a placed order with a reason", "Merchant rejects without a reason is refused", "Real-time visibility of state changes" (merchant side).
   - Est. lines: ~180
-- [ ] 3.5.3 Create `ordering/adapters/ui/CustomerOrderTrackingScreen.kt`/`Content`/`ViewModel` (shows current status, cancel button enabled only while `placed`) and its test.
+- [x] 3.5.3 (branches 03-5g..03-5k: `OrderTimeline`, `OrderTrackingViewModel` (cancel enabled iff `placed`), `OrderTrackingContent`/`Screen`, customer order list (`CustomerOrdersViewModel`/`Content`/`Screen`) opened from a My orders action in the customer home, routes `CartRoute`, `CheckoutRoute`, `CustomerOrdersRoute`, `OrderTrackingRoute`; courier statuses appear only as timeline labels) Create `ordering/adapters/ui/CustomerOrderTrackingScreen.kt`/`Content`/`ViewModel` (shows current status, cancel button enabled only while `placed`) and its test.
   - Test-first: write `CustomerOrderTrackingViewModelTest` RED (cancel button `enabled` iff status is `placed`; cancel calls `transition(cancelled)`), then implement GREEN.
   - Acceptance: ordering spec — "Customer cancels only while placed", "Customer cannot cancel once accepted or later", "Real-time visibility of state changes" (customer side).
   - Est. lines: ~150
