@@ -41,7 +41,8 @@ fun anOrder(
 
 /**
  * In-memory orders: [orders] is the live collection every observer reads, like Firestore listeners.
- * A non-null [listenerError] makes every observer fail when collected.
+ * Observers emit in insertion order, like a snapshot that arrives in no particular order: view models
+ * must sort. A non-null [listenerError] makes every observer fail when collected.
  */
 class FakeOrderRepository : OrderRepository {
     data class Transition(val orderId: String, val to: OrderStatus, val actor: Actor, val reason: String?)
@@ -63,10 +64,10 @@ class FakeOrderRepository : OrderRepository {
     override fun observe(orderId: String): Flow<Order?> = live { list -> list.firstOrNull { it.id == orderId } }
 
     override fun observeForCustomer(customerId: String): Flow<List<Order>> =
-        live { list -> list.filter { it.customerId == customerId }.sortedByDescending { it.createdAtMillis } }
+        live { list -> list.filter { it.customerId == customerId } }
 
     override fun observeForMerchant(merchantId: String): Flow<List<Order>> =
-        live { list -> list.filter { it.merchantId == merchantId }.sortedByDescending { it.createdAtMillis } }
+        live { list -> list.filter { it.merchantId == merchantId } }
 
     override suspend fun transition(orderId: String, to: OrderStatus, actor: Actor, reason: String?): Result<Unit> {
         val transition = Transition(orderId, to, actor, reason)

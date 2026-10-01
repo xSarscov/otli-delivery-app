@@ -55,14 +55,36 @@ class MerchantOrderBoardViewModelTest {
     }
 
     @Test
-    fun theOldestWaitingOrderComesFirst() {
+    fun theNewestWaitingOrderComesFirst() {
         orders.orders.value = listOf(
-            anOrder("late", OrderStatus.PLACED, createdAtMillis = 3_000L),
             anOrder("early", OrderStatus.PLACED, createdAtMillis = 1_000L),
+            anOrder("late", OrderStatus.PLACED, createdAtMillis = 3_000L),
             anOrder("middle", OrderStatus.PLACED, createdAtMillis = 2_000L),
         )
 
-        assertThat(viewModel().uiState.value.incoming.map { it.id }).containsExactly("early", "middle", "late").inOrder()
+        assertThat(viewModel().uiState.value.incoming.map { it.id }).containsExactly("late", "middle", "early").inOrder()
+    }
+
+    @Test
+    fun theNewestOrderInProgressComesFirst() {
+        orders.orders.value = listOf(
+            anOrder("old-ready", OrderStatus.READY, createdAtMillis = 1_000L),
+            anOrder("new-accepted", OrderStatus.ACCEPTED, createdAtMillis = 3_000L),
+            anOrder("mid-preparing", OrderStatus.PREPARING, createdAtMillis = 2_000L),
+        )
+
+        assertThat(viewModel().uiState.value.inProgress.map { it.id })
+            .containsExactly("new-accepted", "mid-preparing", "old-ready").inOrder()
+    }
+
+    @Test
+    fun aJustPlacedOrderStillWaitingForItsServerTimestampIsOnTop() {
+        orders.orders.value = listOf(
+            anOrder("settled", OrderStatus.PLACED, createdAtMillis = 3_000L),
+            anOrder("just-placed", OrderStatus.PLACED, createdAtMillis = 0L),
+        )
+
+        assertThat(viewModel().uiState.value.incoming.map { it.id }).containsExactly("just-placed", "settled").inOrder()
     }
 
     @Test

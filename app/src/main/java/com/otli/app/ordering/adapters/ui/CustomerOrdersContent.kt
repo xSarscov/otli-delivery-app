@@ -40,6 +40,7 @@ fun CustomerOrdersContent(
     onOrderClick: (String) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    placedAt: PlacedAtFormatter = rememberPlacedAtFormatter(),
 ) {
     Column(modifier.fillMaxSize()) {
         OtliTopBar(title = stringResource(R.string.my_orders_title), onBack = onBack)
@@ -48,7 +49,7 @@ fun CustomerOrdersContent(
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center).testTag(CustomerOrdersTags.LOADING))
                 state.loadFailed -> Message(R.string.my_orders_load_failed)
                 state.active.isEmpty() && state.past.isEmpty() -> Message(R.string.my_orders_empty)
-                else -> OrderList(state, onOrderClick)
+                else -> OrderList(state, placedAt, onOrderClick)
             }
         }
     }
@@ -62,29 +63,35 @@ private fun Message(message: Int) {
 }
 
 @Composable
-private fun OrderList(state: CustomerOrdersUiState, onOrderClick: (String) -> Unit) {
+private fun OrderList(state: CustomerOrdersUiState, placedAt: PlacedAtFormatter, onOrderClick: (String) -> Unit) {
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        section(R.string.my_orders_active, state.active, onOrderClick)
-        section(R.string.my_orders_past, state.past, onOrderClick)
+        section(R.string.my_orders_active, state.active, placedAt, onOrderClick)
+        section(R.string.my_orders_past, state.past, placedAt, onOrderClick)
     }
 }
 
-private fun androidx.compose.foundation.lazy.LazyListScope.section(title: Int, orders: List<Order>, onOrderClick: (String) -> Unit) {
+private fun androidx.compose.foundation.lazy.LazyListScope.section(
+    title: Int,
+    orders: List<Order>,
+    placedAt: PlacedAtFormatter,
+    onOrderClick: (String) -> Unit,
+) {
     if (orders.isEmpty()) return
     item(key = "title-$title") { Text(stringResource(title), style = MaterialTheme.typography.titleLarge) }
-    items(orders, key = { it.id }) { order -> OrderRow(order) { onOrderClick(order.id) } }
+    items(orders, key = { it.id }) { order -> OrderRow(order, placedAt) { onOrderClick(order.id) } }
 }
 
 @Composable
-private fun OrderRow(order: Order, onClick: () -> Unit) {
+private fun OrderRow(order: Order, placedAt: PlacedAtFormatter, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(order.merchantName, style = MaterialTheme.typography.titleMedium)
             Text(stringResource(OrderStatusLabels.of(order.status)), style = MaterialTheme.typography.bodyLarge)
+            Text(placedAtText(order, placedAt), style = MaterialTheme.typography.bodyMedium)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(itemsSummary(order), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                 Text(stringResource(R.string.price_nio, PriceInput.format(order.totals.total)), style = MaterialTheme.typography.bodyMedium)
