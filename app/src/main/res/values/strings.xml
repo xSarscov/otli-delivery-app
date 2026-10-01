@@ -157,4 +157,14 @@
     <string name="notice_new_order_title">New order</string>
     <string name="notice_new_order_text">%1$s, C$ %2$s</string>
     <string name="notice_rejected_with_reason">The store could not take your order: %1$s</string>
+    <string name="tab_orders">Orders</string>
+    <string name="board_incoming_title">New orders</string>
+    <string name="board_in_progress_title">In progress</string>
+    <string name="board_empty">No orders yet. New orders show up here as soon as customers place them.</string>
+    <string name="board_order_total">Total %1$s</string>
+    <string name="board_accept">Accept</string>
+    <string name="board_start_preparing">Start preparing</string>
+    <string name="board_mark_ready">Mark ready</string>
+    <string name="board_error_load">We could not load the orders. Check your connection.</string>
+    <string name="board_error_action">That did not go through. The order may have changed, so check it and try again.</string>
 </resources>
