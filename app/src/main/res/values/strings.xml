@@ -144,4 +144,17 @@
     <string name="checkout_error_store_unavailable">%1$s is not available right now.</string>
     <string name="checkout_error_items_unavailable">These items are no longer available: %1$s. Remove them from your cart to continue.</string>
     <string name="checkout_error_failed">We could not place the order. Check your connection and try again.</string>
+    <string name="order_status_placed">Waiting for the store to answer</string>
+    <string name="order_status_accepted">The store accepted your order</string>
+    <string name="order_status_preparing">Your order is being prepared</string>
+    <string name="order_status_ready">Your order is ready</string>
+    <string name="order_status_claimed">A courier is on the way to the store</string>
+    <string name="order_status_picked_up">Your order is on its way</string>
+    <string name="order_status_delivered">Delivered</string>
+    <string name="order_status_rejected">The store could not take your order</string>
+    <string name="order_status_cancelled">Cancelled</string>
+    <string name="notice_channel_name">Order updates</string>
+    <string name="notice_new_order_title">New order</string>
+    <string name="notice_new_order_text">%1$s, C$ %2$s</string>
+    <string name="notice_rejected_with_reason">The store could not take your order: %1$s</string>
 </resources>
