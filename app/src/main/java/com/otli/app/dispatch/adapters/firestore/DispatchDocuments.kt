@@ -43,6 +43,7 @@ internal object DispatchDocuments {
             dropoff = order.dropoff,
             totals = order.totals,
             readyAtMillis = (data["readyAt"] as? Timestamp)?.toDate()?.time ?: 0L,
+            createdAtMillis = order.createdAtMillis,
         )
     }
 

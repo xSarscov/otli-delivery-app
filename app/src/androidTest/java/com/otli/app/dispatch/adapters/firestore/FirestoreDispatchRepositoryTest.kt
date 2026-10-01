@@ -6,9 +6,11 @@ import com.google.common.truth.Truth.assertThat
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import com.otli.app.BuildConfig
 import com.otli.app.auth.adapters.firestore.FirestoreAuthRepository
 import com.otli.app.core.di.OtliFirebase
+import com.otli.app.core.firebase.await
 import com.otli.app.core.money.Money
 import com.otli.app.dispatch.domain.ClaimDecision
 import com.otli.app.dispatch.domain.ClaimDenial
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -34,7 +37,13 @@ import org.junit.runner.RunWith
  * `test:android`): the seeded customer, merchant and the two active couriers. The default Firebase
  * instance plays the customer, the merchant and courier 1 in turn; a second [FirebaseApp] stays signed
  * in as courier 2, so the two couriers can race for one order like two phones. Orders cannot be
- * deleted by the rules, so each run leaves its orders behind; each test frees the couriers it used.
+ * deleted by the rules, so each run leaves its orders behind.
+ *
+ * Isolation: every test starts and ends by freeing both couriers ([releaseTheCouriers]), so one test
+ * (or an aborted earlier run) can never leave a courier busy for the next. Both the release and the
+ * assertions on stored state read with [Source.SERVER]: a snapshot listener answers from the local
+ * cache first, and the cache lags behind transactions and the other app's writes, so a cache read
+ * would see a stale slot or order status and skip the cleanup.
  */
 @RunWith(AndroidJUnit4::class)
 class FirestoreDispatchRepositoryTest {
@@ -46,13 +55,14 @@ class FirestoreDispatchRepositoryTest {
     private val dispatch = FirestoreDispatchRepository(firestore)
 
     private val secondAuth: FirebaseAuth
+    private val secondFirestore: FirebaseFirestore
     private val secondDispatch: FirestoreDispatchRepository
 
     init {
         val app = FirebaseApp.getApps(context).firstOrNull { it.name == SECOND_APP }
             ?: FirebaseApp.initializeApp(context, OtliFirebase.app(context).options, SECOND_APP)
         secondAuth = FirebaseAuth.getInstance(app)
-        val secondFirestore = FirebaseFirestore.getInstance(app)
+        secondFirestore = FirebaseFirestore.getInstance(app)
         if (BuildConfig.OTLI_USE_EMULATOR && !emulatorWired) {
             secondAuth.useEmulator(BuildConfig.OTLI_EMULATOR_HOST, OtliFirebase.AUTH_EMULATOR_PORT)
             secondFirestore.useEmulator(BuildConfig.OTLI_EMULATOR_HOST, OtliFirebase.FIRESTORE_EMULATOR_PORT)
@@ -110,28 +120,56 @@ class FirestoreDispatchRepositoryTest {
         secondDispatch.setOnline(COURIER_2, true).getOrThrow()
     }
 
-    private suspend fun status(orderId: String): OrderStatus? = orders.observe(orderId).first { it != null }?.status
+    private fun firestoreOf(courierId: String) = if (courierId == COURIER_2) secondFirestore else firestore
+
+    /** The order's status as the server holds it, readable by the signed-in claimer or any courier while it is ready. */
+    private suspend fun status(orderId: String): OrderStatus? =
+        firestore.collection("orders").document(orderId).get(Source.SERVER).await().getString("status")?.let(OrderStatus::fromWire)
+
+    /** The courier's slot as the server holds it; the signed-in user of that courier's app must be the courier. */
+    private suspend fun slotOf(courierId: String): String? =
+        firestoreOf(courierId).collection("couriers").document(courierId).get(Source.SERVER).await().getString("activeOrderId")
+
+    @Before
+    fun startFromFreeCouriers() = await { releaseTheCouriers(strict = true) }
 
     @After
     fun freeTheCouriers() = runBlocking {
-        runCatching { withTimeout(60_000) { release(auth, dispatch, COURIER_1, COURIER_1_EMAIL) } }
-        runCatching { withTimeout(60_000) { release(secondAuth, secondDispatch, COURIER_2, COURIER_2_EMAIL) } }
+        // Best effort: a failure here must not hide the test's own verdict, and the next @Before retries it.
+        runCatching { withTimeout(60_000) { release(auth, dispatch, COURIER_1, COURIER_1_EMAIL, strict = false) } }
+        runCatching { withTimeout(60_000) { release(secondAuth, secondDispatch, COURIER_2, COURIER_2_EMAIL, strict = false) } }
         auth.signOut()
         Unit
     }
 
-    /** Delivers whatever the courier still holds and goes offline, so the next test starts from the seed state. */
-    private suspend fun release(courierAuth: FirebaseAuth, repo: FirestoreDispatchRepository, courierId: String, email: String) {
+    private suspend fun releaseTheCouriers(strict: Boolean) {
+        release(auth, dispatch, COURIER_1, COURIER_1_EMAIL, strict)
+        release(secondAuth, secondDispatch, COURIER_2, COURIER_2_EMAIL, strict)
+    }
+
+    private fun Result<Unit>.requiredWhen(strict: Boolean) {
+        if (strict) getOrThrow()
+    }
+
+    /**
+     * Delivers whatever the courier still holds and goes offline, so the next test starts from the seed
+     * state. Leftovers of an aborted earlier run are cleaned the same way. A [strict] release fails the
+     * test that is starting instead of letting it fail later for an unrelated reason.
+     */
+    private suspend fun release(courierAuth: FirebaseAuth, repo: FirestoreDispatchRepository, courierId: String, email: String, strict: Boolean) {
         if (courierAuth.currentUser?.uid != courierId) {
             courierAuth.signOut()
             FirestoreAuthRepository(courierAuth, FirebaseFirestore.getInstance(courierAuth.app)).login(email, PASSWORD).getOrThrow()
         }
-        val active = repo.observeCourier(courierId).first()?.activeOrderId
+        val active = slotOf(courierId)
         if (active != null) {
-            repo.markPickedUp(active, courierId)
-            repo.markDelivered(active, courierId)
+            val orderStatus = firestoreOf(courierId).collection("orders").document(active).get(Source.SERVER).await().getString("status")
+            if (orderStatus == OrderStatus.CLAIMED.wire) repo.markPickedUp(active, courierId).requiredWhen(strict)
+            if (orderStatus == OrderStatus.CLAIMED.wire || orderStatus == OrderStatus.PICKED_UP.wire) {
+                repo.markDelivered(active, courierId).requiredWhen(strict)
+            }
         }
-        repo.setOnline(courierId, false)
+        repo.setOnline(courierId, false).requiredWhen(strict)
     }
 
     // --- availability ---
@@ -187,7 +225,7 @@ class FirestoreDispatchRepositoryTest {
         val order = orders.observe(id).first { it?.status == OrderStatus.CLAIMED }!!
         assertThat(order.courierId).isEqualTo(COURIER_1)
         assertThat(dispatch.observeCourier(COURIER_1).first { it?.activeOrderId == id }).isNotNull()
-        assertThat(dispatch.observePool().first().map { it.id }).doesNotContain(id)
+        assertThat(dispatch.observePool().first { list -> list.none { it.id == id } }).isNotNull()
     }
 
     @Test
@@ -206,10 +244,13 @@ class FirestoreDispatchRepositoryTest {
         assertThat(decisions.count { it == ClaimDecision.Denied(ClaimDenial.ALREADY_CLAIMED) }).isEqualTo(1)
         val winner = if (decisions[0] == ClaimDecision.Allowed) COURIER_1 else COURIER_2
         val loser = if (winner == COURIER_1) COURIER_2 else COURIER_1
-        assertThat(orders.observe(id).first { it?.status == OrderStatus.CLAIMED }?.courierId).isEqualTo(winner)
-        assertThat(dispatch.observeCourier(winner).first { it?.activeOrderId == id }).isNotNull()
-        val loserRepository = if (loser == COURIER_1) dispatch else secondDispatch
-        assertThat(loserRepository.observeCourier(loser).first()?.activeOrderId).isNull()
+        // Read through the winner's own client: the loser can no longer read the order, and a courier
+        // can only read its own availability document.
+        val stored = firestoreOf(winner).collection("orders").document(id).get(Source.SERVER).await()
+        assertThat(stored.getString("status")?.let(OrderStatus::fromWire)).isEqualTo(OrderStatus.CLAIMED)
+        assertThat(stored.getString("courierId")).isEqualTo(winner)
+        assertThat(slotOf(winner)).isEqualTo(id)
+        assertThat(slotOf(loser)).isNull()
     }
 
     @Test
@@ -222,7 +263,7 @@ class FirestoreDispatchRepositoryTest {
         val late = secondDispatch.claim(id, COURIER_2)
 
         assertThat(late.getOrNull()).isEqualTo(ClaimDecision.Denied(ClaimDenial.ALREADY_CLAIMED))
-        assertThat(secondDispatch.observeCourier(COURIER_2).first()?.activeOrderId).isNull()
+        assertThat(slotOf(COURIER_2)).isNull()
     }
 
     @Test
@@ -258,13 +299,14 @@ class FirestoreDispatchRepositoryTest {
     fun theClaimingCourierPicksUpAndDeliversAndTheSlotIsFreed() = await {
         val id = readyOrder()
         signInCourier1Online()
-        dispatch.claim(id, COURIER_1).getOrThrow()
+        assertThat(dispatch.claim(id, COURIER_1).getOrThrow()).isEqualTo(ClaimDecision.Allowed)
 
         dispatch.markPickedUp(id, COURIER_1).getOrThrow()
         assertThat(orders.observe(id).first { it?.status == OrderStatus.PICKED_UP }).isNotNull()
         dispatch.markDelivered(id, COURIER_1).getOrThrow()
 
         assertThat(orders.observe(id).first { it?.status == OrderStatus.DELIVERED }).isNotNull()
+        assertThat(slotOf(COURIER_1)).isNull()
         assertThat(dispatch.observeCourier(COURIER_1).first { it?.activeOrderId == null }?.isOnline).isTrue()
     }
 
@@ -272,13 +314,13 @@ class FirestoreDispatchRepositoryTest {
     fun deliveringBeforePickupIsRefusedAndKeepsTheSlot() = await {
         val id = readyOrder()
         signInCourier1Online()
-        dispatch.claim(id, COURIER_1).getOrThrow()
+        assertThat(dispatch.claim(id, COURIER_1).getOrThrow()).isEqualTo(ClaimDecision.Allowed)
 
         val result = dispatch.markDelivered(id, COURIER_1)
 
         assertThat(result.isFailure).isTrue()
         assertThat(status(id)).isEqualTo(OrderStatus.CLAIMED)
-        assertThat(dispatch.observeCourier(COURIER_1).first()?.activeOrderId).isEqualTo(id)
+        assertThat(slotOf(COURIER_1)).isEqualTo(id)
     }
 
     @Test
@@ -286,7 +328,7 @@ class FirestoreDispatchRepositoryTest {
         val id = readyOrder()
         signInCourier1Online()
         secondCourierOnline()
-        dispatch.claim(id, COURIER_1).getOrThrow()
+        assertThat(dispatch.claim(id, COURIER_1).getOrThrow()).isEqualTo(ClaimDecision.Allowed)
 
         val result = secondDispatch.markPickedUp(id, COURIER_2)
 

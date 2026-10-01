@@ -91,7 +91,7 @@ private fun OrderRow(order: Order, placedAt: PlacedAtFormatter, onClick: () -> U
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(order.merchantName, style = MaterialTheme.typography.titleMedium)
             Text(stringResource(OrderStatusLabels.of(order.status)), style = MaterialTheme.typography.bodyLarge)
-            Text(placedAtText(order, placedAt), style = MaterialTheme.typography.bodyMedium)
+            Text(placedAtText(order.createdAtMillis, placedAt), style = MaterialTheme.typography.bodyMedium)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(itemsSummary(order), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                 Text(stringResource(R.string.price_nio, PriceInput.format(order.totals.total)), style = MaterialTheme.typography.bodyMedium)

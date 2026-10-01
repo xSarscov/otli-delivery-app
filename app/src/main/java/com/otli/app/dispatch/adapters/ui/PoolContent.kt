@@ -30,6 +30,9 @@ import com.otli.app.core.money.Money
 import com.otli.app.core.theme.OtliTheme
 import com.otli.app.dispatch.domain.PoolGate
 import com.otli.app.dispatch.domain.PoolOrder
+import com.otli.app.ordering.adapters.ui.PlacedAtFormatter
+import com.otli.app.ordering.adapters.ui.placedAtText
+import com.otli.app.ordering.adapters.ui.rememberPlacedAtFormatter
 import com.otli.app.ordering.domain.OrderLocation
 import com.otli.app.ordering.domain.Totals
 
@@ -64,6 +67,7 @@ fun PoolContent(
     onClaim: (String) -> Unit,
     onDismissMessage: () -> Unit,
     modifier: Modifier = Modifier,
+    placedAt: PlacedAtFormatter = rememberPlacedAtFormatter(),
 ) {
     when {
         state.isLoading -> Box(modifier.fillMaxSize()) {
@@ -84,7 +88,7 @@ fun PoolContent(
                     item { Text(stringResource(R.string.pool_empty), style = MaterialTheme.typography.bodyLarge) }
                 }
                 items(state.orders, key = { it.id }) { order ->
-                    OrderCard(order, claiming = order.id in state.claiming, onClaim = { onClaim(order.id) })
+                    OrderCard(order, placedAt, claiming = order.id in state.claiming, onClaim = { onClaim(order.id) })
                 }
             }
         }
@@ -92,10 +96,11 @@ fun PoolContent(
 }
 
 @Composable
-private fun OrderCard(order: PoolOrder, claiming: Boolean, onClaim: () -> Unit) {
+private fun OrderCard(order: PoolOrder, placedAt: PlacedAtFormatter, claiming: Boolean, onClaim: () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(order.merchantName, style = MaterialTheme.typography.titleMedium)
+            Text(placedAtText(order.createdAtMillis, placedAt), style = MaterialTheme.typography.labelLarge)
             Text(stringResource(R.string.pool_pickup, order.pickup.reference), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.pool_dropoff, order.dropoff.reference), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.pool_fee, price(order.totals.fee)), style = MaterialTheme.typography.labelLarge)
@@ -125,6 +130,7 @@ private val previewOrder = PoolOrder(
     dropoff = OrderLocation(12.27, -86.57, "Casa azul"),
     totals = Totals(subtotal = Money(24000), fee = Money(3000), total = Money(27000)),
     readyAtMillis = 1_000L,
+    createdAtMillis = 500L,
 )
 
 @Preview(showBackground = true, heightDp = 500)

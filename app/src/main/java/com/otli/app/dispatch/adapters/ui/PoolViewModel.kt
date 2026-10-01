@@ -8,6 +8,7 @@ import com.otli.app.dispatch.domain.ClaimDecision
 import com.otli.app.dispatch.domain.ClaimDenial
 import com.otli.app.dispatch.domain.PoolGate
 import com.otli.app.dispatch.domain.PoolOrder
+import com.otli.app.ordering.domain.OrderOrdering
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,7 +31,7 @@ enum class PoolMessage { ALREADY_TAKEN, NOT_READY, BUSY, OFFLINE, NOT_ACTIVE, CL
 data class PoolUiState(
     val isLoading: Boolean = true,
     val gate: PoolGate = PoolGate.OFFLINE,
-    /** The claimable orders, oldest ready first; empty unless the [gate] is open. */
+    /** The claimable orders, newest placed first; empty unless the [gate] is open. */
     val orders: List<PoolOrder> = emptyList(),
     /** Orders with a claim in flight; their buttons are disabled. */
     val claiming: Set<String> = emptySet(),
@@ -67,7 +68,7 @@ class PoolViewModel @Inject constructor(
                 // A rejected listener (e.g. the rules deny reads after sign-out) must never crash the app.
                 .catch { _uiState.update { it.copy(isLoading = false, message = PoolMessage.LOAD_FAILED) } }
                 .collect { (gate, orders) ->
-                    _uiState.update { it.copy(isLoading = false, gate = gate, orders = oldestReadyFirst(orders)) }
+                    _uiState.update { it.copy(isLoading = false, gate = gate, orders = newestFirst(orders)) }
                 }
         }
     }
@@ -100,7 +101,7 @@ class PoolViewModel @Inject constructor(
         }
     }
 
-    /** An order whose ready time is still the pending server timestamp (0) is the newest, so it goes last. */
-    private fun oldestReadyFirst(orders: List<PoolOrder>): List<PoolOrder> =
-        orders.sortedWith(compareBy<PoolOrder> { if (it.readyAtMillis == 0L) Long.MAX_VALUE else it.readyAtMillis }.thenBy { it.id })
+    /** The same newest-placed-first ordering as every other order list (see [OrderOrdering]). */
+    private fun newestFirst(orders: List<PoolOrder>): List<PoolOrder> =
+        OrderOrdering.newestFirst(orders, PoolOrder::createdAtMillis, PoolOrder::id)
 }

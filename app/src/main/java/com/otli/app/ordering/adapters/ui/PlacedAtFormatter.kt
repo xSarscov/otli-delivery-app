@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import com.otli.app.R
-import com.otli.app.ordering.domain.Order
 import com.otli.app.core.time.Clock
 import com.otli.app.core.time.SystemClock
 import java.time.Instant
@@ -39,10 +38,10 @@ class PlacedAtFormatter(
 @Composable
 internal fun rememberPlacedAtFormatter(): PlacedAtFormatter = remember { PlacedAtFormatter() }
 
-/** The "Placed 11:04" line of an order card. */
+/** The "Placed 11:04" line of an order card, from the order's placement time in epoch millis. */
 @Composable
-internal fun placedAtText(order: Order, formatter: PlacedAtFormatter): String {
-    val placed = formatter.format(order.createdAtMillis) ?: return stringResource(R.string.order_placed_just_now)
+internal fun placedAtText(createdAtMillis: Long, formatter: PlacedAtFormatter): String {
+    val placed = formatter.format(createdAtMillis) ?: return stringResource(R.string.order_placed_just_now)
     return if (placed.date == null) {
         stringResource(R.string.order_placed_at, placed.time)
     } else {

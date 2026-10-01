@@ -126,7 +126,7 @@ private fun OrderCard(order: Order, placedAt: PlacedAtFormatter, actions: @Compo
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(order.customerName, style = MaterialTheme.typography.titleMedium)
-            Text(placedAtText(order, placedAt), style = MaterialTheme.typography.labelLarge)
+            Text(placedAtText(order.createdAtMillis, placedAt), style = MaterialTheme.typography.labelLarge)
             Text(itemsSummary(order), style = MaterialTheme.typography.bodyMedium)
             Text(
                 stringResource(R.string.board_order_total, stringResource(R.string.price_nio, PriceInput.format(order.totals.total))),

@@ -15,6 +15,8 @@ data class PoolOrder(
     val dropoff: OrderLocation,
     /** The delivery fee is the courier's pay; the total is the cash to collect. */
     val totals: Totals,
-    /** Epoch millis when the merchant marked the order ready; the pool lists the oldest first. */
+    /** Epoch millis when the merchant marked the order ready. */
     val readyAtMillis: Long,
+    /** Epoch millis when the customer placed the order (zero while the server timestamp is pending); the pool lists the newest first. */
+    val createdAtMillis: Long,
 )
