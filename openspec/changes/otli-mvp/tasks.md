@@ -310,11 +310,11 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 4.1 — Domain
 
-- [ ] 4.1.1 Create `dispatch/domain/ClaimPolicy.kt` (`ClaimDecision` sealed interface: `Allowed`/`Denied(ClaimDenial)`; `ClaimDenial`: `NOT_READY`, `ALREADY_CLAIMED`, `COURIER_BUSY`, `COURIER_OFFLINE`, `COURIER_NOT_ACTIVE`) and `app/src/test/java/com/otli/app/dispatch/domain/ClaimPolicyTest.kt`.
+- [x] 4.1.1 (branch 04-1a: `ClaimPolicy.decide(orderStatus, orderCourierId, CourierState)`, order reasons before courier reasons; 9 tests incl. exhaustive 144-combination single-Allowed check; 10 mutants killed) Create `dispatch/domain/ClaimPolicy.kt` (`ClaimDecision` sealed interface: `Allowed`/`Denied(ClaimDenial)`; `ClaimDenial`: `NOT_READY`, `ALREADY_CLAIMED`, `COURIER_BUSY`, `COURIER_OFFLINE`, `COURIER_NOT_ACTIVE`) and `app/src/test/java/com/otli/app/dispatch/domain/ClaimPolicyTest.kt`.
   - Test-first: write `ClaimPolicyTest` RED (table-driven over every combination of order status/courier assignment/courier online/courier active/courier busy), then implement GREEN.
   - Acceptance: courier-dispatch spec — "A courier with an active order cannot claim another order", "Claiming an order already claimed by someone else fails cleanly" (domain half; rules in PR 4.2 are the real authority per ADR-7).
   - Est. lines: ~150
-- [ ] 4.1.2 Create `dispatch/application/DispatchRepository.kt` port (`observePool`, `claim`, `markPickedUp`, `markDelivered`, `setOnline`).
+- [x] 4.1.2 (branch 04-1a: results are `Result<...>` like the other ports; `claim` returns `Result<ClaimDecision>`; adds `PoolOrder`) Create `dispatch/application/DispatchRepository.kt` port (`observePool`, `claim`, `markPickedUp`, `markDelivered`, `setOnline`).
   - Test-first: N/A (interface).
   - Acceptance: compiles; consumed by PR 4.3.
   - Est. lines: ~40
