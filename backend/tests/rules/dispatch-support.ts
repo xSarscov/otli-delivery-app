@@ -46,6 +46,36 @@ export const claimSlot = (orderId: string | null, overrides: Record<string, unkn
   ...overrides,
 });
 
+/** Seeds courier [uid] serving order [orderId] in [status] (claimed or picked_up): the order names the courier and the slot holds the order. */
+export async function seedServing(admin: Env["admin"], uid: string, orderId: string, status: "claimed" | "picked_up" = "picked_up") {
+  await seedCourier(admin, uid, { isOnline: true, activeOrderId: orderId });
+  await seedReadyOrder(admin, orderId, { status, courierId: uid });
+}
+
+/** The order half of picking the order up. */
+export const pickUpOrder = (overrides: Record<string, unknown> = {}) => ({
+  status: "picked_up",
+  pickedUpAt: serverTime(),
+  updatedAt: serverTime(),
+  ...overrides,
+});
+
+/** The order half of a delivery. */
+export const deliverOrder = (overrides: Record<string, unknown> = {}) => ({
+  status: "delivered",
+  deliveredAt: serverTime(),
+  updatedAt: serverTime(),
+  ...overrides,
+});
+
+/** Delivers [orderId] the way the app does: the order and the freed courier slot in one atomic write. */
+export function deliver(db: Db, uid: string, orderId: string, order: Record<string, unknown> = {}, slot: Record<string, unknown> = {}) {
+  const batch = db.batch();
+  batch.update(db.collection("orders").doc(orderId), deliverOrder(order));
+  batch.update(db.collection("couriers").doc(uid), claimSlot(null, slot));
+  return batch.commit();
+}
+
 /** Claims [orderId] the way the app does, both documents in one atomic write. */
 export function claim(db: Db, uid: string, orderId: string, order: Record<string, unknown> = {}, slot: Record<string, unknown> = {}) {
   const batch = db.batch();

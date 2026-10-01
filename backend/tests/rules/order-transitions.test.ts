@@ -20,9 +20,6 @@ const ACTORS = ["customer", "merchant", "courier", "admin"];
  */
 const IMPLEMENTED_ACTORS = new Set(["customer", "merchant", "courier"]);
 
-/** Courier steps of the contract whose rules a later slice work unit adds: still denied until then. */
-const NOT_YET = new Set(["claimed>picked_up>courier", "picked_up>delivered>courier"]);
-
 const UID: Record<string, string> = { customer: "customer-1", merchant: "merchant-a", courier: "courier-1", admin: "admin-1" };
 const TIMESTAMP_FIELD: Record<string, string> = {
   accepted: "acceptedAt",
@@ -62,16 +59,16 @@ function updateTo(to: string, actor: string, overrides: Record<string, unknown> 
 const orderOf = (uid: string, id: string) => as(uid).collection("orders").doc(id);
 
 /** The contract triples the rules implement so far. */
-const implemented = contract.filter((t) => IMPLEMENTED_ACTORS.has(t.actor) && !NOT_YET.has(`${t.from}>${t.to}>${t.actor}`));
+const implemented = contract.filter((t) => IMPLEMENTED_ACTORS.has(t.actor));
 
-/** Sends [payload] as [actor]. A courier's claim carries the paired write on couriers/{uid}, as the app's transaction does. */
+/** Sends [payload] as [actor]. A courier's claim and delivery carry the paired write on couriers/{uid}, as the app's transaction does. */
 function send(actor: string, id: string, to: string, payload: Record<string, unknown>) {
   const db = as(UID[actor]);
   const ref = db.collection("orders").doc(id);
-  if (actor !== "courier" || to !== "claimed") return ref.update(payload);
+  if (actor !== "courier" || (to !== "claimed" && to !== "delivered")) return ref.update(payload);
   const batch = db.batch();
   batch.update(ref, payload);
-  batch.update(db.collection("couriers").doc(UID.courier), { activeOrderId: id, updatedAt: serverTime() });
+  batch.update(db.collection("couriers").doc(UID.courier), { activeOrderId: to === "claimed" ? id : null, updatedAt: serverTime() });
   return batch.commit();
 }
 
