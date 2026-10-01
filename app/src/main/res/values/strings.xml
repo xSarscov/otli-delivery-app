@@ -200,4 +200,9 @@
     <string name="my_orders_past">Past orders</string>
     <string name="my_orders_empty">You have not placed any orders yet.</string>
     <string name="my_orders_load_failed">We could not load your orders. Check your connection and try again.</string>
+    <string name="availability_online">You are online</string>
+    <string name="availability_offline">You are offline</string>
+    <string name="availability_locked">Finish your delivery to go offline.</string>
+    <string name="availability_error_load">We could not load your availability. Check your connection.</string>
+    <string name="availability_error_update">We could not change your availability. Try again.</string>
 </resources>
