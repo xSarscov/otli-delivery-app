@@ -220,4 +220,16 @@
     <string name="pool_message_not_active">Your account cannot claim orders right now.</string>
     <string name="pool_message_failed">We could not claim the order. Check your connection and try again.</string>
     <string name="pool_message_load">We could not load the orders. Check your connection.</string>
+    <string name="delivery_title">Your delivery</string>
+    <string name="delivery_step_claimed">Go to the store and pick up the order.</string>
+    <string name="delivery_step_picked_up">Take the order to the customer.</string>
+    <string name="delivery_pickup">Pick up at: %1$s</string>
+    <string name="delivery_dropoff">Deliver to: %1$s</string>
+    <string name="delivery_pin">Pin: %1$s</string>
+    <string name="delivery_customer">Customer: %1$s, %2$s</string>
+    <string name="delivery_cash">Cash to collect: %1$s</string>
+    <string name="delivery_pick_up">Picked up</string>
+    <string name="delivery_deliver">Delivered</string>
+    <string name="delivery_error_load">We could not load your delivery. Check your connection.</string>
+    <string name="delivery_error_action">That did not go through. The order may have changed, so check it and try again.</string>
 </resources>
