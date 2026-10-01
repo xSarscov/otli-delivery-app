@@ -31,14 +31,39 @@ class CustomerGraphTest {
         compose.setContent {
             RootNavHost(
                 session = session,
-                customerHome = { open ->
+                customerHome = { open, openOrders ->
                     Column {
                         Text("Marta", Modifier.testTag("list-m1").clickable { open("m1") })
                         Text("Sol", Modifier.testTag("list-m2").clickable { open("m2") })
+                        Text("My orders", Modifier.testTag("my-orders").clickable(onClick = openOrders))
                     }
                 },
-                storefront = { merchantId, onBack ->
-                    Text("storefront-$merchantId", Modifier.testTag("storefront").clickable(onClick = onBack))
+                storefront = { merchantId, onBack, onOpenCart ->
+                    Column {
+                        Text("storefront-$merchantId", Modifier.testTag("storefront").clickable(onClick = onBack))
+                        Text("cart-button", Modifier.testTag("open-cart").clickable(onClick = onOpenCart))
+                    }
+                },
+                cart = { onBack, onCheckout ->
+                    Column {
+                        Text("cart-screen", Modifier.testTag("cart").clickable(onClick = onBack))
+                        Text("checkout-button", Modifier.testTag("open-checkout").clickable(onClick = onCheckout))
+                    }
+                },
+                checkout = { onBack, onPlaced ->
+                    Column {
+                        Text("checkout-screen", Modifier.testTag("checkout").clickable(onClick = onBack))
+                        Text("place", Modifier.testTag("place").clickable { onPlaced("order-7") })
+                    }
+                },
+                customerOrders = { onBack, onOpenOrder ->
+                    Column {
+                        Text("orders-screen", Modifier.testTag("orders").clickable(onClick = onBack))
+                        Text("order-row", Modifier.testTag("order-row").clickable { onOpenOrder("order-3") })
+                    }
+                },
+                orderTracking = { orderId, onBack ->
+                    Text("tracking-$orderId", Modifier.testTag("tracking").clickable(onClick = onBack))
                 },
             )
         }
@@ -125,5 +150,107 @@ class CustomerGraphTest {
 
         compose.onNodeWithTag(RootTags.SIGNED_OUT).assertIsDisplayed()
         compose.onNodeWithTag("storefront").assertDoesNotExist()
+    }
+
+    private fun tap(tag: String) {
+        compose.onNodeWithTag(tag).performClick()
+        compose.waitForIdle()
+    }
+
+    @Test
+    fun theCartOpensFromTheStorefrontAndBackReturnsToIt() {
+        launch()
+        tap("list-m1")
+
+        tap("open-cart")
+        compose.onNodeWithTag("cart").assertIsDisplayed()
+        back()
+
+        compose.onNodeWithText("storefront-m1").assertIsDisplayed()
+        compose.onNodeWithTag("cart").assertDoesNotExist()
+    }
+
+    @Test
+    fun checkoutOpensFromTheCartAndBackReturnsToTheCart() {
+        launch()
+        tap("list-m1")
+        tap("open-cart")
+
+        tap("open-checkout")
+        compose.onNodeWithTag("checkout").assertIsDisplayed()
+        back()
+
+        compose.onNodeWithTag("cart").assertIsDisplayed()
+    }
+
+    @Test
+    fun theUpActionsOfTheCartAndCheckoutReturnOneStep() {
+        launch()
+        tap("list-m1")
+        tap("open-cart")
+        tap("open-checkout")
+
+        tap("checkout")
+        compose.onNodeWithTag("cart").assertIsDisplayed()
+        tap("cart")
+
+        compose.onNodeWithText("storefront-m1").assertIsDisplayed()
+    }
+
+    @Test
+    fun aPlacedOrderOpensItsTrackingAndBackLeavesTheCheckoutBehind() {
+        launch()
+        tap("list-m1")
+        tap("open-cart")
+        tap("open-checkout")
+
+        tap("place")
+        compose.onNodeWithText("tracking-order-7").assertIsDisplayed()
+        back()
+
+        compose.onNodeWithTag("list-m1").assertIsDisplayed()
+        compose.onNodeWithTag("checkout").assertDoesNotExist()
+        compose.onNodeWithTag("cart").assertDoesNotExist()
+    }
+
+    @Test
+    fun myOrdersOpensTheListAndAnOrderOpensItsTracking() {
+        launch()
+
+        tap("my-orders")
+        compose.onNodeWithTag("orders").assertIsDisplayed()
+        tap("order-row")
+
+        compose.onNodeWithText("tracking-order-3").assertIsDisplayed()
+        back()
+        compose.onNodeWithTag("orders").assertIsDisplayed()
+        back()
+        compose.onNodeWithTag("list-m1").assertIsDisplayed()
+    }
+
+    @Test
+    fun theUpActionsOfTheOrderScreensReturnOneStep() {
+        launch()
+        tap("my-orders")
+        tap("order-row")
+
+        tap("tracking")
+        compose.onNodeWithTag("orders").assertIsDisplayed()
+        tap("orders")
+
+        compose.onNodeWithTag("list-m1").assertIsDisplayed()
+    }
+
+    @Test
+    fun signingOutFromTrackingLeavesTheCustomerGraphEntirely() {
+        launch()
+        tap("my-orders")
+        tap("order-row")
+
+        session.value = SessionState.SignedOut
+        compose.waitForIdle()
+
+        compose.onNodeWithTag(RootTags.SIGNED_OUT).assertIsDisplayed()
+        compose.onNodeWithTag("tracking").assertDoesNotExist()
     }
 }
