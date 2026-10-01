@@ -66,6 +66,16 @@ class CartViewModelTest {
     }
 
     @Test
+    fun steppingAProductThatIsNoLongerInTheCartChangesNothing() {
+        viewModel.add(marta, nacatamal)
+
+        viewModel.increase("gone")
+        viewModel.decrease("gone")
+
+        assertThat(state.lines.map { it.productId to it.quantity }).containsExactly("p1" to 1)
+    }
+
+    @Test
     fun decreasingTheLastUnitRemovesTheLineAndAnEmptiedCartHasNoMerchant() {
         viewModel.add(marta, nacatamal)
 

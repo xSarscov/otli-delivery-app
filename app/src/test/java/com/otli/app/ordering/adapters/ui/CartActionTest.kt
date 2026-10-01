@@ -37,6 +37,13 @@ class CartActionTest {
     }
 
     @Test
+    fun aSingleItemAlreadyShowsItsBadge() {
+        compose.setContent { CartAction(itemCount = 1, onClick = {}) }
+
+        compose.onNodeWithText("1").assertIsDisplayed()
+    }
+
+    @Test
     fun aDifferentCountShowsThatCount() {
         compose.setContent { CartAction(itemCount = 12, onClick = {}) }
 
