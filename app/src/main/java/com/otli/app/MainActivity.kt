@@ -17,6 +17,7 @@ import com.otli.app.catalog.adapters.ui.MerchantListScreen
 import com.otli.app.catalog.adapters.ui.PhotoLoader
 import com.otli.app.catalog.adapters.ui.StorefrontScreen
 import com.otli.app.core.navigation.RootNavHost
+import com.otli.app.core.notification.RequestNotificationPermission
 import com.otli.app.core.theme.OtliTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -37,12 +38,18 @@ class MainActivity : ComponentActivity() {
                     RootNavHost(
                         session = sessionViewModel.session,
                         signedOut = { SignedOutScreen() },
-                        customerHome = { open -> MerchantListScreen(onMerchantClick = open) },
+                        customerHome = { open ->
+                            RequestNotificationPermission()
+                            MerchantListScreen(onMerchantClick = open)
+                        },
                         storefront = { _, onBack -> StorefrontScreen(onBack = onBack) },
                         profileIncomplete = { ProfileIncompleteScreen(onRetry = sessionViewModel::retry) },
                         pending = { role -> PendingApprovalScreen(role) },
                         suspended = { role -> SuspendedScreen(role) },
-                        merchantHome = { MerchantHomeTabsScreen() },
+                        merchantHome = {
+                            RequestNotificationPermission()
+                            MerchantHomeTabsScreen()
+                        },
                     )
                 }
             }
