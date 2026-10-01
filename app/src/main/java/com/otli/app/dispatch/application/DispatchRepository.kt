@@ -1,6 +1,7 @@
 package com.otli.app.dispatch.application
 
 import com.otli.app.dispatch.domain.ClaimDecision
+import com.otli.app.dispatch.domain.CourierAvailability
 import com.otli.app.dispatch.domain.PoolOrder
 import kotlinx.coroutines.flow.Flow
 
@@ -12,6 +13,12 @@ import kotlinx.coroutines.flow.Flow
 interface DispatchRepository {
     /** The `ready`, unclaimed orders, oldest first. Orders claimed by someone else leave the list. */
     fun observePool(): Flow<List<PoolOrder>>
+
+    /**
+     * The courier's availability and active order, live; null while `couriers/{courierId}` does not
+     * exist. A failing listener ends the flow with an error.
+     */
+    fun observeCourier(courierId: String): Flow<CourierAvailability?>
 
     /**
      * Claims [orderId] for [courierId] in one transaction that writes the order and the courier's
