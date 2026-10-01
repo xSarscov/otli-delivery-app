@@ -172,4 +172,23 @@
     <string name="board_reject_reason_label">Reason for the customer</string>
     <string name="board_reject_reason_required">Write a reason so the customer knows why.</string>
     <string name="board_reject_confirm">Reject order</string>
+    <string name="tracking_title">Your order</string>
+    <string name="tracking_not_found">We could not find this order.</string>
+    <string name="tracking_load_failed">We could not load this order. Check your connection and try again.</string>
+    <string name="tracking_step_placed">Order placed</string>
+    <string name="tracking_step_accepted">Accepted by the store</string>
+    <string name="tracking_step_preparing">Being prepared</string>
+    <string name="tracking_step_ready">Ready for pickup</string>
+    <string name="tracking_step_claimed">Courier assigned</string>
+    <string name="tracking_step_picked_up">On the way to you</string>
+    <string name="tracking_step_delivered">Delivered</string>
+    <string name="tracking_step_rejected">Rejected by the store</string>
+    <string name="tracking_step_cancelled">Cancelled by you</string>
+    <string name="tracking_step_done">Done</string>
+    <string name="tracking_step_current">Current step</string>
+    <string name="tracking_step_upcoming">Coming up</string>
+    <string name="tracking_reject_reason">Reason from the store: %1$s</string>
+    <string name="tracking_cancel">Cancel order</string>
+    <string name="tracking_cancel_hint">You can only cancel while the store has not answered yet.</string>
+    <string name="tracking_cancel_failed">We could not cancel the order. It may have been answered already; check its status.</string>
 </resources>
