@@ -30,6 +30,10 @@ data class MerchantOrderBoardUiState(
     val incoming: List<Order> = emptyList(),
     /** Accepted orders up to the ones already with a courier, oldest first. */
     val inProgress: List<Order> = emptyList(),
+    /** The order whose rejection dialog is open. */
+    val rejecting: String? = null,
+    val rejectReason: String = "",
+    val rejectReasonMissing: Boolean = false,
     /** Orders with a step in flight; their buttons are disabled. */
     val busy: Set<String> = emptySet(),
     val error: OrderBoardError? = null,
@@ -65,19 +69,40 @@ class MerchantOrderBoardViewModel @Inject constructor(
     fun advance(orderId: String) {
         val order = find(orderId) ?: return
         val next = OrderTransitions.merchantAdvance(order.status) ?: return
-        send(orderId, next)
+        send(orderId, next, reason = null)
+    }
+
+    fun startReject(orderId: String) {
+        if (find(orderId)?.status != OrderStatus.PLACED) return
+        _uiState.update { it.copy(rejecting = orderId, rejectReason = "", rejectReasonMissing = false) }
+    }
+
+    fun setRejectReason(reason: String) = _uiState.update { it.copy(rejectReason = reason, rejectReasonMissing = false) }
+
+    fun dismissReject() = _uiState.update { it.copy(rejecting = null, rejectReason = "", rejectReasonMissing = false) }
+
+    fun confirmReject() {
+        val state = _uiState.value
+        val orderId = state.rejecting ?: return
+        val reason = state.rejectReason.trim()
+        if (reason.isEmpty()) {
+            _uiState.update { it.copy(rejectReasonMissing = true) }
+            return
+        }
+        send(orderId, OrderStatus.REJECTED, reason) { dismissReject() }
     }
 
     fun dismissError() = _uiState.update { it.copy(error = null) }
 
-    private fun send(orderId: String, to: OrderStatus) {
+    private fun send(orderId: String, to: OrderStatus, reason: String?, onSent: () -> Unit = {}) {
         if (orderId in _uiState.value.busy) return
         _uiState.update { it.copy(busy = it.busy + orderId, error = null) }
         viewModelScope.launch {
-            val result = orders.transition(orderId, to, Actor.MERCHANT)
+            val result = orders.transition(orderId, to, Actor.MERCHANT, reason)
             _uiState.update {
                 it.copy(busy = it.busy - orderId, error = if (result.isFailure) OrderBoardError.ACTION_FAILED else it.error)
             }
+            if (result.isSuccess) onSent()
         }
     }
 
@@ -87,10 +112,14 @@ class MerchantOrderBoardViewModel @Inject constructor(
     private fun show(state: MerchantOrderBoardUiState, list: List<Order>): MerchantOrderBoardUiState {
         val oldestFirst = list.sortedBy { it.createdAtMillis }
         val incoming = oldestFirst.filter { it.status == OrderStatus.PLACED }
+        val stillWaiting = state.rejecting != null && incoming.any { it.id == state.rejecting }
         return state.copy(
             isLoading = false,
             incoming = incoming,
             inProgress = oldestFirst.filter { it.status in IN_PROGRESS },
+            rejecting = state.rejecting.takeIf { stillWaiting },
+            rejectReason = if (stillWaiting) state.rejectReason else "",
+            rejectReasonMissing = stillWaiting && state.rejectReasonMissing,
         )
     }
 
