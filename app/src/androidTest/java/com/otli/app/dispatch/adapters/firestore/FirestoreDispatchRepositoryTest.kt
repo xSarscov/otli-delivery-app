@@ -244,8 +244,12 @@ class FirestoreDispatchRepositoryTest {
         assertThat(decisions.count { it == ClaimDecision.Denied(ClaimDenial.ALREADY_CLAIMED) }).isEqualTo(1)
         val winner = if (decisions[0] == ClaimDecision.Allowed) COURIER_1 else COURIER_2
         val loser = if (winner == COURIER_1) COURIER_2 else COURIER_1
-        assertThat(orders.observe(id).first { it?.status == OrderStatus.CLAIMED }?.courierId).isEqualTo(winner)
-        assertThat(dispatch.observeCourier(winner).first { it?.activeOrderId == id }).isNotNull()
+        // Read through the winner's own client: the loser can no longer read the order, and a courier
+        // can only read its own availability document.
+        val stored = firestoreOf(winner).collection("orders").document(id).get(Source.SERVER).await()
+        assertThat(stored.getString("status")?.let(OrderStatus::fromWire)).isEqualTo(OrderStatus.CLAIMED)
+        assertThat(stored.getString("courierId")).isEqualTo(winner)
+        assertThat(slotOf(winner)).isEqualTo(id)
         assertThat(slotOf(loser)).isNull()
     }
 
