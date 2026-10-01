@@ -258,8 +258,25 @@ service cloud.firestore {
           && get(c).data.activeOrderId == null
           && getAfter(c).data.activeOrderId == orderId;
       }
-      // Pick-up, deliver and the Admin release/cancel are implemented in later work units and Slice 6.
-      function courierStep() { return claim(); }
+      function pickUp() {
+        return isActiveCourier() && moves('claimed', 'picked_up')
+          && resource.data.courierId == request.auth.uid
+          && changed().hasOnly(['status', 'pickedUpAt', 'updatedAt'])
+          && stamped('pickedUpAt');
+      }
+      // Delivering frees the courier's slot in the same write; the slot must hold this very order beforehand,
+      // so the order cannot be delivered without clearing it (ADR-7 release path).
+      function deliver() {
+        let c = courierPath(request.auth.uid);
+        return isActiveCourier() && moves('picked_up', 'delivered')
+          && resource.data.courierId == request.auth.uid
+          && changed().hasOnly(['status', 'deliveredAt', 'updatedAt'])
+          && stamped('deliveredAt')
+          && get(c).data.activeOrderId == orderId
+          && getAfter(c).data.activeOrderId == null;
+      }
+      // The Admin release/cancel are implemented in Slice 6.
+      function courierStep() { return claim() || pickUp() || deliver(); }
       function adminStep() { return false; }
 
       // The pool is every ready order for any active courier; the dropoff and customer contact are readable
@@ -315,9 +332,20 @@ service cloud.firestore {
           && getAfter(orderPath(id)).data.courierId == uid;
       }
 
+      // The slot is freed with the order's delivery: the courier's write requires the order to be delivered after it.
+      function pairedDeliver() {
+        let id = resource.data.activeOrderId;
+        return isSelf() && isActiveCourier()
+          && id is string
+          && request.resource.data.activeOrderId == null
+          && changed().hasOnly(['activeOrderId', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time
+          && getAfter(orderPath(id)).data.status == 'delivered';
+      }
+
       allow read: if isSelf() || isActiveAdmin();
       allow create: if validCourierCreate();
-      allow update: if availability() || pairedClaim();
+      allow update: if availability() || pairedClaim() || pairedDeliver();
       allow delete: if false;
     }
 
