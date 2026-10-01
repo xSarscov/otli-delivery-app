@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 
 fun anOrder(
     id: String = "o1",
@@ -22,6 +23,7 @@ fun anOrder(
     merchantName: String = "Comedor Marta",
     createdAtMillis: Long = 1_000L,
     rejectReason: String? = null,
+    courierId: String? = null,
 ) = Order(
     id = id,
     customerId = customerId,
@@ -34,7 +36,7 @@ fun anOrder(
     items = listOf(OrderItem("p1", "Nacatamal", Money(12000), 2), OrderItem("p2", "Fresco", Money(2500), 1)),
     totals = Totals(subtotal = Money(26500), fee = Money(3000), total = Money(29500)),
     status = status,
-    courierId = null,
+    courierId = courierId,
     rejectReason = rejectReason,
     createdAtMillis = createdAtMillis,
 )
@@ -61,7 +63,12 @@ class FakeOrderRepository : OrderRepository {
         return outcome(draft)
     }
 
-    override fun observe(orderId: String): Flow<Order?> = live { list -> list.firstOrNull { it.id == orderId } }
+    /** How many times [observe] listeners were started. */
+    var observeStarts = 0
+        private set
+
+    override fun observe(orderId: String): Flow<Order?> =
+        live { list -> list.firstOrNull { it.id == orderId } }.onStart { observeStarts++ }
 
     override fun observeForCustomer(customerId: String): Flow<List<Order>> =
         live { list -> list.filter { it.customerId == customerId } }
