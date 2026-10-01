@@ -205,4 +205,19 @@
     <string name="availability_locked">Finish your delivery to go offline.</string>
     <string name="availability_error_load">We could not load your availability. Check your connection.</string>
     <string name="availability_error_update">We could not change your availability. Try again.</string>
+    <string name="pool_title">Orders waiting for a courier</string>
+    <string name="pool_offline">Go online to see the orders waiting for a courier.</string>
+    <string name="pool_empty">No orders are waiting right now. New ones appear here as soon as a store marks them ready.</string>
+    <string name="pool_pickup">Pick up at: %1$s</string>
+    <string name="pool_dropoff">Deliver to: %1$s</string>
+    <string name="pool_fee">You earn %1$s</string>
+    <string name="pool_cash">Cash to collect: %1$s</string>
+    <string name="pool_claim">Claim</string>
+    <string name="pool_message_taken">That order was already taken by another courier.</string>
+    <string name="pool_message_not_ready">That order is no longer available.</string>
+    <string name="pool_message_busy">Finish your current delivery before claiming another order.</string>
+    <string name="pool_message_offline">Go online to claim orders.</string>
+    <string name="pool_message_not_active">Your account cannot claim orders right now.</string>
+    <string name="pool_message_failed">We could not claim the order. Check your connection and try again.</string>
+    <string name="pool_message_load">We could not load the orders. Check your connection.</string>
 </resources>
