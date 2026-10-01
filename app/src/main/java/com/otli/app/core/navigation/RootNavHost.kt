@@ -67,6 +67,7 @@ fun RootNavHost(
         HomePlaceholder(R.string.home_customer, RootTags.ORDER_TRACKING)
     },
     merchantHome: @Composable () -> Unit = { MerchantHomeScreen() },
+    courierHome: @Composable () -> Unit = { CourierHomeScreen() },
 ) {
     val state by session.collectAsStateWithLifecycle()
     val navController = rememberNavController()
@@ -86,6 +87,7 @@ fun RootNavHost(
                 navController, start, signedOut, profileIncomplete, pending, suspended,
                 CustomerSlots(customerHome, storefront, cart, checkout, customerOrders, orderTracking),
                 merchantHome,
+                courierHome,
             )
         }
     }
@@ -111,6 +113,7 @@ private fun RootGraph(
     suspended: @Composable (Role) -> Unit,
     customer: CustomerSlots,
     merchantHome: @Composable () -> Unit,
+    courierHome: @Composable () -> Unit,
 ) {
     NavHost(navController, startDestination = start) {
         composable<LoadingRoute> { LoadingScreen() }
@@ -157,7 +160,7 @@ private fun RootGraph(
             composable<MerchantHome> { merchantHome() }
         }
         navigation<CourierGraph>(startDestination = CourierHome) {
-            composable<CourierHome> { CourierHomeScreen() }
+            composable<CourierHome> { courierHome() }
         }
         navigation<AdminGraph>(startDestination = AdminHome) {
             composable<AdminHome> { AdminHomeScreen() }

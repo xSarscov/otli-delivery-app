@@ -166,4 +166,34 @@ class RootNavHostRoutingTest {
         compose.onNodeWithTag(RootTags.home(Role.CUSTOMER)).assertIsDisplayed()
         compose.onNodeWithTag("merchant-home-slot").assertDoesNotExist()
     }
+
+    @Test
+    fun anActiveCourierSeesTheProvidedCourierHomeAndNotThePlaceholder() {
+        session.value = SessionState.Active(Role.COURIER)
+        compose.setContent {
+            RootNavHost(
+                session = session,
+                courierHome = { Text("real courier home", modifier = Modifier.testTag("courier-home-slot")) },
+            )
+        }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag("courier-home-slot").assertIsDisplayed()
+        compose.onNodeWithTag(RootTags.home(Role.COURIER)).assertDoesNotExist()
+    }
+
+    @Test
+    fun otherRolesKeepTheirOwnHomeEvenWhenACourierHomeIsProvided() {
+        session.value = SessionState.Active(Role.MERCHANT)
+        compose.setContent {
+            RootNavHost(
+                session = session,
+                courierHome = { Text("real courier home", modifier = Modifier.testTag("courier-home-slot")) },
+            )
+        }
+        compose.waitForIdle()
+
+        compose.onNodeWithTag(RootTags.home(Role.MERCHANT)).assertIsDisplayed()
+        compose.onNodeWithTag("courier-home-slot").assertDoesNotExist()
+    }
 }

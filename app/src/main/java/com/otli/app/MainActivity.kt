@@ -18,6 +18,7 @@ import com.otli.app.catalog.adapters.ui.PhotoLoader
 import com.otli.app.core.navigation.RootNavHost
 import com.otli.app.core.notification.RequestNotificationPermission
 import com.otli.app.core.theme.OtliTheme
+import com.otli.app.dispatch.adapters.ui.CourierDashboardScreen
 import com.otli.app.ordering.adapters.ui.CartScreen
 import com.otli.app.ordering.adapters.ui.CheckoutScreen
 import com.otli.app.ordering.adapters.ui.CustomerOrdersScreen
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
                             RequestNotificationPermission()
                             MerchantHomeTabsScreen(orders = { MerchantOrderBoardScreen() })
                         },
+                        courierHome = { CourierDashboardScreen() },
                     )
                 }
             }
