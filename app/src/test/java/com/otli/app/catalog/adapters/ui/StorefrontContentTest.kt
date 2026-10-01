@@ -1,6 +1,9 @@
 package com.otli.app.catalog.adapters.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -46,8 +49,25 @@ class StorefrontContentTest {
     private fun item(product: Product, storeOpen: Boolean) =
         StorefrontItem(product, canAddToCart = storeOpen && product.isAvailable)
 
-    private fun show(state: StorefrontUiState, onAdd: (Product) -> Unit = {}, onBack: () -> Unit = {}) {
-        compose.setContent { StorefrontContent(state = state, onAddToCart = onAdd, onBack = onBack) }
+    private fun show(
+        state: StorefrontUiState,
+        onAdd: (Product) -> Unit = {},
+        onBack: () -> Unit = {},
+        actions: @Composable RowScope.() -> Unit = {},
+    ) {
+        compose.setContent { StorefrontContent(state = state, onAddToCart = onAdd, onBack = onBack, actions = actions) }
+    }
+
+    @Test
+    fun extraTopBarActionsAreShownForALoadedStoreAndWhileLoading() {
+        show(stateOf(open = true), actions = { Text("cart-action") })
+        compose.onNodeWithText("cart-action").assertIsDisplayed()
+    }
+
+    @Test
+    fun extraTopBarActionsStayAvailableWhileLoading() {
+        show(StorefrontUiState(isLoading = true), actions = { Text("cart-action") })
+        compose.onNodeWithText("cart-action").assertIsDisplayed()
     }
 
     @Test

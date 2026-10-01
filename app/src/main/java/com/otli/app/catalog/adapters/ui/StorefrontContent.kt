@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,11 +58,12 @@ fun StorefrontContent(
     onAddToCart: (Product) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {},
 ) {
     val merchant = state.merchant
     Column(modifier.fillMaxSize()) {
         // The bar is always there, so the user can leave while loading or after an error.
-        OtliTopBar(title = merchant?.name.orEmpty(), onBack = onBack)
+        OtliTopBar(title = merchant?.name.orEmpty(), onBack = onBack, actions = actions)
         when {
             state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(Modifier.testTag(StorefrontTags.LOADING))
