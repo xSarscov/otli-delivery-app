@@ -341,7 +341,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 4.3 — Firestore dispatch adapter
 
-- [ ] 4.3.1 Create `dispatch/adapters/firestore/FirestoreDispatchRepository.kt` implementing `DispatchRepository`: `claim` runs a `runTransaction` writing both `orders/{orderId}` and `couriers/{uid}` per ADR-7; `markDelivered` is the paired release transaction; `observePool` queries `status=='ready'` ordered by `readyAt`; `setOnline` is a plain document update. Add `dispatch/di/DispatchModule.kt`.
+- [x] 4.3.1 (branches 04-3a-dispatch-documents: pure `DispatchDocuments` + `CourierAvailability` + `observeCourier` on the port, 21 mutants killed; 04-3b-dispatch-repository: `FirestoreDispatchRepository` + `DispatchModule` + `FirestoreDispatchRepositoryTest` (13 instrumented tests incl. two couriers from two `FirebaseApp` instances racing the same order, compile-checked only, device run pending); the loser's denied read maps to `Denied(ALREADY_CLAIMED)`; 04-3c-courier-registration: `couriers/{uid}` written in the users batch through the pure `RegistrationDocuments`, 12 mutants killed; `markPickedUp` is a plain update, `markDelivered` a paired transaction) Create `dispatch/adapters/firestore/FirestoreDispatchRepository.kt` implementing `DispatchRepository`: `claim` runs a `runTransaction` writing both `orders/{orderId}` and `couriers/{uid}` per ADR-7; `markDelivered` is the paired release transaction; `observePool` queries `status=='ready'` ordered by `readyAt`; `setOnline` is a plain document update. Add `dispatch/di/DispatchModule.kt`.
   - Test-first: write `app/src/androidTest/java/com/otli/app/dispatch/adapters/firestore/FirestoreDispatchRepositoryTest.kt` RED (two `FirebaseApp` instances signed in as different couriers racing `claim` on the same order against the emulator — exactly one succeeds, per `design.md`'s Integration testing row), then implement GREEN.
   - Acceptance: courier-dispatch spec — "Two couriers claim the same order concurrently — exactly one wins" (client-transaction half, complementing PR 4.2b's pure-rules proof).
   - Est. lines: ~230
@@ -350,15 +350,15 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 4.4 — Dispatch UI
 
-- [ ] 4.4.1 Create `dispatch/adapters/ui/AvailabilityToggleScreen.kt`/`Content`/`ViewModel` (online/offline switch) and its test.
+- [x] 4.4.1 (branches 04-4a1-availability-viewmodel, 04-4a2-availability-content: named `AvailabilityViewModel`/`AvailabilityContent`/`AvailabilityScreen`; 23 mutants killed) Create `dispatch/adapters/ui/AvailabilityToggleScreen.kt`/`Content`/`ViewModel` (online/offline switch) and its test.
   - Test-first: write the ViewModel test RED, then implement GREEN.
   - Acceptance: courier-dispatch spec — "Offline courier cannot see the pool", "Courier goes online and sees the pool" (UI half).
   - Est. lines: ~110
-- [ ] 4.4.2 Create `dispatch/adapters/ui/PoolScreen.kt`/`Content`/`ViewModel` (lists `ready` orders when online and not busy, hides entirely when the courier has an active order, claim button surfaces `ClaimDenial` as a user message) and its test.
+- [x] 4.4.2 (branches 04-4b1-pool-gate, 04-4b2-pool-viewmodel, 04-4c-pool-content: `PoolGate` hides the pool entirely while busy, the pool listener only runs while online and free; claim denials map to messages; 42 mutants killed; one survivor was a redundant guard and was removed) Create `dispatch/adapters/ui/PoolScreen.kt`/`Content`/`ViewModel` (lists `ready` orders when online and not busy, hides entirely when the courier has an active order, claim button surfaces `ClaimDenial` as a user message) and its test.
   - Test-first: write `PoolViewModelTest` RED (pool hidden while `activeOrderId != null`; pool reappears after a fake delivered event; claim failure shows the right denial message), then implement GREEN.
   - Acceptance: courier-dispatch spec — "Courier with an active order does not see the pool", "Courier's pool reappears after completing delivery", "Two couriers claim the same order concurrently" (losing courier sees it disappear).
   - Est. lines: ~200
-- [ ] 4.4.3 Create `dispatch/adapters/ui/ActiveDeliveryScreen.kt`/`Content`/`ViewModel` (pickup/deliver action buttons enabled by current status) and its test.
+- [x] 4.4.3 (branches 04-4d1-active-delivery-viewmodel, 04-4d2-active-delivery-content, 04-4e-courier-home: courier home with `OtliTopBar` + sign-out in `CourierGraph` through a new `courierHome` slot of `RootNavHost`; customer tracking confirmed for claimed/picked_up/delivered) Create `dispatch/adapters/ui/ActiveDeliveryScreen.kt`/`Content`/`ViewModel` (pickup/deliver action buttons enabled by current status) and its test.
   - Test-first: write `ActiveDeliveryViewModelTest` RED (picked-up button only enabled from `claimed`; delivered button only enabled from `picked_up`), then implement GREEN.
   - Acceptance: courier-dispatch spec — "Claiming courier marks the order picked up", "Claiming courier marks the order delivered", "Cannot mark delivered before pickup" (UI half).
   - Est. lines: ~140
