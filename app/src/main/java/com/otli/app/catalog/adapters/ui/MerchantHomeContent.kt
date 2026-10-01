@@ -19,14 +19,15 @@ import com.otli.app.auth.adapters.ui.GateViewModel
 import com.otli.app.auth.adapters.ui.SignOutMenuContent
 import com.otli.app.core.ui.OtliTopBar
 
-enum class MerchantTab { CATALOG, PROFILE }
+enum class MerchantTab { ORDERS, CATALOG, PROFILE }
 
-/** Stateless merchant home: two tabs, each hosting one of the screens passed in as a slot. */
+/** Stateless merchant home: three tabs, each hosting one of the screens passed in as a slot. */
 @Composable
 fun MerchantHomeContent(
     selected: MerchantTab,
     onSelect: (MerchantTab) -> Unit,
     onSignOut: () -> Unit,
+    orders: @Composable () -> Unit,
     catalog: @Composable () -> Unit,
     profile: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -37,6 +38,11 @@ fun MerchantHomeContent(
             actions = { SignOutMenuContent(onSignOut) },
         )
         TabRow(selectedTabIndex = selected.ordinal) {
+            Tab(
+                selected = selected == MerchantTab.ORDERS,
+                onClick = { onSelect(MerchantTab.ORDERS) },
+                text = { Text(stringResource(R.string.tab_orders)) },
+            )
             Tab(
                 selected = selected == MerchantTab.CATALOG,
                 onClick = { onSelect(MerchantTab.CATALOG) },
@@ -50,6 +56,7 @@ fun MerchantHomeContent(
         }
         Box(Modifier.weight(1f)) {
             when (selected) {
+                MerchantTab.ORDERS -> orders()
                 MerchantTab.CATALOG -> catalog()
                 MerchantTab.PROFILE -> profile()
             }
@@ -57,14 +64,19 @@ fun MerchantHomeContent(
     }
 }
 
-/** Container: keeps the selected tab across configuration changes and hosts the two Hilt screens. */
+/** Container: keeps the selected tab across configuration changes (the order board comes first) and hosts the Hilt screens. */
 @Composable
-fun MerchantHomeTabsScreen(modifier: Modifier = Modifier, session: GateViewModel = hiltViewModel()) {
-    var selected by rememberSaveable { mutableStateOf(MerchantTab.CATALOG) }
+fun MerchantHomeTabsScreen(
+    orders: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    session: GateViewModel = hiltViewModel(),
+) {
+    var selected by rememberSaveable { mutableStateOf(MerchantTab.ORDERS) }
     MerchantHomeContent(
         selected = selected,
         onSelect = { selected = it },
         onSignOut = session::logout,
+        orders = orders,
         catalog = { MerchantCatalogScreen() },
         profile = { MerchantProfileScreen() },
         modifier = modifier,

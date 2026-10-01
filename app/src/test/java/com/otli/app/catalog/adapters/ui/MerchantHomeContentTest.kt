@@ -7,6 +7,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -44,6 +48,7 @@ class MerchantHomeContentTest {
                     onSelected(it)
                 },
                 onSignOut = onSignOut,
+                orders = { Text("orders-slot") },
                 catalog = { Text("catalog-slot") },
                 profile = { Text("profile-slot") },
             )
@@ -90,6 +95,36 @@ class MerchantHomeContentTest {
         compose.onNodeWithText("profile-slot").assertIsDisplayed()
         compose.onNodeWithText("catalog-slot").assertDoesNotExist()
         assertThat(chosen).containsExactly(MerchantTab.PROFILE)
+    }
+
+    @Test
+    fun theOrdersTabShowsTheOrderBoardInPlaceOfTheOtherTabs() {
+        val chosen = mutableListOf<MerchantTab>()
+        show(onSelected = { chosen += it })
+
+        compose.onNodeWithText(text(R.string.tab_orders)).performClick()
+
+        compose.onNodeWithText("orders-slot").assertIsDisplayed()
+        compose.onNodeWithText("catalog-slot").assertDoesNotExist()
+        assertThat(chosen).containsExactly(MerchantTab.ORDERS)
+    }
+
+    @Test
+    fun theOrdersTabIsMarkedSelectedOnlyWhileItIsShown() {
+        show(initial = MerchantTab.ORDERS)
+        compose.onNode(isSelectable() and hasText(text(R.string.tab_orders))).assertIsSelected()
+        compose.onNode(isSelectable() and hasText(text(R.string.tab_catalog))).assertIsNotSelected()
+    }
+
+    @Test
+    fun canSwitchBackFromTheOrdersTab() {
+        show(initial = MerchantTab.ORDERS)
+        compose.onNodeWithText("orders-slot").assertIsDisplayed()
+        compose.onNodeWithText("profile-slot").assertDoesNotExist()
+
+        compose.onNodeWithText(text(R.string.tab_profile)).performClick()
+
+        compose.onNodeWithText("profile-slot").assertIsDisplayed()
     }
 
     @Test

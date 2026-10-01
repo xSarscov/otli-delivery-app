@@ -19,6 +19,7 @@ import com.otli.app.catalog.adapters.ui.StorefrontScreen
 import com.otli.app.core.navigation.RootNavHost
 import com.otli.app.core.notification.RequestNotificationPermission
 import com.otli.app.core.theme.OtliTheme
+import com.otli.app.ordering.adapters.ui.MerchantOrderBoardScreen
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
                         suspended = { role -> SuspendedScreen(role) },
                         merchantHome = {
                             RequestNotificationPermission()
-                            MerchantHomeTabsScreen()
+                            MerchantHomeTabsScreen(orders = { MerchantOrderBoardScreen() })
                         },
                     )
                 }
