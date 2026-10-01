@@ -249,6 +249,42 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // couriers/{uid}: availability and the active order slot of a courier (ADR-7). The claim and deliver
+    // writes that fill and free `activeOrderId` are paired with the order and arrive with the order rules.
+    match /couriers/{uid} {
+      function isSelf() { return signedIn() && request.auth.uid == uid; }
+      function isActiveCourier() {
+        return isSelf()
+          && exists(userPath(uid))
+          && get(userPath(uid)).data.role == 'courier'
+          && get(userPath(uid)).data.status == 'active';
+      }
+      // Created by the courier in the same batch as users/{uid} at registration (or later on retry), offline and free.
+      function validCourierCreate() {
+        let data = request.resource.data;
+        return isSelf()
+          && getAfter(userPath(uid)).data.role == 'courier'
+          && data.keys().hasOnly(['isOnline', 'activeOrderId', 'updatedAt'])
+          && data.keys().hasAll(['isOnline', 'activeOrderId', 'updatedAt'])
+          && data.isOnline == false
+          && data.activeOrderId == null
+          && data.updatedAt == request.time;
+      }
+      // Going offline is refused while a delivery is under way; going (or staying) online never is.
+      function availability() {
+        return isActiveCourier()
+          && changed().hasOnly(['isOnline', 'updatedAt'])
+          && request.resource.data.isOnline is bool
+          && request.resource.data.updatedAt == request.time
+          && (request.resource.data.isOnline == true || resource.data.activeOrderId == null);
+      }
+
+      allow read: if isSelf() || isActiveAdmin();
+      allow create: if validCourierCreate();
+      allow update: if availability();
+      allow delete: if false;
+    }
+
     // Everything else stays denied until its slice adds a match block test-first.
     match /{document=**} {
       allow read, write: if false;
