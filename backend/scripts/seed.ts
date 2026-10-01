@@ -23,13 +23,17 @@ function requireEmulatorEnv(env: NodeJS.ProcessEnv): void {
 interface SeedUser {
   uid: string;
   email: string;
-  role: "admin" | "merchant" | "customer";
+  role: "admin" | "merchant" | "customer" | "courier";
   status: "active" | "pending";
   displayName: string;
   phone: string;
 }
 
 const SEED_USERS: SeedUser[] = [
+  { uid: "seed-courier-1", email: "courier1@otli.test", role: "courier", status: "active", displayName: "Luis Mendoza", phone: "8888-0301" },
+  { uid: "seed-courier-2", email: "courier2@otli.test", role: "courier", status: "active", displayName: "Marta Ruiz", phone: "8888-0302" },
+  // Pending on purpose: the Admin approval demo (Slice 6) flips this one to active.
+  { uid: "seed-courier-pending", email: "courier-pending@otli.test", role: "courier", status: "pending", displayName: "Nuevo Repartidor", phone: "8888-0303" },
   { uid: "seed-admin", email: "admin@otli.test", role: "admin", status: "active", displayName: "Otli Admin", phone: "8888-0000" },
   { uid: "seed-merchant-1", email: "merchant1@otli.test", role: "merchant", status: "active", displayName: "Doña Marta", phone: "+50588880101" },
   { uid: "seed-merchant-2", email: "merchant2@otli.test", role: "merchant", status: "active", displayName: "Don Chepe", phone: "+50588880102" },
@@ -160,6 +164,11 @@ async function upsertMerchant(merchant: SeedMerchant): Promise<void> {
   }
 }
 
+/** Upserts `couriers/{uid}` offline and free (ADR-7); re-running resets availability to the seed values. */
+async function upsertCourier(uid: string): Promise<void> {
+  await getFirestore().collection("couriers").doc(uid).set({ isOnline: false, activeOrderId: null, updatedAt: FieldValue.serverTimestamp() });
+}
+
 /** Upserts `settings/app`; re-running resets the fee to the seed value, like every other seeded document. */
 async function upsertSettings(): Promise<void> {
   await getFirestore()
@@ -178,6 +187,10 @@ async function main(): Promise<void> {
   for (const merchant of SEED_MERCHANTS) {
     await upsertMerchant(merchant);
     console.log(`${merchant.uid}: merchants/${merchant.uid} upserted with ${merchant.categories.length} categories and ${merchant.products.length} products`);
+  }
+  for (const courier of SEED_USERS.filter((user) => user.role === "courier")) {
+    await upsertCourier(courier.uid);
+    console.log(`${courier.uid}: couriers/${courier.uid} upserted offline with no active order`);
   }
   await upsertSettings();
   console.log(`settings/app upserted with deliveryFeeCents=${DELIVERY_FEE_CENTS}`);
