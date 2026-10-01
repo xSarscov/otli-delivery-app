@@ -30,6 +30,10 @@ describe("composite indexes the queries of the design depend on", () => {
     expect(indexOn("orders", "merchantId:ASCENDING", "createdAt:DESCENDING")).toBeDefined();
   });
 
+  it("has the courier pool index: ready orders, oldest first", () => {
+    expect(indexOn("orders", "status:ASCENDING", "readyAt:ASCENDING")).toBeDefined();
+  });
+
   it("keeps the earlier indexes", () => {
     expect(indexOn("users", "status:ASCENDING", "createdAt:ASCENDING")).toBeDefined();
     expect(indexOn("merchants", "status:ASCENDING", "name:ASCENDING")).toBeDefined();
