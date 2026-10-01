@@ -10,8 +10,13 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.google.common.truth.Truth.assertThat
 import com.otli.app.R
+import com.otli.app.core.time.FixedClock
 import com.otli.app.dispatch.application.aPoolOrder
 import com.otli.app.dispatch.domain.PoolGate
+import com.otli.app.ordering.adapters.ui.PlacedAtFormatter
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.util.Locale
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,10 +36,22 @@ class PoolContentTest {
         var dismissed = 0
     }
 
+    private val zone = ZoneId.of("America/Managua")
+
+    private fun millisAt(day: Int, hour: Int, minute: Int) =
+        ZonedDateTime.of(2026, 9, day, hour, minute, 0, 0, zone).toInstant().toEpochMilli()
+
+    private val placedAtFormatter = PlacedAtFormatter(FixedClock(millisAt(30, 15, 0)), zone, Locale.US)
+
     private fun show(state: PoolUiState): Events {
         val events = Events()
         compose.setContent {
-            PoolContent(state = state, onClaim = { events.claimed += it }, onDismissMessage = { events.dismissed++ })
+            PoolContent(
+                state = state,
+                onClaim = { events.claimed += it },
+                onDismissMessage = { events.dismissed++ },
+                placedAt = placedAtFormatter,
+            )
         }
         return events
     }
@@ -89,6 +106,26 @@ class PoolContentTest {
         compose.onNodeWithText(text(R.string.pool_fee, text(R.string.price_nio, "30.00"))).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.pool_cash, text(R.string.price_nio, "270.00"))).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.pool_empty)).assertDoesNotExist()
+    }
+
+    @Test
+    fun everyCardShowsWhenItsOrderWasPlaced() {
+        show(
+            open(
+                aPoolOrder("o1", createdAtMillis = millisAt(30, 11, 4)),
+                aPoolOrder("o2", createdAtMillis = millisAt(29, 9, 15)),
+            ),
+        )
+
+        compose.onNodeWithText(text(R.string.order_placed_at, "11:04")).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.order_placed_at_date, "29 Sep", "09:15")).assertIsDisplayed()
+    }
+
+    @Test
+    fun anOrderWhoseTimestampIsPendingSaysItWasJustPlaced() {
+        show(open(aPoolOrder("o1", createdAtMillis = 0L)))
+
+        compose.onNodeWithText(text(R.string.order_placed_just_now)).assertIsDisplayed()
     }
 
     @Test

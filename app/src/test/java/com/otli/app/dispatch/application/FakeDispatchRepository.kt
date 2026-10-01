@@ -18,6 +18,7 @@ fun aPoolOrder(
     id: String = "o1",
     merchantName: String = "Comedor Marta",
     readyAtMillis: Long = 1_000L,
+    createdAtMillis: Long = 1_000L,
 ) = PoolOrder(
     id = id,
     merchantName = merchantName,
@@ -25,6 +26,7 @@ fun aPoolOrder(
     dropoff = OrderLocation(12.27, -86.57, "Casa azul"),
     totals = Totals(subtotal = Money(24000), fee = Money(3000), total = Money(27000)),
     readyAtMillis = readyAtMillis,
+    createdAtMillis = createdAtMillis,
 )
 
 /**

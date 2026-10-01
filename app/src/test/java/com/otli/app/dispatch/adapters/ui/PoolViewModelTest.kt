@@ -68,20 +68,43 @@ class PoolViewModelTest {
     }
 
     @Test
-    fun theOrdersAreListedOldestReadyFirstAndAJustReadyOneLast() {
+    fun theNewestPlacedOrderIsListedFirstWhateverTheSnapshotOrder() {
         dispatch.pool.value = listOf(
-            aPoolOrder("late", readyAtMillis = 3_000L),
-            aPoolOrder("just-ready", readyAtMillis = 0L),
-            aPoolOrder("early", readyAtMillis = 1_000L),
+            aPoolOrder("early", createdAtMillis = 1_000L),
+            aPoolOrder("late", createdAtMillis = 3_000L),
+            aPoolOrder("middle", createdAtMillis = 2_000L),
         )
         dispatch.courier = online
 
-        assertThat(viewModel().uiState.value.orders.map { it.id }).containsExactly("early", "late", "just-ready").inOrder()
+        assertThat(viewModel().uiState.value.orders.map { it.id }).containsExactly("late", "middle", "early").inOrder()
     }
 
     @Test
-    fun ordersReadyAtTheSameTimeAreListedByIdSoTheListIsStable() {
-        dispatch.pool.value = listOf(aPoolOrder("b", readyAtMillis = 1_000L), aPoolOrder("a", readyAtMillis = 1_000L))
+    fun aJustPlacedOrderStillWaitingForItsServerTimestampIsOnTop() {
+        dispatch.pool.value = listOf(
+            aPoolOrder("settled", createdAtMillis = 3_000L),
+            aPoolOrder("just-placed", createdAtMillis = 0L),
+        )
+        dispatch.courier = online
+
+        assertThat(viewModel().uiState.value.orders.map { it.id }).containsExactly("just-placed", "settled").inOrder()
+    }
+
+    @Test
+    fun theListFollowsPlacementTimeNotWhenTheOrderBecameReady() {
+        dispatch.pool.value = listOf(
+            aPoolOrder("placed-first-ready-last", createdAtMillis = 1_000L, readyAtMillis = 9_000L),
+            aPoolOrder("placed-last-ready-first", createdAtMillis = 2_000L, readyAtMillis = 5_000L),
+        )
+        dispatch.courier = online
+
+        assertThat(viewModel().uiState.value.orders.map { it.id })
+            .containsExactly("placed-last-ready-first", "placed-first-ready-last").inOrder()
+    }
+
+    @Test
+    fun ordersPlacedAtTheSameTimeAreListedByIdSoTheListIsStable() {
+        dispatch.pool.value = listOf(aPoolOrder("b", createdAtMillis = 1_000L), aPoolOrder("a", createdAtMillis = 1_000L))
         dispatch.courier = online
 
         assertThat(viewModel().uiState.value.orders.map { it.id }).containsExactly("a", "b").inOrder()

@@ -34,6 +34,17 @@ class OrderOrderingTest {
         assertThat(ids(listOf(settled, pending))).containsExactly("pending", "settled").inOrder()
     }
 
+    private data class Item(val key: String, val placedAt: Long)
+
+    private fun keys(items: List<Item>) = OrderOrdering.newestFirst(items, Item::placedAt, Item::key).map { it.key }
+
+    @Test
+    fun anyListOfPlacedThingsFollowsTheSameRulesAsOrders() {
+        assertThat(keys(listOf(Item("a", 1L), Item("c", 3L), Item("b", 2L)))).containsExactly("c", "b", "a").inOrder()
+        assertThat(keys(listOf(Item("z", 5L), Item("y", 5L)))).containsExactly("y", "z").inOrder()
+        assertThat(keys(listOf(Item("old", 9L), Item("pending", 0L)))).containsExactly("pending", "old").inOrder()
+    }
+
     @Test
     fun anEmptyListStaysEmptyAndTheInputIsNotMutated() {
         assertThat(OrderOrdering.newestFirst(emptyList())).isEmpty()

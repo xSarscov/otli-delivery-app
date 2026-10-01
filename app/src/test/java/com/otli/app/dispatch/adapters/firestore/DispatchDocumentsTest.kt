@@ -81,8 +81,16 @@ class DispatchDocumentsTest {
                 dropoff = OrderLocation(12.27, -86.57, "Casa azul"),
                 totals = Totals(subtotal = Money(24000), fee = Money(3000), total = Money(27000)),
                 readyAtMillis = 1_700_000_600_000L,
+                createdAtMillis = 1_700_000_000_000L,
             ),
         )
+    }
+
+    @Test
+    fun aReadyOrderWhoseCreationTimestampIsStillPendingHasNoPlacementTime() {
+        val pool = DispatchDocuments.poolOrderFrom("o1", readyOrder - "createdAt")
+
+        assertThat(pool?.createdAtMillis).isEqualTo(0L)
     }
 
     @Test
