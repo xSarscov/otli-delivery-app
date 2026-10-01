@@ -1,6 +1,9 @@
 import type { useCatalogEnv } from "./catalog-support";
+import { serverTime } from "./catalog-support";
+import { orderDoc } from "./order-support";
 
 type Env = ReturnType<typeof useCatalogEnv>;
+type Db = ReturnType<Env["as"]>;
 
 /** A `couriers/{uid}` document as stored: offline and free unless a test says otherwise. */
 export function courierDoc(overrides: Record<string, unknown> = {}) {
@@ -16,4 +19,37 @@ export async function seedCourier(admin: Env["admin"], uid: string, courier: Rec
     await db.collection("users").doc(uid).set({ role: "courier", status, displayName: uid, email: `${uid}@otli.test`, phone: "1", createdAt: new Date() });
     await db.collection("couriers").doc(uid).set(courierDoc(courier));
   });
+}
+
+/** An online courier with no order, ready to claim. */
+export const seedFreeCourier = (admin: Env["admin"], uid: string) => seedCourier(admin, uid, { isOnline: true });
+
+/** Seeds an order of customer-1 at merchant-a that the merchant marked ready, bypassing the rules. */
+export const seedReadyOrder = (admin: Env["admin"], id: string, overrides: Record<string, unknown> = {}) =>
+  admin((db) =>
+    db.collection("orders").doc(id).set(orderDoc({ status: "ready", createdAt: new Date(), readyAt: new Date(), updatedAt: new Date(), ...overrides })),
+  );
+
+/** The order half of a claim by [uid]. */
+export const claimOrder = (uid: string, overrides: Record<string, unknown> = {}) => ({
+  status: "claimed",
+  courierId: uid,
+  claimedAt: serverTime(),
+  updatedAt: serverTime(),
+  ...overrides,
+});
+
+/** The courier half of a claim: the slot now holds [orderId]. */
+export const claimSlot = (orderId: string | null, overrides: Record<string, unknown> = {}) => ({
+  activeOrderId: orderId,
+  updatedAt: serverTime(),
+  ...overrides,
+});
+
+/** Claims [orderId] the way the app does, both documents in one atomic write. */
+export function claim(db: Db, uid: string, orderId: string, order: Record<string, unknown> = {}, slot: Record<string, unknown> = {}) {
+  const batch = db.batch();
+  batch.update(db.collection("orders").doc(orderId), claimOrder(uid, order));
+  batch.update(db.collection("couriers").doc(uid), claimSlot(orderId, slot));
+  return batch.commit();
 }

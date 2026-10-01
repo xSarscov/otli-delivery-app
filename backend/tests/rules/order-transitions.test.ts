@@ -15,11 +15,13 @@ const STATUSES = ["placed", "accepted", "preparing", "ready", "claimed", "picked
 const ACTORS = ["customer", "merchant", "courier", "admin"];
 
 /**
- * Actors whose transitions the rules implement so far. Courier and admin transitions (claim, pick up,
- * deliver, release) arrive in Slices 4 and 6: until then every attempt by them must be denied, and this
- * set grows with each slice.
+ * Actors whose transitions the rules implement so far. The admin release arrives in Slice 6: until
+ * then every attempt by an admin must be denied, and this set grows with each slice.
  */
-const IMPLEMENTED_ACTORS = new Set(["customer", "merchant"]);
+const IMPLEMENTED_ACTORS = new Set(["customer", "merchant", "courier"]);
+
+/** Courier steps of the contract whose rules a later slice work unit adds: still denied until then. */
+const NOT_YET = new Set(["claimed>picked_up>courier", "picked_up>delivered>courier"]);
 
 const UID: Record<string, string> = { customer: "customer-1", merchant: "merchant-a", courier: "courier-1", admin: "admin-1" };
 const TIMESTAMP_FIELD: Record<string, string> = {
@@ -33,30 +35,45 @@ const TIMESTAMP_FIELD: Record<string, string> = {
   cancelled: "cancelledAt",
 };
 
-/** Seeds an order of customer-1 at merchant-a in [status], bypassing the rules. */
+/**
+ * Seeds an order of customer-1 at merchant-a in [status], bypassing the rules, and the online courier-1
+ * in the state that goes with it: serving the order while it is claimed or picked up, free otherwise.
+ */
 const seed = (id: string, status: string, overrides: Record<string, unknown> = {}) =>
-  admin((db) =>
-    db.collection("orders").doc(id).set(
-      orderDoc({
-        status,
-        courierId: ["claimed", "picked_up", "delivered"].includes(status) ? "courier-1" : null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        ...overrides,
-      }),
-    ),
-  );
+  admin(async (db) => {
+    const assigned = ["claimed", "picked_up", "delivered"].includes(status);
+    await db.collection("orders").doc(id).set(
+      orderDoc({ status, courierId: assigned ? "courier-1" : null, createdAt: new Date(), updatedAt: new Date(), ...overrides }),
+    );
+    const serving = ["claimed", "picked_up"].includes(status);
+    await db.collection("couriers").doc("courier-1").set({ isOnline: true, activeOrderId: serving ? id : null, updatedAt: new Date() });
+  });
 
 /** The most complete update an actor could send to move to [to]: denial of a combination is then about the transition itself. */
 function updateTo(to: string, actor: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
   const extra: Record<string, unknown> = {};
   if (to === "rejected") extra.rejectReason = "Out of stock";
   if (to === "cancelled") extra.cancelledBy = actor === "admin" ? "admin" : "customer";
+  if (to === "claimed") extra.courierId = UID[actor];
   const stamp = TIMESTAMP_FIELD[to];
   return { status: to, ...(stamp ? { [stamp]: serverTime() } : {}), ...extra, updatedAt: serverTime(), ...overrides };
 }
 
 const orderOf = (uid: string, id: string) => as(uid).collection("orders").doc(id);
+
+/** The contract triples the rules implement so far. */
+const implemented = contract.filter((t) => IMPLEMENTED_ACTORS.has(t.actor) && !NOT_YET.has(`${t.from}>${t.to}>${t.actor}`));
+
+/** Sends [payload] as [actor]. A courier's claim carries the paired write on couriers/{uid}, as the app's transaction does. */
+function send(actor: string, id: string, to: string, payload: Record<string, unknown>) {
+  const db = as(UID[actor]);
+  const ref = db.collection("orders").doc(id);
+  if (actor !== "courier" || to !== "claimed") return ref.update(payload);
+  const batch = db.batch();
+  batch.update(ref, payload);
+  batch.update(db.collection("couriers").doc(UID.courier), { activeOrderId: id, updatedAt: serverTime() });
+  return batch.commit();
+}
 
 describe("the transitions contract", () => {
   it("lists the nine allowed triples of the spec", () => {
@@ -64,7 +81,7 @@ describe("the transitions contract", () => {
   });
 
   it("allows every implemented triple and denies every other (from, to, actor) combination", async () => {
-    const allowed = new Set(contract.filter((t) => IMPLEMENTED_ACTORS.has(t.actor)).map((t) => `${t.from}>${t.to}>${t.actor}`));
+    const allowed = new Set(implemented.map((t) => `${t.from}>${t.to}>${t.actor}`));
     expect(allowed.size).toBeGreaterThan(0);
 
     const wrong: string[] = [];
@@ -77,7 +94,7 @@ describe("the transitions contract", () => {
           await seed(id, from);
           let ok: boolean;
           try {
-            await assertSucceeds(orderOf(UID[actor], id).update(updateTo(to, actor)));
+            await assertSucceeds(send(actor, id, to, updateTo(to, actor)));
             ok = true;
           } catch {
             ok = false;
@@ -92,22 +109,19 @@ describe("the transitions contract", () => {
   }, 180_000);
 });
 
-const IMPLEMENTED = contract.filter((t) => IMPLEMENTED_ACTORS.has(t.actor));
-
 describe("every implemented transition touches only its own fields", () => {
-  it.each(IMPLEMENTED.map((t) => [`${t.from} to ${t.to} by ${t.actor}`, t] as const))("%s", async (_name, t) => {
-    const uid = UID[t.actor];
+  it.each(implemented.map((t) => [`${t.from} to ${t.to} by ${t.actor}`, t] as const))("%s", async (_name, t) => {
     const attempt = async (id: string, overrides: Record<string, unknown>, omit: string[] = []) => {
       await seed(id, t.from);
       const payload: Record<string, unknown> = { ...updateTo(t.to, t.actor), ...overrides };
       for (const key of omit) delete payload[key];
-      return orderOf(uid, id).update(payload);
+      return send(t.actor, id, t.to, payload);
     };
     const stamp = TIMESTAMP_FIELD[t.to];
 
     await assertSucceeds(attempt("ok", {}));
     await assertFails(attempt("extra-total", { totalCents: 1 }));
-    await assertFails(attempt("extra-courier", { courierId: "courier-1" }));
+    await assertFails(attempt("extra-courier", { courierId: "courier-2" }));
     await assertFails(attempt("extra-customer", { customerName: "Someone else" }));
     await assertFails(attempt("no-stamp", {}, [stamp]));
     await assertFails(attempt("client-stamp", { [stamp]: new Date() }));

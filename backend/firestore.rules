@@ -10,6 +10,14 @@ service cloud.firestore {
         && get(userPath(request.auth.uid)).data.status == 'active';
     }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function isActiveCourier() {
+      return signedIn()
+        && exists(userPath(request.auth.uid))
+        && get(userPath(request.auth.uid)).data.role == 'courier'
+        && get(userPath(request.auth.uid)).data.status == 'active';
+    }
+    function courierPath(uid) { return /databases/$(database)/documents/couriers/$(uid); }
+    function orderPath(id) { return /databases/$(database)/documents/orders/$(id); }
 
     // users/{uid}: role and account status are the source of truth (ADR-6).
     match /users/{uid} {
@@ -237,28 +245,42 @@ service cloud.firestore {
           && stamped('cancelledAt')
           && request.resource.data.cancelledBy == 'customer';
       }
-      // Courier claim, pick-up, deliver and the Admin release/cancel are implemented in Slices 4 and 6.
-      function courierStep() { return false; }
+      // The race-safe claim (ADR-7): one write on the order and one on the courier's slot, each requiring the
+      // other through getAfter(), so neither can commit alone and a second claim finds the order or the slot taken.
+      function claim() {
+        let c = courierPath(request.auth.uid);
+        return isActiveCourier() && moves('ready', 'claimed')
+          && resource.data.courierId == null
+          && request.resource.data.courierId == request.auth.uid
+          && changed().hasOnly(['status', 'courierId', 'claimedAt', 'updatedAt'])
+          && stamped('claimedAt')
+          && get(c).data.isOnline == true
+          && get(c).data.activeOrderId == null
+          && getAfter(c).data.activeOrderId == orderId;
+      }
+      // Pick-up, deliver and the Admin release/cancel are implemented in later work units and Slice 6.
+      function courierStep() { return claim(); }
       function adminStep() { return false; }
 
-      // The owner customer, the addressed merchant and Admin. Couriers (pool and assigned order) join in Slice 4.
+      // The pool is every ready order for any active courier; the dropoff and customer contact are readable
+      // before the claim because rules cannot hide fields (accepted risk, ADR-7). A courier also reads the
+      // orders assigned to them, whatever their status.
+      function courierRead() {
+        return isActiveCourier() && (resource.data.courierId == request.auth.uid || resource.data.status == 'ready');
+      }
+
+      // The owner customer, the addressed merchant, Admin and couriers (the pool and their own orders).
       allow read: if signedIn()
-        && (resource.data.customerId == request.auth.uid || resource.data.merchantId == request.auth.uid || isActiveAdmin());
+        && (resource.data.customerId == request.auth.uid || resource.data.merchantId == request.auth.uid || isActiveAdmin() || courierRead());
       allow create: if validPlacement();
       allow update: if merchantStep() || merchantReject() || customerCancel() || courierStep() || adminStep();
       allow delete: if false;
     }
 
     // couriers/{uid}: availability and the active order slot of a courier (ADR-7). The claim and deliver
-    // writes that fill and free `activeOrderId` are paired with the order and arrive with the order rules.
+    // writes that fill and free `activeOrderId` are paired with the order write.
     match /couriers/{uid} {
       function isSelf() { return signedIn() && request.auth.uid == uid; }
-      function isActiveCourier() {
-        return isSelf()
-          && exists(userPath(uid))
-          && get(userPath(uid)).data.role == 'courier'
-          && get(userPath(uid)).data.status == 'active';
-      }
       // Created by the courier in the same batch as users/{uid} at registration (or later on retry), offline and free.
       function validCourierCreate() {
         let data = request.resource.data;
@@ -272,16 +294,30 @@ service cloud.firestore {
       }
       // Going offline is refused while a delivery is under way; going (or staying) online never is.
       function availability() {
-        return isActiveCourier()
+        return isSelf() && isActiveCourier()
           && changed().hasOnly(['isOnline', 'updatedAt'])
           && request.resource.data.isOnline is bool
           && request.resource.data.updatedAt == request.time
           && (request.resource.data.isOnline == true || resource.data.activeOrderId == null);
       }
 
+      // The slot is filled with the order's claim: the courier's write requires the order to be ready before
+      // and claimed by this courier after, and the order's claim requires this slot to hold its id (ADR-7).
+      function pairedClaim() {
+        let id = request.resource.data.activeOrderId;
+        return isSelf() && isActiveCourier()
+          && resource.data.activeOrderId == null
+          && id is string
+          && changed().hasOnly(['activeOrderId', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time
+          && get(orderPath(id)).data.status == 'ready'
+          && getAfter(orderPath(id)).data.status == 'claimed'
+          && getAfter(orderPath(id)).data.courierId == uid;
+      }
+
       allow read: if isSelf() || isActiveAdmin();
       allow create: if validCourierCreate();
-      allow update: if availability();
+      allow update: if availability() || pairedClaim();
       allow delete: if false;
     }
 
