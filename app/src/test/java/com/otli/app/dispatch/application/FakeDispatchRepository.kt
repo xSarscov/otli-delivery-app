@@ -8,9 +8,11 @@ import com.otli.app.ordering.domain.OrderLocation
 import com.otli.app.ordering.domain.Totals
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onStart
 
 fun aPoolOrder(
     id: String = "o1",
@@ -32,7 +34,18 @@ fun aPoolOrder(
  */
 class FakeDispatchRepository : DispatchRepository {
     val pool = MutableStateFlow<List<PoolOrder>>(emptyList())
-    val courier = MutableStateFlow<CourierAvailability?>(null)
+    private val courierSource = MutableSharedFlow<CourierAvailability?>(replay = 1).also { it.tryEmit(null) }
+
+    /** The courier document; every assignment is delivered to the observers, even an unchanged one, like a snapshot. */
+    var courier: CourierAvailability? = null
+        set(value) {
+            field = value
+            courierSource.tryEmit(value)
+        }
+
+    /** How many times the pool listener was started. */
+    var poolSubscriptions = 0
+        private set
     var listenerError: Throwable? = null
 
     /** While set, observers hold their first emission until it completes: the window before a listener delivers. */
@@ -51,9 +64,9 @@ class FakeDispatchRepository : DispatchRepository {
     val onlineRequests = mutableListOf<Pair<String, Boolean>>()
     var onlineOutcome: suspend (courierId: String, online: Boolean) -> Result<Unit> = { _, _ -> Result.success(Unit) }
 
-    override fun observePool(): Flow<List<PoolOrder>> = live(pool)
+    override fun observePool(): Flow<List<PoolOrder>> = live(pool).onStart { poolSubscriptions++ }
 
-    override fun observeCourier(courierId: String): Flow<CourierAvailability?> = live(courier)
+    override fun observeCourier(courierId: String): Flow<CourierAvailability?> = live(courierSource)
 
     override suspend fun claim(orderId: String, courierId: String): Result<ClaimDecision> {
         claims += orderId to courierId
@@ -73,11 +86,11 @@ class FakeDispatchRepository : DispatchRepository {
     override suspend fun setOnline(courierId: String, online: Boolean): Result<Unit> {
         onlineRequests += courierId to online
         val result = onlineOutcome(courierId, online)
-        if (result.isSuccess) courier.value = (courier.value ?: CourierAvailability(false, null)).copy(isOnline = online)
+        if (result.isSuccess) courier = (courier ?: CourierAvailability(false, null)).copy(isOnline = online)
         return result
     }
 
-    private fun <T> live(source: MutableStateFlow<T>): Flow<T> = flow {
+    private fun <T> live(source: Flow<T>): Flow<T> = flow {
         listenerError?.let { throw it }
         firstEmissionGate?.await()
         emitAll(source)

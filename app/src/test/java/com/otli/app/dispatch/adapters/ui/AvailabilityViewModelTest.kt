@@ -30,7 +30,7 @@ class AvailabilityViewModelTest {
 
     @Test
     fun anOfflineCourierSeesTheSwitchOff() {
-        dispatch.courier.value = CourierAvailability(isOnline = false, activeOrderId = null)
+        dispatch.courier = CourierAvailability(isOnline = false, activeOrderId = null)
 
         val state = viewModel().uiState.value
 
@@ -41,7 +41,7 @@ class AvailabilityViewModelTest {
 
     @Test
     fun anOnlineCourierWithAnActiveOrderSeesTheSwitchOnAndLocked() {
-        dispatch.courier.value = CourierAvailability(isOnline = true, activeOrderId = "o7")
+        dispatch.courier = CourierAvailability(isOnline = true, activeOrderId = "o7")
 
         val state = viewModel().uiState.value
 
@@ -51,7 +51,7 @@ class AvailabilityViewModelTest {
 
     @Test
     fun aCourierWithoutADocumentIsOfflineAndNoLongerLoading() {
-        dispatch.courier.value = null
+        dispatch.courier = null
 
         val state = viewModel().uiState.value
 
@@ -62,16 +62,16 @@ class AvailabilityViewModelTest {
 
     @Test
     fun theSwitchFollowsTheLiveDocument() {
-        dispatch.courier.value = CourierAvailability(false, null)
+        dispatch.courier = CourierAvailability(false, null)
         val viewModel = viewModel()
 
-        dispatch.courier.value = CourierAvailability(true, null)
+        dispatch.courier = CourierAvailability(true, null)
         assertThat(viewModel.uiState.value.isOnline).isTrue()
 
-        dispatch.courier.value = CourierAvailability(true, "o1")
+        dispatch.courier = CourierAvailability(true, "o1")
         assertThat(viewModel.uiState.value.hasActiveOrder).isTrue()
 
-        dispatch.courier.value = CourierAvailability(true, null)
+        dispatch.courier = CourierAvailability(true, null)
         assertThat(viewModel.uiState.value.hasActiveOrder).isFalse()
     }
 
@@ -89,7 +89,7 @@ class AvailabilityViewModelTest {
 
     @Test
     fun goingOnlineAsksTheRepositoryForTheSignedInCourier() {
-        dispatch.courier.value = CourierAvailability(false, null)
+        dispatch.courier = CourierAvailability(false, null)
         val viewModel = viewModel()
 
         viewModel.setOnline(true)
@@ -101,7 +101,7 @@ class AvailabilityViewModelTest {
 
     @Test
     fun goingOfflineAsksTheRepository() {
-        dispatch.courier.value = CourierAvailability(true, null)
+        dispatch.courier = CourierAvailability(true, null)
         val viewModel = viewModel()
 
         viewModel.setOnline(false)
@@ -112,7 +112,7 @@ class AvailabilityViewModelTest {
 
     @Test
     fun aCourierWithAnActiveOrderCannotGoOffline() {
-        dispatch.courier.value = CourierAvailability(true, "o1")
+        dispatch.courier = CourierAvailability(true, "o1")
         val viewModel = viewModel()
 
         viewModel.setOnline(false)
@@ -134,7 +134,7 @@ class AvailabilityViewModelTest {
     fun nothingIsSentBeforeTheCourierDocumentHasArrived() {
         val arrives = CompletableDeferred<Unit>()
         dispatch.firstEmissionGate = arrives
-        dispatch.courier.value = CourierAvailability(false, null)
+        dispatch.courier = CourierAvailability(false, null)
         val viewModel = viewModel()
         assertThat(viewModel.uiState.value.isLoading).isTrue()
 
@@ -148,7 +148,7 @@ class AvailabilityViewModelTest {
 
     @Test
     fun aSecondTapWhileTheChangeIsInFlightIsIgnored() {
-        dispatch.courier.value = CourierAvailability(false, null)
+        dispatch.courier = CourierAvailability(false, null)
         val release = CompletableDeferred<Unit>()
         dispatch.onlineOutcome = { _, _ ->
             release.await()
@@ -167,7 +167,7 @@ class AvailabilityViewModelTest {
 
     @Test
     fun aRefusedChangeShowsAnErrorThatCanBeDismissedAndKeepsTheSwitch() {
-        dispatch.courier.value = CourierAvailability(false, null)
+        dispatch.courier = CourierAvailability(false, null)
         dispatch.onlineOutcome = { _, _ -> Result.failure(IllegalStateException("denied")) }
         val viewModel = viewModel()
 
@@ -183,7 +183,7 @@ class AvailabilityViewModelTest {
 
     @Test
     fun tryingAgainClearsThePreviousError() {
-        dispatch.courier.value = CourierAvailability(false, null)
+        dispatch.courier = CourierAvailability(false, null)
         dispatch.onlineOutcome = { _, _ -> Result.failure(IllegalStateException("denied")) }
         val viewModel = viewModel()
         viewModel.setOnline(true)
