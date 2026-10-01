@@ -22,10 +22,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
-private class FakeSettingsRepository(var fee: Result<Money> = Result.success(Money(3000))) : SettingsRepository {
-    override suspend fun deliveryFee(): Result<Money> = fee
-}
-
 class PlaceOrderTest {
     private val customer = OrderCustomer(id = "customer-1", name = "Ana Lopez", phone = "+50588882222")
     private val dropoff = OrderLocation(12.27, -86.57, "Casa azul frente a la pulperia")
