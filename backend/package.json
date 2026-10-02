@@ -11,6 +11,7 @@
     "test": "node scripts/run-with-emulators.mjs vitest",
     "test:android": "node scripts/run-with-emulators.mjs android",
     "emulators": "firebase emulators:start --only firestore,auth --project demo-otli --import=./emulator-data --export-on-exit",
+    "emulators:lan": "firebase emulators:start --only firestore,auth --project demo-otli --config firebase.lan.json",
     "seed": "tsx scripts/seed.ts",
     "typecheck": "tsc --noEmit"
   },

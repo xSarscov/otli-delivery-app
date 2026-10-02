@@ -67,7 +67,7 @@ data (so adapter tests can sign in as `merchant1@otli.test`, password `otli-demo
   builds with `-Potli.emulatorHost=127.0.0.1`, and removes the reverse mappings afterwards. For an
   Android emulator (`emulator-*` serial) nothing is reversed and the default `10.0.2.2` is used.
 - Debug builds allow cleartext HTTP to 127.0.0.1, 10.0.2.2 and localhost only
-  (`app/src/debug/res/xml/network_security_config.xml`), because the Auth emulator has no TLS.
+  (generated at build time into the debug variant only, from `otli.emulatorHost`; see `buildSrc`), because the Auth emulator has no TLS.
   Release builds are unaffected.
 - Some vendors block installs over USB. On Xiaomi/HyperOS enable "Install via USB" (and "USB debugging
   (Security settings)") in Developer options and accept the prompt on the phone; otherwise the run
@@ -85,6 +85,24 @@ data (so adapter tests can sign in as `merchant1@otli.test`, password `otli-demo
    (`admin@otli.test` / `otli-demo-123`); later slices extend it.
 
 The emulator project id is `demo-otli`; no real Firebase project is needed for development.
+
+## Testing on a phone over Wi-Fi
+
+Use this to try the app on a physical phone without USB or `adb reverse` during the test.
+
+1. Put the phone and the PC on the same Wi-Fi, and set the PC network profile to **Private**.
+2. Start the emulators bound to all interfaces: `npm --prefix backend run emulators:lan`
+   (uses `backend/firebase.lan.json`). Allow the Windows firewall prompt for Java and Node on
+   private networks.
+3. Seed from the PC, which still reaches the emulators on localhost (see the seed command above).
+4. Build with the PC LAN IP: `./gradlew assembleDebug -Potli.emulatorHost=<PC LAN IP>`. The host must
+   be an IPv4 address or a simple hostname; the debug build then allows cleartext to exactly that
+   host plus the default emulator hosts. Release builds never allow cleartext.
+5. Install the APK over USB once, unplug, and test.
+
+Security: while the LAN emulators run, any device on that Wi-Fi can reach Auth and Firestore
+(no authentication in front of the emulators). Use trusted networks only and stop the emulators
+afterwards.
 
 ## Firebase project status
 

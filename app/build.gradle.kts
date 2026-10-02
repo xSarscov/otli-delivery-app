@@ -22,7 +22,8 @@ fun otliProp(name: String, default: String): String =
     (project.findProperty(name) as String?) ?: localProps.getProperty(name, default)
 
 val useEmulator: String = otliProp("otli.useEmulator", "true")
-val emulatorHost: String = otliProp("otli.emulatorHost", "10.0.2.2")
+// Validated eagerly so a malformed value fails the build with a clear message.
+val emulatorHost: String = com.otli.buildlogic.DebugNetworkSecurityConfig.validateHost(otliProp("otli.emulatorHost", "10.0.2.2"))
 
 android {
     namespace = "com.otli.app"
@@ -66,6 +67,20 @@ android {
 
 kotlin {
     jvmToolchain(17)
+}
+
+// Debug-only: generate res/xml/network_security_config.xml allowing cleartext for the emulator
+// hosts plus exactly the configured otli.emulatorHost. Release has no such resource.
+androidComponents {
+    val configuredHost = emulatorHost
+    onVariants(selector().withBuildType("debug")) { variant ->
+        val generate = tasks.register<com.otli.buildlogic.GenerateDebugNetworkSecurityConfig>(
+            "generate${variant.name.replaceFirstChar { it.uppercase() }}NetworkSecurityConfig",
+        ) {
+            emulatorHost.set(configuredHost)
+        }
+        variant.sources.res?.addGeneratedSourceDirectory(generate, com.otli.buildlogic.GenerateDebugNetworkSecurityConfig::outputDir)
+    }
 }
 
 // OrderTransitionsContractTest and LiveLocationDocumentsTest read these shared fixtures (ADR-14); declaring them makes a fixture edit re-run the tests.
