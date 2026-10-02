@@ -40,7 +40,10 @@ object OrderTrackingTags {
     const val LOADING = "order-tracking-loading"
 }
 
-/** Stateless tracking of one order: its status, the journey so far, what was ordered, and cancel. */
+/**
+ * Stateless tracking of one order: its status, the journey so far, what was ordered, and cancel. The
+ * [liveMap] slot hosts the courier map, which shows itself only while the courier is on the way.
+ */
 @Composable
 fun OrderTrackingContent(
     state: OrderTrackingUiState,
@@ -48,6 +51,7 @@ fun OrderTrackingContent(
     onDismissError: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    liveMap: @Composable () -> Unit = {},
 ) {
     Column(modifier.fillMaxSize()) {
         OtliTopBar(title = stringResource(R.string.tracking_title), onBack = onBack)
@@ -57,7 +61,7 @@ fun OrderTrackingContent(
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center).testTag(OrderTrackingTags.LOADING))
                 state.notFound -> Message(R.string.tracking_not_found)
                 state.loadFailed || order == null -> Message(R.string.tracking_load_failed)
-                else -> OrderDetails(order, state, onCancel, onDismissError)
+                else -> OrderDetails(order, state, onCancel, onDismissError, liveMap)
             }
         }
     }
@@ -71,7 +75,13 @@ private fun Message(message: Int) {
 }
 
 @Composable
-private fun OrderDetails(order: Order, state: OrderTrackingUiState, onCancel: () -> Unit, onDismissError: () -> Unit) {
+private fun OrderDetails(
+    order: Order,
+    state: OrderTrackingUiState,
+    onCancel: () -> Unit,
+    onDismissError: () -> Unit,
+    liveMap: @Composable () -> Unit,
+) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -89,6 +99,7 @@ private fun OrderDetails(order: Order, state: OrderTrackingUiState, onCancel: ()
             Text(stringResource(R.string.tracking_reject_reason, reason), color = MaterialTheme.colorScheme.error)
         }
         Timeline(order.status)
+        liveMap()
         HorizontalDivider()
         Text(itemsSummary(order), style = MaterialTheme.typography.bodyLarge)
         Totals(order)
