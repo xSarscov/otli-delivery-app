@@ -2,6 +2,7 @@ import { assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import { describe, expect, it } from "vitest";
 import { useCatalogEnv, serverTime } from "./catalog-support";
 import { seedFreeCourier, seedReadyOrder } from "./dispatch-support";
+import { liveFix } from "./live-support";
 
 /**
  * The exact documents the Android adapter writes (`DispatchDocuments`), in the exact shape of its
@@ -69,6 +70,27 @@ describe("the writes of the Android dispatch adapter", () => {
     await assertFails(deliverLikeTheAdapter("o1"));
     expect(await order("o1")).toMatchObject({ status: "claimed" });
     expect(await courier()).toMatchObject({ activeOrderId: "o1" });
+  });
+});
+
+describe("the live location write of the Android tracking adapter", () => {
+  const publish = (orderId: string, lat: number) =>
+    as(UID).collection("liveLocations").doc(orderId).set(liveFix(UID, { lat }));
+
+  it("publishes while claimed, again after the floor, and stops at the delivery", async () => {
+    await seedReadyOrder(admin, "o1");
+    await seedFreeCourier(admin, UID);
+    await assertFails(publish("o1", 12.2));
+    await assertSucceeds(claimLikeTheAdapter("o1"));
+    await assertSucceeds(publish("o1", 12.2));
+    await assertFails(publish("o1", 12.3));
+    await admin((db) => db.collection("liveLocations").doc("o1").update({ updatedAt: new Date(Date.now() - 6000) }));
+    await assertSucceeds(as(UID).collection("orders").doc("o1").update(pickUpUpdate()));
+    await assertSucceeds(publish("o1", 12.4));
+    await admin((db) => db.collection("liveLocations").doc("o1").update({ updatedAt: new Date(Date.now() - 6000) }));
+    await assertSucceeds(deliverLikeTheAdapter("o1"));
+    await assertFails(publish("o1", 12.5));
+    expect((await admin((db) => db.collection("liveLocations").doc("o1").get())).data()?.lat).toBe(12.4);
   });
 });
 
