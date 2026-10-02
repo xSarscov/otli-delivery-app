@@ -96,6 +96,8 @@
     <string name="product_photo_saved">Product photo saved.</string>
     <string name="tab_catalog">Catalog</string>
     <string name="tab_profile">Store</string>
+    <string name="map_courier_marker">Courier</string>
+    <string name="map_dropoff_marker">Delivery address</string>
     <string name="map_attribution">OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors</string>
     <string name="map_pin_hint">Tap the map to drop a pin on your location.</string>
     <string name="map_pin_selected">Pin: %1$.5f, %2$.5f</string>
