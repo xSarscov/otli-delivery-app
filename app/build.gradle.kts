@@ -100,6 +100,7 @@ dependencies {
     implementation(libs.firebase.firestore)
 
     implementation(libs.maplibre.android)
+    implementation(libs.play.services.location)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
