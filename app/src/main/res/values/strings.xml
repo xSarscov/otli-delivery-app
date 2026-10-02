@@ -96,6 +96,11 @@
     <string name="product_photo_saved">Product photo saved.</string>
     <string name="tab_catalog">Catalog</string>
     <string name="tab_profile">Store</string>
+    <string name="live_map_title">Courier location</string>
+    <string name="live_map_waiting">Waiting for the courier\'s location…</string>
+    <string name="live_map_updated_seconds">Updated %1$d s ago</string>
+    <string name="live_map_updated_minutes">Updated %1$d min ago</string>
+    <string name="live_map_unavailable">The courier\'s location is not available right now</string>
     <string name="map_courier_marker">Courier</string>
     <string name="map_dropoff_marker">Delivery address</string>
     <string name="map_attribution">OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors</string>
