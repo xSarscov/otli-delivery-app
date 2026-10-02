@@ -60,7 +60,11 @@ class MainActivity : ComponentActivity() {
                             RequestNotificationPermission()
                             MerchantHomeTabsScreen(orders = { MerchantOrderBoardScreen() })
                         },
-                        courierHome = { CourierDashboardScreen() },
+                        courierHome = {
+                            // The foreground service notification of a delivery needs it to be visible (Android 13+).
+                            RequestNotificationPermission()
+                            CourierDashboardScreen()
+                        },
                     )
                 }
             }
