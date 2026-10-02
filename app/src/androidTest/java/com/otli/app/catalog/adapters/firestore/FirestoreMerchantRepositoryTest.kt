@@ -4,6 +4,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import com.google.firebase.firestore.Blob
+import com.google.firebase.firestore.Source
 import com.otli.app.auth.adapters.firestore.FirestoreAuthRepository
 import com.otli.app.auth.domain.AccountStatus
 import com.otli.app.core.di.OtliFirebase
@@ -39,7 +40,7 @@ class FirestoreMerchantRepositoryTest {
     @After
     fun restoreSeedProfileAndSignOut() = await {
         if (auth.currentUser != null) {
-            repository.updateProfile(MERCHANT_1, "Comedor Doña Marta", "Comida típica nicaragüense", "8888-0101")
+            repository.updateProfile(MERCHANT_1, "Comedor Doña Marta", "Comida típica nicaragüense", "+50588880101")
             repository.setOpen(MERCHANT_1, true)
         }
         auth.signOut()
@@ -67,7 +68,10 @@ class FirestoreMerchantRepositoryTest {
 
     @Test
     fun updatePhotoStoresTheBytesAtTheProfilePhotoAndBumpsPhotoVersionEachTime() = await {
-        val before = repository.observeMerchant(MERCHANT_1).first()!!.photoVersion
+        // Read the starting version from the server: the persistent local cache can still hold a version
+        // from an earlier run after the seed reset it, and the wait below would then never finish.
+        val before = firestore.collection("merchants").document(MERCHANT_1).get(Source.SERVER).await()
+            .getLong("photoVersion")?.toInt() ?: 0
         val jpeg = byteArrayOf(1, 2, 3, 4)
 
         repository.updatePhoto(MERCHANT_1, jpeg).getOrThrow()

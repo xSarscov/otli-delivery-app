@@ -141,9 +141,12 @@ class FirestoreLocationRepositoryTest {
         locations.publish(id, COURIER, fix()).getOrThrow()
         signIn(MERCHANT_EMAIL)
 
-        val outcome = runCatching { locations.observe(id).first() }
+        // Ask the server: the courier's own write is still in this device's local cache, and a listener
+        // answers from that cache before the server's denial arrives.
+        val outcome = runCatching { firestore.collection("liveLocations").document(id).get(Source.SERVER).await() }
 
-        assertThat(outcome.isFailure).isTrue()
+        assertThat((outcome.exceptionOrNull() as? FirebaseFirestoreException)?.code)
+            .isEqualTo(FirebaseFirestoreException.Code.PERMISSION_DENIED)
     }
 
     @Test

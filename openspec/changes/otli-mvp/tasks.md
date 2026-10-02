@@ -372,7 +372,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 5.1 — Domain
 
-- [ ] 5.1.1 Create `tracking/domain/GeoFix.kt` (lat/lng/accuracy/timestamp) and `tracking/domain/LocationThrottle.kt` (pure function: publish iff `elapsed ≥ 10s && distance ≥ 10m`, or `elapsed ≥ 60s` heartbeat, per ADR-8) and `app/src/test/java/com/otli/app/tracking/domain/LocationThrottleTest.kt`.
+- [x] 5.1.1 (branch 05-1a: `GeoFix` with haversine distance and `LocationThrottle`; 9 tests, 7 mutants killed) Create `tracking/domain/GeoFix.kt` (lat/lng/accuracy/timestamp) and `tracking/domain/LocationThrottle.kt` (pure function: publish iff `elapsed ≥ 10s && distance ≥ 10m`, or `elapsed ≥ 60s` heartbeat, per ADR-8) and `app/src/test/java/com/otli/app/tracking/domain/LocationThrottleTest.kt`.
   - Test-first: write `LocationThrottleTest` RED (table-driven across elapsed/distance combinations, including the heartbeat case), then implement GREEN.
   - Acceptance: live-tracking spec — "Rapid successive location reports are throttled" (client half; server floor is PR 5.2).
   - Est. lines: ~120
@@ -381,7 +381,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 5.2 — `liveLocations` rules
 
-- [ ] 5.2.1 Extend `backend/firestore.rules` with `liveLocations/{orderId}`: read restricted to the order's customer, its assigned courier, and Admin; create/update restricted to the assigned active courier while the order is `claimed`/`picked_up`, `updatedAt == request.time`, `keys().hasOnly([...])` exactly as in `design.md`'s excerpt, and the 5-second write floor (`resource == null || request.time > resource.data.updatedAt + duration.value(5, 's')`).
+- [x] 5.2.1 (branch 05-2a: `liveLocations` rules, read via `allow get` only; 31 tests, per-clause mutation; shared fixture `backend/contracts/live-location.json` pins the field list for rules and adapter) Extend `backend/firestore.rules` with `liveLocations/{orderId}`: read restricted to the order's customer, its assigned courier, and Admin; create/update restricted to the assigned active courier while the order is `claimed`/`picked_up`, `updatedAt == request.time`, `keys().hasOnly([...])` exactly as in `design.md`'s excerpt, and the 5-second write floor (`resource == null || request.time > resource.data.updatedAt + duration.value(5, 's')`).
   - Test-first: write `backend/tests/rules/live-locations.test.ts` RED first (assigned courier can write while claimed/picked_up, denied once delivered or while still ready; a write within 5s of the last one is denied; the order's customer and Admin can read, a different customer/merchant/courier cannot), then extend rules GREEN.
   - Acceptance: live-tracking spec — "Location publishes while claimed and picked up", "Location stops at delivery", "No tracking data before claim", "The order's own customer sees the courier's live position" (read half), "A different customer cannot see the courier's location", "Admin can view live location for oversight", "The merchant cannot see courier live location".
   - Est. lines: ~240
@@ -390,11 +390,11 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 5.3 — Location publishing service
 
-- [ ] 5.3.1 Create `tracking/application/LocationSource.kt` and `LocationRepository.kt` ports, `tracking/adapters/device/FusedLocationSource.kt` (`FusedLocationProviderClient` wrapped as `Flow<GeoFix>`), `tracking/adapters/firestore/FirestoreLocationRepository.kt` (implements `publish`/`observe` against `liveLocations/{orderId}`), and `tracking/di/TrackingModule.kt`.
+- [x] 5.3.1 (branches 05-3a ports + `LiveLocationDocuments` + contract, 05-3b `FusedLocationSource` on play-services-location 21.4.0, `FirestoreLocationRepository`, `TrackingModule`; instrumented `FirestoreLocationRepositoryTest` compiled, device GREEN pending) Create `tracking/application/LocationSource.kt` and `LocationRepository.kt` ports, `tracking/adapters/device/FusedLocationSource.kt` (`FusedLocationProviderClient` wrapped as `Flow<GeoFix>`), `tracking/adapters/firestore/FirestoreLocationRepository.kt` (implements `publish`/`observe` against `liveLocations/{orderId}`), and `tracking/di/TrackingModule.kt`.
   - Test-first: write `app/src/androidTest/java/com/otli/app/tracking/adapters/firestore/FirestoreLocationRepositoryTest.kt` RED (publish while `claimed` succeeds and is observable; publish attempted twice within 5s — second is rejected by rules and the adapter surfaces that), then implement GREEN.
   - Acceptance: live-tracking spec — "Location publishes while claimed and picked up" (adapter half).
   - Est. lines: ~180
-- [ ] 5.3.2 Create `tracking/adapters/service/DeliveryTrackingService.kt` (foreground service, `foregroundServiceType="location"`, starts when the courier's `activeOrderId` becomes non-null, applies `LocationThrottle` before each `publish`, stops on `activeOrderId==null` or order leaving `claimed`/`picked_up`) and register it in `AndroidManifest.xml`. Create a Robolectric service test asserting start/stop transitions on fake `activeOrderId` changes.
+- [x] 5.3.2 (branches 05-3c `TrackingPlan` + `TrackingCoordinator` (pure, JVM-tested start/stop transitions), 05-3d `TrackingPublisher`, 05-3e `DeliveryTrackingService` + `ServiceTrackingController` + notification + manifest, 05-3f permission request on going online + status line; Robolectric tests cover the controller intents instead of a Service lifecycle test, the service is thin glue) Create `tracking/adapters/service/DeliveryTrackingService.kt` (foreground service, `foregroundServiceType="location"`, starts when the courier's `activeOrderId` becomes non-null, applies `LocationThrottle` before each `publish`, stops on `activeOrderId==null` or order leaving `claimed`/`picked_up`) and register it in `AndroidManifest.xml`. Create a Robolectric service test asserting start/stop transitions on fake `activeOrderId` changes.
   - Test-first: write the service test RED, then implement GREEN.
   - Acceptance: live-tracking spec — "Location publishes while claimed and picked up", "Location stops at delivery"; ADR-8 (service lifecycle).
   - Est. lines: ~170
@@ -403,11 +403,11 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 5.4 — Live map UI
 
-- [ ] 5.4.1 Create `tracking/adapters/ui/MapStyle.kt` (OpenFreeMap style URL constant + OSM raster fallback style JSON, attribution) — if not already created in task 3.4.3, this is where the fallback path and attribution UI are added.
+- [x] 5.4.1 (branch 05-4a: `core/map/MapStyle` shared with the pin picker, OSM raster fallback and `MapAttribution`; placed in core/map, not tracking/adapters/ui, because the style already lived there) Create `tracking/adapters/ui/MapStyle.kt` (OpenFreeMap style URL constant + OSM raster fallback style JSON, attribution) — if not already created in task 3.4.3, this is where the fallback path and attribution UI are added.
   - Test-first: N/A (constants + attribution rendering, covered by the UI test in 5.4.2).
   - Acceptance: ADR-13.
   - Est. lines: ~50
-- [ ] 5.4.2 Create `tracking/adapters/ui/LiveMapScreen.kt`/`Content`/`ViewModel` (MapLibre `AndroidView` showing the assigned courier's live marker, only rendered for the order's customer or Admin) and its test.
+- [x] 5.4.2 (branches 05-4b `LiveMapAccess` + `UpdateAge`, 05-4c `LiveMapViewModel`, 05-4d `ReadOnlyMapView` + shared `rememberMapView`, 05-4e `LiveMapContent`/`LiveMapScreen` in the customer tracking screen, 05-4f dropoff map on the courier's active delivery; native map verified on device) Create `tracking/adapters/ui/LiveMapScreen.kt`/`Content`/`ViewModel` (MapLibre `AndroidView` showing the assigned courier's live marker, only rendered for the order's customer or Admin) and its test.
   - Test-first: write `LiveMapViewModelTest` RED (marker position updates from `LocationRepository.observe`; screen is not reachable/visible for a non-owner customer, merchant, or unrelated courier — assert the ViewModel refuses to expose location data for an unauthorized viewer role), then implement GREEN.
   - Acceptance: live-tracking spec — "The order's own customer sees the courier's live position" (UI half), "A different customer cannot see the courier's location", "Admin can view live location for oversight", "The merchant cannot see courier live location".
   - Est. lines: ~200
