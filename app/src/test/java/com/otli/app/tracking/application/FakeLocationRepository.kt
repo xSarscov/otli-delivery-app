@@ -22,6 +22,10 @@ class FakeLocationRepository : LocationRepository {
     val position = MutableStateFlow<LivePosition?>(null)
     var listenerError: Throwable? = null
 
+    /** How many times [observe] listeners were started. */
+    var observeStarts = 0
+        private set
+
     override suspend fun publish(orderId: String, courierId: String, fix: GeoFix): Result<Unit> {
         val attempt = Published(orderId, courierId, fix)
         published += attempt
@@ -29,6 +33,7 @@ class FakeLocationRepository : LocationRepository {
     }
 
     override fun observe(orderId: String): Flow<LivePosition?> = flow {
+        observeStarts++
         listenerError?.let { throw it }
         emitAll(position)
     }

@@ -8,14 +8,19 @@ import com.otli.app.auth.domain.Role
 import com.otli.app.auth.domain.UserAccount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 
-/** An auth repository whose signed-in user is [authState]; the user documents are never needed. */
+/**
+ * An auth repository whose signed-in user is [authState]. [userDocument] is the one `users` document
+ * that exists; asking for any other uid finds nothing, like Firestore.
+ */
 class FakeSignedInAuth(uid: String? = null) : AuthRepository {
     val authState = MutableStateFlow(uid?.let { AuthUser(it, "$it@otli.test") })
+    val userDocument = MutableStateFlow<UserAccount?>(null)
 
     override fun observeAuthState(): Flow<AuthUser?> = authState
 
-    override fun observeUserDocument(uid: String): Flow<UserAccount?> = MutableStateFlow(null)
+    override fun observeUserDocument(uid: String): Flow<UserAccount?> = userDocument.map { it?.takeIf { account -> account.uid == uid } }
 
     override suspend fun register(email: String, password: String, role: Role, profileFields: ProfileFields, merchantStore: MerchantStoreDetails?) =
         Result.success(Unit)
