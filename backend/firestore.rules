@@ -349,6 +349,38 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // liveLocations/{orderId}: the assigned courier's latest position, overwritten in place while the order
+    // is claimed or picked up (ADR-8). The rules floor the write rate at 5 s per order even for a buggy
+    // client; the app throttles itself to 10 s / 10 m. Only single reads are allowed, never listing.
+    match /liveLocations/{orderId} {
+      function order() { return get(orderPath(orderId)).data; }
+      function validFix() {
+        let data = request.resource.data;
+        return data.keys().hasOnly(['courierId', 'lat', 'lng', 'accuracyM', 'updatedAt'])
+          && data.keys().hasAll(['courierId', 'lat', 'lng', 'accuracyM', 'updatedAt'])
+          && data.courierId == request.auth.uid
+          && data.lat is number && data.lat >= -90 && data.lat <= 90
+          && data.lng is number && data.lng >= -180 && data.lng <= 180
+          && data.accuracyM is number && data.accuracyM >= 0
+          && data.updatedAt == request.time;
+      }
+      function spacedOut() {
+        return resource == null || request.time > resource.data.updatedAt + duration.value(5, 's');
+      }
+      function publish() {
+        return isActiveCourier()
+          && order().courierId == request.auth.uid
+          && order().status in ['claimed', 'picked_up']
+          && validFix()
+          && spacedOut();
+      }
+
+      allow get: if signedIn()
+        && (order().customerId == request.auth.uid || order().courierId == request.auth.uid || isActiveAdmin());
+      allow create, update: if publish();
+      allow delete: if false;
+    }
+
     // Everything else stays denied until its slice adds a match block test-first.
     match /{document=**} {
       allow read, write: if false;
