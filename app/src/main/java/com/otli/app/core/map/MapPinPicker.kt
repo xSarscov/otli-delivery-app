@@ -44,11 +44,7 @@ fun MapPinPicker(
         mapContent(state) { latitude, longitude ->
             state.withPin(latitude, longitude).result?.takeIf { it != pin }?.let(onPinChange)
         }
-        Text(
-            stringResource(R.string.map_attribution),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        MapAttribution()
         if (pin == null) {
             Text(stringResource(R.string.map_pin_hint), style = MaterialTheme.typography.bodyMedium)
         } else {
