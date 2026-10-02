@@ -21,8 +21,6 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 
-/** OpenFreeMap vector style; free, keyless, and its attribution is shown by [MapPinPicker]. */
-private const val STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
 private const val INITIAL_ZOOM = 13.0
 
 /**
@@ -53,7 +51,7 @@ fun PinMapView(
             }
             view.getMapAsync { map ->
                 holder.map = map
-                map.setStyle(STYLE_URL) {
+                view.loadOtliStyle(map) {
                     val start = currentState.center
                     map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(start.latitude, start.longitude), INITIAL_ZOOM))
                     holder.render(currentState.pin)
