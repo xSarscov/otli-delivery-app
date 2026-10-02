@@ -24,6 +24,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.otli.app.R
 import com.otli.app.catalog.domain.PriceInput
+import com.otli.app.core.map.MapAttribution
+import com.otli.app.core.map.MapPin
+import com.otli.app.core.map.ReadOnlyMapContent
 import com.otli.app.core.theme.OtliTheme
 import com.otli.app.ordering.adapters.ui.OrderStatusLabels
 import com.otli.app.ordering.adapters.ui.itemsSummary
@@ -39,8 +42,9 @@ object DeliveryTags {
 
 /**
  * Stateless active delivery: where to pick the order up, where to take it, who to hand it to and the
- * cash to collect, with the two step buttons enabled by the order's current status. Shows nothing
- * when the courier has no active order, so the pool can take the screen.
+ * cash to collect, with the two step buttons enabled by the order's current status. The dropoff pin is
+ * drawn by the [dropoffMap] slot. Shows nothing when the courier has no active order, so the pool can take
+ * the screen.
  */
 @Composable
 fun ActiveDeliveryContent(
@@ -49,6 +53,7 @@ fun ActiveDeliveryContent(
     onDeliver: () -> Unit,
     onDismissError: () -> Unit,
     modifier: Modifier = Modifier,
+    dropoffMap: ReadOnlyMapContent = { _, _ -> },
 ) {
     when {
         state.isLoading -> Box(modifier.fillMaxSize()) {
@@ -60,13 +65,19 @@ fun ActiveDeliveryContent(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             state.error?.let { ErrorRow(it, onDismissError) }
-            state.order?.let { DeliveryCard(it, state, onPickUp, onDeliver) }
+            state.order?.let { DeliveryCard(it, state, onPickUp, onDeliver, dropoffMap) }
         }
     }
 }
 
 @Composable
-private fun DeliveryCard(order: Order, state: ActiveDeliveryUiState, onPickUp: () -> Unit, onDeliver: () -> Unit) {
+private fun DeliveryCard(
+    order: Order,
+    state: ActiveDeliveryUiState,
+    onPickUp: () -> Unit,
+    onDeliver: () -> Unit,
+    dropoffMap: ReadOnlyMapContent,
+) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(stringResource(R.string.delivery_title), style = MaterialTheme.typography.titleLarge)
@@ -75,6 +86,8 @@ private fun DeliveryCard(order: Order, state: ActiveDeliveryUiState, onPickUp: (
             Text(stringResource(R.string.delivery_pickup, order.pickup.reference), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.delivery_dropoff, order.dropoff.reference), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.delivery_pin, coordinates(order.dropoff)), style = MaterialTheme.typography.bodyMedium)
+            dropoffMap(MapPin(order.dropoff.latitude, order.dropoff.longitude), null)
+            MapAttribution()
             Text(
                 stringResource(R.string.delivery_customer, order.customerName, order.customerPhone),
                 style = MaterialTheme.typography.bodyMedium,
@@ -98,7 +111,7 @@ private fun stepText(status: OrderStatus): Int = when (status) {
     else -> OrderStatusLabels.of(status)
 }
 
-/** The dropoff pin as read-only text: the courier navigates with whatever map app they prefer. */
+/** The dropoff pin as text too (copyable): the courier navigates with whatever map app they prefer. */
 private fun coordinates(location: OrderLocation): String =
     String.format(Locale.US, "%.5f, %.5f", location.latitude, location.longitude)
 
