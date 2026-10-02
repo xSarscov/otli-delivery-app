@@ -11,9 +11,11 @@ import com.otli.app.R
 import com.otli.app.auth.adapters.ui.GateViewModel
 import com.otli.app.auth.adapters.ui.SignOutMenuContent
 import com.otli.app.core.ui.OtliTopBar
+import com.otli.app.tracking.adapters.ui.TrackingStatusScreen
+import com.otli.app.tracking.adapters.ui.rememberLocationPermission
 
 /**
- * Stateless courier home: the app bar with the sign-out menu, the availability switch, and one body
+ * Stateless courier home: the app bar with the sign-out menu, the availability switch, the location sharing status, and one body
  * that the pool and the active delivery share. They never show together: the pool hides while the
  * courier has an active order, and the delivery renders nothing without one.
  */
@@ -21,6 +23,7 @@ import com.otli.app.core.ui.OtliTopBar
 fun CourierDashboardContent(
     onSignOut: () -> Unit,
     availability: @Composable () -> Unit,
+    tracking: @Composable () -> Unit,
     pool: @Composable () -> Unit,
     activeDelivery: @Composable () -> Unit,
     modifier: Modifier = Modifier,
@@ -31,6 +34,7 @@ fun CourierDashboardContent(
             actions = { SignOutMenuContent(onSignOut) },
         )
         availability()
+        tracking()
         Box(Modifier.weight(1f)) {
             pool()
             activeDelivery()
@@ -44,9 +48,12 @@ fun CourierDashboardScreen(
     modifier: Modifier = Modifier,
     session: GateViewModel = hiltViewModel(),
 ) {
+    // The location permission is asked for when the courier goes online, so it is settled before a delivery.
+    val locationPermission = rememberLocationPermission()
     CourierDashboardContent(
         onSignOut = session::logout,
-        availability = { AvailabilityScreen() },
+        availability = { AvailabilityScreen(onWentOnline = locationPermission::request) },
+        tracking = { TrackingStatusScreen(locationPermission) },
         pool = { PoolScreen() },
         activeDelivery = { ActiveDeliveryScreen() },
         modifier = modifier,

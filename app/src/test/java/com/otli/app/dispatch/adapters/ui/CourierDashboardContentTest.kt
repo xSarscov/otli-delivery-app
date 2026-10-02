@@ -29,6 +29,7 @@ class CourierDashboardContentTest {
             CourierDashboardContent(
                 onSignOut = onSignOut,
                 availability = { Text("availability slot", Modifier.testTag("availability-slot")) },
+                tracking = { Text("tracking slot", Modifier.testTag("tracking-slot")) },
                 pool = { Text("pool slot", Modifier.testTag("pool-slot")) },
                 activeDelivery = { Text("delivery slot", Modifier.testTag("delivery-slot")) },
             )
@@ -36,11 +37,12 @@ class CourierDashboardContentTest {
     }
 
     @Test
-    fun itHasTheAppBarAndHostsTheAvailabilitySwitchThePoolAndTheActiveDelivery() {
+    fun itHasTheAppBarAndHostsTheAvailabilitySwitchTheTrackingStatusThePoolAndTheActiveDelivery() {
         show()
 
         compose.onNodeWithText(text(R.string.app_name)).assertIsDisplayed()
         compose.onNodeWithTag("availability-slot").assertIsDisplayed()
+        compose.onNodeWithTag("tracking-slot").assertIsDisplayed()
         compose.onNodeWithTag("pool-slot").assertIsDisplayed()
         compose.onNodeWithTag("delivery-slot").assertIsDisplayed()
     }

@@ -157,6 +157,9 @@
     <string name="tracking_channel_name">Delivery location sharing</string>
     <string name="tracking_notification_title">Delivery in progress</string>
     <string name="tracking_notification_text">Sharing your location with the customer</string>
+    <string name="tracking_sharing">Sharing your location with the customer</string>
+    <string name="tracking_permission_missing">Location is off, so the customer cannot follow your delivery. Allow location access to share it, or enable it in the app settings.</string>
+    <string name="tracking_allow_location">Allow location</string>
     <string name="notice_new_order_title">New order</string>
     <string name="notice_new_order_text">%1$s, C$ %2$s</string>
     <string name="notice_rejected_with_reason">The store could not take your order: %1$s</string>
