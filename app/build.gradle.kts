@@ -68,9 +68,10 @@ kotlin {
     jvmToolchain(17)
 }
 
-// OrderTransitionsContractTest reads this shared fixture (ADR-14); declaring it makes a fixture edit re-run the tests.
+// OrderTransitionsContractTest and LiveLocationDocumentsTest read these shared fixtures (ADR-14); declaring them makes a fixture edit re-run the tests.
 tasks.withType<Test>().configureEach {
     inputs.file(rootProject.file("backend/contracts/order-transitions.json")).withPropertyName("orderTransitionsContract")
+    inputs.file(rootProject.file("backend/contracts/live-location.json")).withPropertyName("liveLocationContract")
 }
 
 dependencies {

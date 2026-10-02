@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import { describe, expect, it } from "vitest";
 import { useCatalogEnv } from "./catalog-support";
@@ -8,6 +9,18 @@ const { as, signedOut, admin } = useCatalogEnv();
 
 const live = (asUid: string, orderId = "o1") => as(asUid).collection("liveLocations").doc(orderId);
 const stored = async (orderId = "o1") => (await admin((db) => db.collection("liveLocations").doc(orderId).get())).data();
+
+describe("liveLocations/{orderId} contract with the Android adapter", () => {
+  // backend/contracts/live-location.json is also read by the Kotlin LiveLocationDocumentsTest.
+  const contract: { fields: string[] } = JSON.parse(readFileSync("contracts/live-location.json", "utf8"));
+
+  it("accepts exactly the fields of the shared fixture", async () => {
+    await seedServing(admin, "courier-1", "o1", "claimed");
+    expect(Object.keys(liveFix()).sort()).toEqual([...contract.fields].sort());
+    await assertSucceeds(live("courier-1").set(liveFix()));
+    await assertFails(live("courier-1", "o1").update({ ...liveFix(), extra: 1 }));
+  });
+});
 
 describe("liveLocations/{orderId} writes", () => {
   it("lets the assigned courier publish while the order is claimed", async () => {
