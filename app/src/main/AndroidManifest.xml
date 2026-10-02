@@ -23,6 +23,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Publishes the courier's position while a delivery is under way (ADR-8); started by the app while it is visible. -->
+        <service
+            android:name=".tracking.adapters.service.DeliveryTrackingService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
     </application>
 
 </manifest>

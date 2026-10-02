@@ -154,6 +154,9 @@
     <string name="order_status_rejected">The store could not take your order</string>
     <string name="order_status_cancelled">Cancelled</string>
     <string name="notice_channel_name">Order updates</string>
+    <string name="tracking_channel_name">Delivery location sharing</string>
+    <string name="tracking_notification_title">Delivery in progress</string>
+    <string name="tracking_notification_text">Sharing your location with the customer</string>
     <string name="notice_new_order_title">New order</string>
     <string name="notice_new_order_text">%1$s, C$ %2$s</string>
     <string name="notice_rejected_with_reason">The store could not take your order: %1$s</string>
