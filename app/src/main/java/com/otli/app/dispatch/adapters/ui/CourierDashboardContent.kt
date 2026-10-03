@@ -11,8 +11,11 @@ import com.otli.app.R
 import com.otli.app.auth.adapters.ui.GateViewModel
 import com.otli.app.auth.adapters.ui.SignOutMenuContent
 import com.otli.app.core.ui.OtliTopBar
+import com.otli.app.tracking.adapters.ui.LocationActionsEffect
 import com.otli.app.tracking.adapters.ui.TrackingStatusScreen
+import com.otli.app.tracking.adapters.ui.TrackingViewModel
 import com.otli.app.tracking.adapters.ui.rememberLocationPermission
+import com.otli.app.tracking.adapters.ui.rememberTurnOnLocationPrompt
 
 /**
  * Stateless courier home: the app bar with the sign-out menu, the availability switch, the location sharing status, and one body
@@ -48,12 +51,16 @@ fun CourierDashboardScreen(
     modifier: Modifier = Modifier,
     session: GateViewModel = hiltViewModel(),
 ) {
-    // The location permission is asked for when the courier goes online, so it is settled before a delivery.
+    // Going online asks for the location permission and the device location services, so both are settled
+    // before a delivery; the tracking view model decides what to ask and these dialogs answer it.
     val locationPermission = rememberLocationPermission()
+    val turnOnLocation = rememberTurnOnLocationPrompt()
+    val tracking: TrackingViewModel = hiltViewModel()
+    LocationActionsEffect(tracking.events, onRequestPermission = locationPermission::request, onTurnOnServices = turnOnLocation)
     CourierDashboardContent(
         onSignOut = session::logout,
-        availability = { AvailabilityScreen(onWentOnline = locationPermission::request) },
-        tracking = { TrackingStatusScreen(locationPermission) },
+        availability = { AvailabilityScreen(onWentOnline = tracking::onWentOnline) },
+        tracking = { TrackingStatusScreen(locationPermission, onTurnOnLocation = turnOnLocation, viewModel = tracking) },
         pool = { PoolScreen() },
         activeDelivery = { ActiveDeliveryScreen() },
         modifier = modifier,
