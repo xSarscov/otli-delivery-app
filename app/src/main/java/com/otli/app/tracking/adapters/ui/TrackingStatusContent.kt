@@ -63,7 +63,7 @@ fun TrackingStatusContent(
 @Composable
 fun TrackingStatusScreen(
     permission: LocationPermission,
-    onTurnOnLocation: () -> Unit = {},
+    onTurnOnLocation: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TrackingViewModel = hiltViewModel(),
 ) {
