@@ -23,6 +23,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.otli.app.R
 import com.otli.app.core.map.MapAttribution
 import com.otli.app.core.map.MapPin
+import com.otli.app.core.map.MapScene
 import com.otli.app.core.map.NativeReadOnlyMapContent
 import com.otli.app.core.map.ReadOnlyMapContent
 import com.otli.app.core.theme.OtliTheme
@@ -50,7 +51,7 @@ fun LiveMapContent(
     val courier = state.courier
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(R.string.live_map_title), style = MaterialTheme.typography.titleMedium)
-        mapContent(dropoff, courier?.let { MapPin(it.latitude, it.longitude) })
+        mapContent(MapScene(dropoff, courier = courier?.let { MapPin(it.latitude, it.longitude) }))
         MapAttribution()
         Text(statusText(state, nowMillis), style = MaterialTheme.typography.bodyMedium)
     }
@@ -101,7 +102,7 @@ private fun LiveMapPreview() {
                 courier = LivePosition("courier-1", 12.2656, -86.5664, accuracyMeters = 6f, updatedAtMillis = 1_000L),
             ),
             nowMillis = 8_000L,
-            mapContent = { _, _ -> Text("map") },
+            mapContent = { Text("map") },
         )
     }
 }
