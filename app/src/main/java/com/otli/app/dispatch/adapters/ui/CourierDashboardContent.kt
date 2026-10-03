@@ -62,7 +62,7 @@ fun CourierDashboardScreen(
         availability = { AvailabilityScreen(onWentOnline = tracking::onWentOnline) },
         tracking = { TrackingStatusScreen(locationPermission, onTurnOnLocation = turnOnLocation, viewModel = tracking) },
         pool = { PoolScreen() },
-        activeDelivery = { ActiveDeliveryScreen() },
+        activeDelivery = { ActiveDeliveryScreen(locationPermission) },
         modifier = modifier,
     )
 }
