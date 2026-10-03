@@ -21,12 +21,14 @@ class TrackingViewModel @Inject constructor(
     private val coordinator: TrackingCoordinator,
 ) : ViewModel() {
     private val permitted = MutableStateFlow(false)
+    // The device location switch is wired in the next unit; until then it is assumed on.
+    private val servicesOn = MutableStateFlow(true)
     private val _plan = MutableStateFlow<TrackingPlan>(TrackingPlan.Idle)
     val plan: StateFlow<TrackingPlan> = _plan.asStateFlow()
 
     init {
         viewModelScope.launch {
-            coordinator.plans(permitted).collect {
+            coordinator.plans(permitted, servicesOn).collect {
                 _plan.value = it
                 coordinator.apply(it)
             }

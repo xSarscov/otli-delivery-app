@@ -22,13 +22,14 @@ import com.otli.app.tracking.domain.TrackingPlan
 
 /**
  * Stateless line under the availability switch: tells the courier the location is being shared with the
- * customer, or warns that it is off (claiming and delivering still work) and offers to allow it.
- * Shows nothing without a delivery.
+ * customer, or warns that it is off (claiming and delivering still work) and offers to allow it, or, when
+ * only the device location services are off, to turn them on. Shows nothing without a delivery.
  */
 @Composable
 fun TrackingStatusContent(
     plan: TrackingPlan,
     onAllowLocation: () -> Unit,
+    onTurnOnLocation: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (plan) {
@@ -45,29 +46,46 @@ fun TrackingStatusContent(
             Text(stringResource(R.string.tracking_permission_missing), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             Button(onClick = onAllowLocation) { Text(stringResource(R.string.tracking_allow_location)) }
         }
+        is TrackingPlan.ServicesOff -> Column(
+            modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(stringResource(R.string.tracking_services_off), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            Button(onClick = onTurnOnLocation) { Text(stringResource(R.string.tracking_turn_on_location)) }
+        }
     }
 }
 
-/** Container: runs the tracking coordinator and feeds it the location [permission] owned by the courier home. */
+/**
+ * Container: runs the tracking coordinator and feeds it the location [permission] owned by the courier
+ * home; [onTurnOnLocation] re-opens the "Turn on location?" dialog from the warning button.
+ */
 @Composable
 fun TrackingStatusScreen(
     permission: LocationPermission,
+    onTurnOnLocation: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TrackingViewModel = hiltViewModel(),
 ) {
     val plan by viewModel.plan.collectAsStateWithLifecycle()
     LaunchedEffect(permission.granted) { viewModel.onPermissionChanged(permission.granted) }
-    TrackingStatusContent(plan = plan, onAllowLocation = permission::request, modifier = modifier)
+    TrackingStatusContent(plan = plan, onAllowLocation = permission::request, onTurnOnLocation = onTurnOnLocation, modifier = modifier)
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun TrackingSharingPreview() {
-    OtliTheme { TrackingStatusContent(TrackingPlan.Share("o1", "courier-1"), onAllowLocation = {}) }
+    OtliTheme { TrackingStatusContent(TrackingPlan.Share("o1", "courier-1"), onAllowLocation = {}, onTurnOnLocation = {}) }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun TrackingPermissionMissingPreview() {
-    OtliTheme { TrackingStatusContent(TrackingPlan.NeedsPermission("o1"), onAllowLocation = {}) }
+    OtliTheme { TrackingStatusContent(TrackingPlan.NeedsPermission("o1"), onAllowLocation = {}, onTurnOnLocation = {}) }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TrackingServicesOffPreview() {
+    OtliTheme { TrackingStatusContent(TrackingPlan.ServicesOff("o1", "courier-1"), onAllowLocation = {}, onTurnOnLocation = {}) }
 }

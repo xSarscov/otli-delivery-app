@@ -12,7 +12,8 @@ class TrackingPlanTest {
         courier: CourierAvailability? = working,
         status: OrderStatus? = OrderStatus.CLAIMED,
         permitted: Boolean = true,
-    ) = TrackingPlan.of("courier-1", courier, status, permitted)
+        servicesOn: Boolean = true,
+    ) = TrackingPlan.of("courier-1", courier, status, permitted, servicesOn)
 
     @Test
     fun anOnlineCourierWithAClaimedOrderSharesTheLocation() {
@@ -53,5 +54,23 @@ class TrackingPlanTest {
             assertThat(plan(status = status)).isEqualTo(TrackingPlan.Idle)
         }
         assertThat(plan(status = null)).isEqualTo(TrackingPlan.Idle)
+    }
+
+    @Test
+    fun withThePermissionButTheLocationServicesOffTheCourierIsToldToTurnThemOn() {
+        assertThat(plan(servicesOn = false)).isEqualTo(TrackingPlan.ServicesOff("o1", "courier-1"))
+        assertThat(plan(status = OrderStatus.PICKED_UP, servicesOn = false)).isEqualTo(TrackingPlan.ServicesOff("o1", "courier-1"))
+    }
+
+    @Test
+    fun theMissingPermissionComesBeforeTheLocationServices() {
+        assertThat(plan(permitted = false, servicesOn = false)).isEqualTo(TrackingPlan.NeedsPermission("o1"))
+    }
+
+    @Test
+    fun theLocationServicesDoNotMatterWithoutADelivery() {
+        assertThat(plan(courier = CourierAvailability(isOnline = true, activeOrderId = null), servicesOn = false)).isEqualTo(TrackingPlan.Idle)
+        assertThat(plan(courier = CourierAvailability(isOnline = false, activeOrderId = "o1"), servicesOn = false)).isEqualTo(TrackingPlan.Idle)
+        assertThat(plan(status = OrderStatus.DELIVERED, servicesOn = false)).isEqualTo(TrackingPlan.Idle)
     }
 }
