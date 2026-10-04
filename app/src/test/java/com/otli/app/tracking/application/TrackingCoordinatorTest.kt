@@ -37,12 +37,13 @@ class TrackingCoordinatorTest {
     private val auth = FakeSignedInAuth("courier-1")
     private val controller = RecordingController()
     private val permitted = MutableStateFlow(true)
+    private val servicesOn = MutableStateFlow(true)
     private val coordinator = TrackingCoordinator(dispatch, orders, auth, controller)
 
     private fun order(id: String, status: OrderStatus) = anOrder(id, status, courierId = "courier-1")
 
     private fun runCoordinator(block: suspend TestScope.() -> Unit) = runTest(UnconfinedTestDispatcher()) {
-        val job = launch(UnconfinedTestDispatcher(testScheduler)) { coordinator.run(permitted) }
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) { coordinator.run(permitted, servicesOn) }
         block()
         job.cancel()
     }
@@ -158,6 +159,64 @@ class TrackingCoordinatorTest {
         assertThat(controller.events).containsExactly("stop", "start:o1:courier-1", "stop").inOrder()
     }
 
+    // --- the device location switch ---
+
+    @Test
+    fun withTheLocationServicesOffTheServiceStaysUpSoPublishingResumesWhenTheyComeBack() = runCoordinator {
+        servicesOn.value = false
+        orders.orders.value = listOf(order("o1", OrderStatus.CLAIMED))
+        dispatch.courier = CourierAvailability(isOnline = true, activeOrderId = "o1")
+
+        assertThat(controller.events.last()).isEqualTo("start:o1:courier-1")
+
+        servicesOn.value = true
+
+        assertThat(controller.events).containsExactly("stop", "start:o1:courier-1", "start:o1:courier-1").inOrder()
+    }
+
+    @Test
+    fun turningTheLocationServicesOffMidDeliveryDoesNotStopTheService() = runCoordinator {
+        orders.orders.value = listOf(order("o1", OrderStatus.PICKED_UP))
+        dispatch.courier = CourierAvailability(isOnline = true, activeOrderId = "o1")
+
+        servicesOn.value = false
+
+        assertThat(controller.events.drop(1)).containsExactly("start:o1:courier-1", "start:o1:courier-1").inOrder()
+    }
+
+    @Test
+    fun theMissingPermissionIsReportedBeforeTheLocationServices() = runTest(UnconfinedTestDispatcher()) {
+        permitted.value = false
+        servicesOn.value = false
+        orders.orders.value = listOf(order("o1", OrderStatus.CLAIMED))
+        dispatch.courier = CourierAvailability(isOnline = true, activeOrderId = "o1")
+        val plans = mutableListOf<TrackingPlan>()
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) { coordinator.plans(permitted, servicesOn).toList(plans) }
+
+        permitted.value = true
+
+        assertThat(plans).containsExactly(TrackingPlan.NeedsPermission("o1"), TrackingPlan.ServicesOff("o1", "courier-1")).inOrder()
+        job.cancel()
+    }
+
+    @Test
+    fun theLocationServicesGoingOffAndOnAreReflectedInThePlans() = runTest(UnconfinedTestDispatcher()) {
+        orders.orders.value = listOf(order("o1", OrderStatus.CLAIMED))
+        dispatch.courier = CourierAvailability(isOnline = true, activeOrderId = "o1")
+        val plans = mutableListOf<TrackingPlan>()
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) { coordinator.plans(permitted, servicesOn).toList(plans) }
+
+        servicesOn.value = false
+        servicesOn.value = true
+
+        assertThat(plans).containsExactly(
+            TrackingPlan.Share("o1", "courier-1"),
+            TrackingPlan.ServicesOff("o1", "courier-1"),
+            TrackingPlan.Share("o1", "courier-1"),
+        ).inOrder()
+        job.cancel()
+    }
+
     // --- the session and failures ---
 
     @Test
@@ -189,7 +248,7 @@ class TrackingCoordinatorTest {
         orders.orders.value = listOf(order("o1", OrderStatus.CLAIMED))
         dispatch.courier = CourierAvailability(isOnline = true, activeOrderId = "o1")
         val plans = mutableListOf<TrackingPlan>()
-        val job = launch(UnconfinedTestDispatcher(testScheduler)) { coordinator.plans(permitted).toList(plans) }
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) { coordinator.plans(permitted, servicesOn).toList(plans) }
 
         permitted.value = true
         orders.orders.value = listOf(order("o1", OrderStatus.DELIVERED))

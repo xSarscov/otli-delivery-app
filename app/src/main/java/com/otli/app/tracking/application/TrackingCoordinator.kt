@@ -16,9 +16,10 @@ import kotlinx.coroutines.flow.map
 
 /**
  * Decides, from the signed-in courier's availability, the status of the order in their slot and the
- * location permission, when the tracking service runs (ADR-8): it starts when the courier is online
- * with a `claimed`/`picked_up` order and stops as soon as the slot clears, the order leaves those
- * states, the permission goes, or the courier signs out. It only observes and calls [TrackingController],
+ * location permission and the device location switch, when the tracking service runs (ADR-8): it starts when
+ * the courier is online with a `claimed`/`picked_up` order and stops as soon as the slot clears, the order
+ * leaves those states, the permission goes, or the courier signs out. With the location services off the
+ * service stays up so publishing resumes the moment they come back. It only observes and calls [TrackingController],
  * so it is testable without Android; the service is thin glue around [TrackingPublisher].
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -29,7 +30,7 @@ class TrackingCoordinator @Inject constructor(
     private val controller: TrackingController,
 ) {
     /** The live plan; a failing listener (the rules deny reads after sign-out) ends in [TrackingPlan.Idle]. */
-    fun plans(permitted: Flow<Boolean>): Flow<TrackingPlan> =
+    fun plans(permitted: Flow<Boolean>, servicesOn: Flow<Boolean>): Flow<TrackingPlan> =
         auth.observeAuthState()
             .map { it?.uid }
             .distinctUntilChanged()
@@ -37,21 +38,22 @@ class TrackingCoordinator @Inject constructor(
                 if (uid == null) {
                     flowOf(TrackingPlan.Idle)
                 } else {
-                    combine(serving(uid), permitted) { (courier, status), allowed -> TrackingPlan.of(uid, courier, status, allowed) }
+                    combine(serving(uid), permitted, servicesOn) { (courier, status), allowed, on -> TrackingPlan.of(uid, courier, status, allowed, on) }
                         .catch { emit(TrackingPlan.Idle) }
                 }
             }
             .distinctUntilChanged()
 
-    /** Starts the service for a [TrackingPlan.Share] and stops it for anything else. */
+    /** Starts the service for a [TrackingPlan.Share] or [TrackingPlan.ServicesOff] and stops it for anything else. */
     fun apply(plan: TrackingPlan) {
         when (plan) {
             is TrackingPlan.Share -> controller.start(plan.orderId, plan.courierId)
+            is TrackingPlan.ServicesOff -> controller.start(plan.orderId, plan.courierId)
             is TrackingPlan.NeedsPermission, TrackingPlan.Idle -> controller.stop()
         }
     }
 
-    suspend fun run(permitted: Flow<Boolean>) = plans(permitted).collect(::apply)
+    suspend fun run(permitted: Flow<Boolean>, servicesOn: Flow<Boolean>) = plans(permitted, servicesOn).collect(::apply)
 
     /** The courier document and the status of the order its slot names; an unchanged document does not restart the order listener. */
     private fun serving(uid: String) = dispatch.observeCourier(uid)
