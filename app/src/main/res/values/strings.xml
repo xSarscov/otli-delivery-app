@@ -103,6 +103,8 @@
     <string name="live_map_unavailable">The courier\'s location is not available right now</string>
     <string name="map_courier_marker">Courier</string>
     <string name="map_dropoff_marker">Delivery address</string>
+    <string name="map_pickup_here_marker">Pick up here</string>
+    <string name="map_store_marker">Store</string>
     <string name="map_attribution">OpenFreeMap © OpenMapTiles, data © OpenStreetMap contributors</string>
     <string name="map_pin_hint">Tap the map to drop a pin on your location.</string>
     <string name="map_pin_selected">Pin: %1$.5f, %2$.5f</string>

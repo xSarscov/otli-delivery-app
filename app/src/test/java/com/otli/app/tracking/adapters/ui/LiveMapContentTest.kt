@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithText
 import com.google.common.truth.Truth.assertThat
 import com.otli.app.R
 import com.otli.app.core.map.MapPin
+import com.otli.app.core.map.MapScene
 import com.otli.app.core.map.ReadOnlyMapContent
 import com.otli.app.tracking.domain.LivePosition
 import org.junit.Rule
@@ -27,9 +28,9 @@ class LiveMapContentTest {
 
     /** Records what the map was asked to draw instead of rendering MapLibre, which needs a device. */
     private class RecordingMap {
-        val drawn = mutableListOf<Pair<MapPin, MapPin?>>()
-        val content: ReadOnlyMapContent = { dropoff, courier ->
-            drawn += dropoff to courier
+        val drawn = mutableListOf<MapScene>()
+        val content: ReadOnlyMapContent = { scene ->
+            drawn += scene
             Text("map slot")
         }
     }
@@ -77,14 +78,14 @@ class LiveMapContentTest {
         compose.onNodeWithText(text(R.string.live_map_title)).assertIsDisplayed()
         compose.onNodeWithText("map slot").assertIsDisplayed()
         compose.onNodeWithText(text(R.string.live_map_waiting)).assertIsDisplayed()
-        assertThat(map.drawn.last()).isEqualTo(dropoff to null)
+        assertThat(map.drawn.last()).isEqualTo(MapScene(dropoff))
     }
 
     @Test
     fun theCourierMarkerIsDrawnAtTheLivePosition() {
         val map = show(following(courier = courierAt))
 
-        assertThat(map.drawn.last()).isEqualTo(dropoff to MapPin(12.2656, -86.5664))
+        assertThat(map.drawn.last()).isEqualTo(MapScene(dropoff, courier = MapPin(12.2656, -86.5664)))
         compose.onNodeWithText(text(R.string.live_map_waiting)).assertDoesNotExist()
     }
 
@@ -115,6 +116,6 @@ class LiveMapContentTest {
 
         compose.onNodeWithText(text(R.string.live_map_unavailable)).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.live_map_waiting)).assertDoesNotExist()
-        assertThat(map.drawn.last()).isEqualTo(dropoff to null)
+        assertThat(map.drawn.last()).isEqualTo(MapScene(dropoff))
     }
 }

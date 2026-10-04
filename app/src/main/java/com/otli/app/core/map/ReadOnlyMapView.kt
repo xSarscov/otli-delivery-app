@@ -26,111 +26,152 @@ import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
 
 private val ReadOnlyMapHeight = 240.dp
-private const val DROPOFF_ZOOM = 15.0
+private const val SINGLE_POINT_ZOOM = 15.0
 private const val FRAME_PADDING_PX = 120
-private const val COURIER_ICON_SIZE_PX = 56
-private const val COURIER_ICON_COLOR = 0xFF1565C0.toInt()
+private const val DOT_SIZE_PX = 56
+private const val MUTED_DOT_SIZE_PX = 36
+private const val COURIER_COLOR = 0xFF1565C0.toInt()
+private const val MUTED_COLOR = 0xFF757575.toInt()
 
-/** Slot that draws the [dropoff] pin and, once there is one, the courier; tests substitute their own. */
-typealias ReadOnlyMapContent = @Composable (dropoff: MapPin, courier: MapPin?) -> Unit
+/** Slot that draws a [MapScene]; tests substitute their own. */
+typealias ReadOnlyMapContent = @Composable (scene: MapScene) -> Unit
 
 /** The real MapLibre map. */
-val NativeReadOnlyMapContent: ReadOnlyMapContent = { dropoff, courier ->
-    ReadOnlyMapView(dropoff, courier, Modifier.fillMaxWidth().height(ReadOnlyMapHeight))
+val NativeReadOnlyMapContent: ReadOnlyMapContent = { scene ->
+    ReadOnlyMapView(scene, Modifier.fillMaxWidth().height(ReadOnlyMapHeight))
 }
 
 /**
- * A map nobody edits: the delivery address pin and, when known, the courier's marker. It can be panned
- * and zoomed but never taps a pin. The camera frames the dropoff, and frames both points once when the
- * courier first appears; later updates only move the marker, so a viewer who panned is not yanked back.
- * Thin MapLibre adapter, verified manually on a device (native rendering cannot run on the JVM).
+ * A map nobody edits: the delivery address pin, the store pin when the scene has one, and the courier's
+ * marker when known. It can be panned and zoomed but never taps a pin. The pin the viewer is heading to
+ * is a full marker with its label open, the other a small grey dot. The camera fits the destination (and
+ * the courier once known) whenever [MapScene.framingKey] changes; later updates only move the courier's
+ * marker. No routes. Thin MapLibre adapter, verified manually on a device (native rendering cannot run
+ * on the JVM).
  */
 @Composable
 fun ReadOnlyMapView(
-    dropoff: MapPin,
-    courier: MapPin?,
+    scene: MapScene,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val currentDropoff by rememberUpdatedState(dropoff)
-    val currentCourier by rememberUpdatedState(courier)
-    val dropoffTitle = stringResource(R.string.map_dropoff_marker)
-    val courierTitle = stringResource(R.string.map_courier_marker)
-    val holder = remember { ReadOnlyMapHolder(courierIcon(context), dropoffTitle, courierTitle) }
+    val currentScene by rememberUpdatedState(scene)
+    val titles = MarkerTitles(
+        dropoff = stringResource(R.string.map_dropoff_marker),
+        courier = stringResource(R.string.map_courier_marker),
+        pickupHere = stringResource(R.string.map_pickup_here_marker),
+        store = stringResource(R.string.map_store_marker),
+    )
+    val holder = remember { ReadOnlyMapHolder(MarkerIcons.create(context)) }
+    holder.titles = titles
     val mapView = rememberMapView(
         onMapReady = { view, map ->
-            view.loadOtliStyle(map) { holder.attach(map, currentDropoff, currentCourier) }
+            view.loadOtliStyle(map) { holder.attach(map, currentScene) }
         },
         onDisposed = { holder.detach() },
     )
 
-    AndroidView(factory = { mapView }, modifier = modifier, update = { holder.render(dropoff, courier) })
+    AndroidView(factory = { mapView }, modifier = modifier, update = { holder.render(scene) })
 }
 
-/** A blue dot with a white rim, to tell the courier apart from the default dropoff marker. */
-private fun courierIcon(context: Context): Icon {
-    val bitmap = Bitmap.createBitmap(COURIER_ICON_SIZE_PX, COURIER_ICON_SIZE_PX, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    val center = COURIER_ICON_SIZE_PX / 2f
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = android.graphics.Color.WHITE }
-    canvas.drawCircle(center, center, center, paint)
-    paint.color = COURIER_ICON_COLOR
-    canvas.drawCircle(center, center, center - 6f, paint)
-    return IconFactory.getInstance(context).fromBitmap(bitmap)
+private class MarkerTitles(val dropoff: String, val courier: String, val pickupHere: String, val store: String)
+
+/** The three looks of a marker: the library default for a destination, a grey dot for the other pin, a blue dot for the courier. */
+private class MarkerIcons(val destination: Icon, val muted: Icon, val courier: Icon) {
+    companion object {
+        fun create(context: Context): MarkerIcons {
+            val factory = IconFactory.getInstance(context)
+            return MarkerIcons(
+                destination = factory.defaultMarker(),
+                muted = factory.fromBitmap(dot(MUTED_DOT_SIZE_PX, MUTED_COLOR)),
+                courier = factory.fromBitmap(dot(DOT_SIZE_PX, COURIER_COLOR)),
+            )
+        }
+
+        /** A coloured dot with a white rim. */
+        private fun dot(size: Int, color: Int): Bitmap {
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            val center = size / 2f
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = android.graphics.Color.WHITE }
+            canvas.drawCircle(center, center, center, paint)
+            paint.color = color
+            canvas.drawCircle(center, center, center - 6f, paint)
+            return bitmap
+        }
+    }
 }
 
-/** Keeps the two markers and the camera in sync with the points; a no-op until the map has a style. */
-private class ReadOnlyMapHolder(
-    private val courierIcon: Icon,
-    private val dropoffTitle: String,
-    private val courierTitle: String,
-) {
+/** Keeps the markers and the camera in sync with the scene; a no-op until the map has a style. */
+@Suppress("DEPRECATION")
+private class ReadOnlyMapHolder(private val icons: MarkerIcons) {
+    lateinit var titles: MarkerTitles
     private var map: MapLibreMap? = null
     private var dropoffMarker: Marker? = null
+    private var pickupMarker: Marker? = null
     private var courierMarker: Marker? = null
-    private var framedWithCourier = false
+    private var framedKey: MapScene.FramingKey? = null
+    private var framedOnce = false
 
     /** Called when a style is ready; also after a fallback style replaced the first one, so markers start afresh. */
-    fun attach(map: MapLibreMap, dropoff: MapPin, courier: MapPin?) {
+    fun attach(map: MapLibreMap, scene: MapScene) {
         this.map = map
         dropoffMarker = null
+        pickupMarker = null
         courierMarker = null
-        framedWithCourier = false
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(dropoff.toLatLng(), DROPOFF_ZOOM))
-        render(dropoff, courier)
+        framedKey = null
+        framedOnce = false
+        render(scene)
     }
 
     fun detach() {
         map = null
     }
 
-    @Suppress("DEPRECATION")
-    fun render(dropoff: MapPin, courier: MapPin?) {
+    fun render(scene: MapScene) {
         val map = map ?: return
-        val dropoffAt = dropoff.toLatLng()
-        val shownDropoff = dropoffMarker
-        if (shownDropoff == null) {
-            dropoffMarker = map.addMarker(MarkerOptions().position(dropoffAt).title(dropoffTitle))
-        } else if (shownDropoff.position != dropoffAt) {
-            shownDropoff.position = dropoffAt
-        }
+        dropoffMarker = sync(
+            map, dropoffMarker, scene.dropoff,
+            icon = if (scene.dropoffEmphasized) icons.destination else icons.muted,
+            title = titles.dropoff,
+        )
+        pickupMarker = sync(
+            map, pickupMarker, scene.pickup,
+            icon = if (scene.pickupEmphasized) icons.destination else icons.muted,
+            title = if (scene.pickupEmphasized) titles.pickupHere else titles.store,
+        )
+        courierMarker = sync(map, courierMarker, scene.courier, icon = icons.courier, title = titles.courier)
 
-        val shownCourier = courierMarker
-        when {
-            courier == null -> {
-                shownCourier?.let(map::removeMarker)
-                courierMarker = null
-            }
-            shownCourier == null -> courierMarker = map.addMarker(MarkerOptions().position(courier.toLatLng()).icon(courierIcon).title(courierTitle))
-            shownCourier.position != courier.toLatLng() -> shownCourier.position = courier.toLatLng()
-        }
-
-        if (courier != null && !framedWithCourier) {
-            framedWithCourier = true
-            val bounds = LatLngBounds.Builder().include(dropoffAt).include(courier.toLatLng()).build()
-            map.easeCamera(CameraUpdateFactory.newLatLngBounds(bounds, FRAME_PADDING_PX))
+        if (scene.framingKey != framedKey) {
+            framedKey = scene.framingKey
+            // A courier map says where to go by opening the label of the destination; a viewer-only map has no choice to make.
+            if (scene.pickup != null) (if (scene.pickupEmphasized) pickupMarker else dropoffMarker)?.let(map::selectMarker)
+            frame(map, scene.framedPoints)
         }
     }
 
-    private fun MapPin.toLatLng() = LatLng(latitude, longitude)
+    /** Adds, moves or removes one marker so it matches [at]; returns the marker now on the map, or null. */
+    private fun sync(map: MapLibreMap, current: Marker?, at: MapPin?, icon: Icon, title: String): Marker? {
+        if (at == null) {
+            current?.let(map::removeMarker)
+            return null
+        }
+        val position = LatLng(at.latitude, at.longitude)
+        if (current == null) return map.addMarker(MarkerOptions().position(position).icon(icon).title(title))
+        if (current.position != position) current.position = position
+        if (current.icon != icon) current.icon = icon
+        if (current.title != title) current.title = title
+        return current
+    }
+
+    private fun frame(map: MapLibreMap, points: List<MapPin>) {
+        val latLngs = points.map { LatLng(it.latitude, it.longitude) }
+        val update = if (latLngs.size == 1) {
+            CameraUpdateFactory.newLatLngZoom(latLngs.first(), SINGLE_POINT_ZOOM)
+        } else {
+            CameraUpdateFactory.newLatLngBounds(LatLngBounds.Builder().includes(latLngs).build(), FRAME_PADDING_PX)
+        }
+        if (framedOnce) map.easeCamera(update) else map.moveCamera(update)
+        framedOnce = true
+    }
 }
