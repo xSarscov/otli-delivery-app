@@ -111,6 +111,22 @@ class LiveMapContentTest {
     }
 
     @Test
+    fun aLegendUnderTheMapNamesTheAddressAndTheCourierOnceItIsKnown() {
+        show(following(courier = courierAt))
+
+        compose.onNodeWithText(text(R.string.map_dropoff_marker)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.map_courier_marker)).assertIsDisplayed()
+    }
+
+    @Test
+    fun theLegendHasNoCourierEntryBeforeTheCourierPublishes() {
+        show(following(courier = null))
+
+        compose.onNodeWithText(text(R.string.map_dropoff_marker)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.map_courier_marker)).assertDoesNotExist()
+    }
+
+    @Test
     fun anUnavailableLocationKeepsTheMapWithTheDropoffAndSaysSo() {
         val map = show(following(courier = null, locationUnavailable = true))
 
