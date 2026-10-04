@@ -75,3 +75,58 @@ location to any other customer, merchant, or courier.
 - GIVEN an order in state `picked_up`, prepared by merchant M
 - WHEN merchant M views the order
 - THEN the system MUST NOT expose the courier's live location to merchant M
+
+### Requirement: Location Services Prompt and Warning for the Courier
+
+Holding the location permission is not enough to publish a position: the
+device location services MUST also be on. The system MUST detect when they
+are off and MUST ask the courier to turn them on (the system "Turn on
+location?" dialog) when the courier goes online and when they go off during
+an active delivery. While they are off during an active delivery, the system
+MUST show a visible warning with an action that re-opens the dialog. Claiming
+and delivering MUST stay allowed, as with a denied permission.
+
+#### Scenario: Going online with the location services off
+
+- GIVEN a courier who holds the location permission and has the device location services off
+- WHEN the courier goes online
+- THEN the system MUST show the "Turn on location?" dialog, and MUST start publishing once the courier accepts
+
+#### Scenario: Location turned off mid-delivery
+
+- GIVEN a courier delivering an order in state `claimed` or `picked_up`
+- WHEN the device location services are turned off
+- THEN the system MUST ask the courier to turn them on and MUST keep showing a warning with a button that re-opens the dialog until they are on again, while the courier can still pick up and deliver
+
+#### Scenario: Location restored
+
+- GIVEN the warning is showing
+- WHEN the device location services come back on
+- THEN the system MUST remove the warning and MUST resume publishing without the courier restarting anything
+
+### Requirement: Courier Delivery Map
+
+The courier's active-delivery screen MUST show on one map the courier's own
+current position, the pickup (store) pin and the dropoff pin. Before
+`picked_up` the pickup MUST be emphasized as the destination (labelled "Pick
+up here") and the camera MUST fit the courier and the pickup; from `picked_up`
+the dropoff MUST be emphasized and the camera MUST fit the courier and the
+dropoff. The map MUST NOT draw routes or give turn-by-turn navigation.
+
+#### Scenario: Heading to the store
+
+- GIVEN a courier with an order in state `claimed` and a known own position
+- WHEN the courier views the active delivery
+- THEN the map MUST show the courier, the pickup pin emphasized as "Pick up here" and the dropoff pin, framed around the courier and the pickup
+
+#### Scenario: Heading to the customer
+
+- GIVEN the courier marks the order `picked_up`
+- WHEN the active delivery is shown
+- THEN the dropoff pin MUST be emphasized, the pickup pin MUST no longer be, and the camera MUST fit the courier and the dropoff
+
+#### Scenario: Own position unknown
+
+- GIVEN the courier's position is unavailable (permission denied or no fix yet)
+- WHEN the active delivery is shown
+- THEN the map MUST still show the pickup and dropoff pins, with the destination emphasized, and no courier marker
