@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.otli.app.R
 import com.otli.app.core.map.MapAttribution
+import com.otli.app.core.map.MapLegend
 import com.otli.app.core.map.MapPin
 import com.otli.app.core.map.MapScene
 import com.otli.app.core.map.NativeReadOnlyMapContent
@@ -51,7 +52,9 @@ fun LiveMapContent(
     val courier = state.courier
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(R.string.live_map_title), style = MaterialTheme.typography.titleMedium)
-        mapContent(MapScene(dropoff, courier = courier?.let { MapPin(it.latitude, it.longitude) }))
+        val scene = MapScene(dropoff, courier = courier?.let { MapPin(it.latitude, it.longitude) })
+        mapContent(scene)
+        MapLegend(scene)
         MapAttribution()
         Text(statusText(state, nowMillis), style = MaterialTheme.typography.bodyMedium)
     }

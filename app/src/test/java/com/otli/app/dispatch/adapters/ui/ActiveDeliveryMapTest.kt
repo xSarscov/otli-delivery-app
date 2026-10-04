@@ -94,6 +94,35 @@ class ActiveDeliveryMapTest {
         assertThat(drawn.last().pickup).isEqualTo(MapPin(12.2, -86.2))
     }
 
+    private fun legendText(role: Int, detail: String? = null) =
+        if (detail == null) compose.activity.getString(role) else compose.activity.getString(R.string.map_legend_entry, compose.activity.getString(role), detail)
+
+    @Test
+    fun beforePickupALegendUnderTheMapNamesTheStoreAsTheDestinationTheAddressAndTheCourier() {
+        show(delivering(OrderStatus.CLAIMED), ownPosition = own)
+
+        compose.onNodeWithText(legendText(R.string.map_pickup_here_marker, "Frente al parque")).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(legendText(R.string.map_dropoff_marker, "Casa azul")).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(legendText(R.string.map_you_marker)).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun afterPickupTheLegendNamesTheAddressAsTheDestinationAndTheStoreAsAPlace() {
+        show(delivering(OrderStatus.PICKED_UP), ownPosition = own)
+
+        compose.onNodeWithText(legendText(R.string.map_deliver_to_marker, "Casa azul")).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(legendText(R.string.map_store_marker, "Frente al parque")).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(legendText(R.string.map_pickup_here_marker, "Frente al parque")).assertDoesNotExist()
+    }
+
+    @Test
+    fun theLegendDoesNotListTheCourierBeforeThePositionIsKnown() {
+        show(delivering(OrderStatus.CLAIMED))
+
+        compose.onNodeWithText(legendText(R.string.map_pickup_here_marker, "Frente al parque")).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(legendText(R.string.map_you_marker)).assertDoesNotExist()
+    }
+
     @Test
     fun withoutAnActiveOrderThereIsNoMap() {
         show(ActiveDeliveryUiState(isLoading = false))

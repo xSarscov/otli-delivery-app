@@ -102,6 +102,9 @@
     <string name="live_map_updated_minutes">Updated %1$d min ago</string>
     <string name="live_map_unavailable">The courier\'s location is not available right now</string>
     <string name="map_courier_marker">Courier</string>
+    <string name="map_you_marker">You</string>
+    <string name="map_deliver_to_marker">Deliver to</string>
+    <string name="map_legend_entry">%1$s — %2$s</string>
     <string name="map_dropoff_marker">Delivery address</string>
     <string name="map_pickup_here_marker">Pick up here</string>
     <string name="map_store_marker">Store</string>

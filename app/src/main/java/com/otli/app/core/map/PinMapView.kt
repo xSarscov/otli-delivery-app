@@ -7,7 +7,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import org.maplibre.android.annotations.Marker
-import org.maplibre.android.annotations.MarkerOptions
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
@@ -31,6 +30,7 @@ fun PinMapView(
     val mapView = rememberMapView(
         onMapReady = { view, map ->
             holder.map = map
+            map.setOnMarkerClickListener(ConsumeMarkerClicks)
             view.loadOtliStyle(map) {
                 val start = currentState.center
                 map.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(start.latitude, start.longitude), INITIAL_ZOOM))
@@ -55,6 +55,6 @@ private class MapHolder {
     fun render(pin: MapPin?) {
         val map = map ?: return
         marker?.let(map::removeMarker)
-        marker = pin?.let { map.addMarker(MarkerOptions().position(LatLng(it.latitude, it.longitude))) }
+        marker = pin?.let { map.addMarker(markerOptions(it)) }
     }
 }

@@ -26,6 +26,7 @@ import com.otli.app.R
 import com.otli.app.catalog.domain.PriceInput
 import com.otli.app.core.map.MapAttribution
 import com.otli.app.core.map.MapEmphasis
+import com.otli.app.core.map.MapLegend
 import com.otli.app.core.map.MapPin
 import com.otli.app.core.map.MapScene
 import com.otli.app.core.map.ReadOnlyMapContent
@@ -91,7 +92,9 @@ private fun DeliveryCard(
             Text(stringResource(R.string.delivery_pickup, order.pickup.reference), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.delivery_dropoff, order.dropoff.reference), style = MaterialTheme.typography.bodyMedium)
             Text(stringResource(R.string.delivery_pin, coordinates(order.dropoff)), style = MaterialTheme.typography.bodyMedium)
-            deliveryMap(deliveryScene(order, ownPosition))
+            val scene = deliveryScene(order, ownPosition)
+            deliveryMap(scene)
+            MapLegend(scene, viewerIsCourier = true, pickupDetail = order.pickup.reference, dropoffDetail = order.dropoff.reference)
             MapAttribution()
             Text(
                 stringResource(R.string.delivery_customer, order.customerName, order.customerPhone),
