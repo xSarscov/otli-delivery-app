@@ -43,6 +43,9 @@ class FakeAdminRepository : AdminRepository {
     val allOrders = MutableStateFlow<List<Order>>(emptyList())
     var listenerError: Throwable? = null
 
+    /** Lets a test hold every observer before its first list, to observe the loading state. */
+    var beforeFirstList: suspend () -> Unit = {}
+
     private suspend fun write(record: () -> Unit): Result<Unit> {
         beforeWrite()
         writeFailure?.let { return Result.failure(it) }
@@ -66,6 +69,7 @@ class FakeAdminRepository : AdminRepository {
     override fun observeAllOrders(): Flow<List<Order>> = observing(allOrders)
 
     private fun <T> observing(source: Flow<T>): Flow<T> = flow {
+        beforeFirstList()
         listenerError?.let { throw it }
         emitAll(source)
     }
