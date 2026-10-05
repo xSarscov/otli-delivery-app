@@ -290,4 +290,9 @@
     <string name="admin_cancel_keep">Keep order</string>
     <string name="admin_orders_empty">No orders have been placed yet.</string>
     <string name="admin_orders_load_failed">We could not load the orders. Check your connection and reopen this tab.</string>
+    <string name="admin_order_detail_title">Order detail</string>
+    <string name="admin_order_phone">Phone: %1$s</string>
+    <string name="admin_order_courier">Courier account: %1$s</string>
+    <string name="admin_order_pickup">Pickup: %1$s</string>
+    <string name="admin_order_dropoff">Dropoff: %1$s</string>
 </resources>
