@@ -81,8 +81,9 @@ data (so adapter tests can sign in as `merchant1@otli.test`, password `otli-demo
 2. In another terminal, load demo accounts. The seed script refuses to run unless both emulator
    host variables are set, so it can never touch a real project:
    `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 npm --prefix backend run seed`.
-   It is idempotent (fixed UIDs) and currently creates the `seed-admin` account
-   (`admin@otli.test` / `otli-demo-123`); later slices extend it.
+   It is idempotent (fixed UIDs) and creates the Admin, a customer, two merchants, two couriers, one
+   pending merchant, one pending courier, the catalogs and the flat fee (`admin@otli.test` /
+   `otli-demo-123`; every account is listed in `docs/demo-script.md`).
 
 The emulator project id is `demo-otli`; no real Firebase project is needed for development.
 
@@ -103,6 +104,14 @@ Use this to try the app on a physical phone without USB or `adb reverse` during 
 Security: while the LAN emulators run, any device on that Wi-Fi can reach Auth and Firestore
 (no authentication in front of the emulators). Use trusted networks only and stop the emulators
 afterwards.
+
+## Demo
+
+`docs/demo-script.md` is the manual end-to-end checklist for the academic demo: all four roles, the
+Admin fee, approvals, release and cancellation, the claim race on two phones and the live map. It lists
+the seeded accounts (password `otli-demo-123`, Admin `admin@otli.test`) and points back to the USB and
+Wi-Fi setups above. The seed script creates one pending merchant and one pending courier on purpose,
+so the Admin approval step works on a fresh emulator.
 
 ## Firebase project status
 
