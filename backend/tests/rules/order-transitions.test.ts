@@ -73,8 +73,8 @@ function send(actor: string, id: string, to: string, payload: Record<string, unk
 }
 
 describe("the transitions contract", () => {
-  it("lists the nine allowed triples of the spec", () => {
-    expect(contract).toHaveLength(9);
+  it("lists the thirteen allowed triples of the spec", () => {
+    expect(contract).toHaveLength(13);
   });
 
   it("allows every implemented triple and denies every other (from, to, actor) combination", async () => {

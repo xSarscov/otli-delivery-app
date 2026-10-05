@@ -31,6 +31,11 @@ object OrderTransitions {
         Triple(CLAIMED, PICKED_UP, COURIER),
         Triple(PICKED_UP, DELIVERED, COURIER),
         Triple(CLAIMED, READY, ADMIN),
+        // Admin cancels before any courier holds the order; a claimed order is released (above) first.
+        Triple(PLACED, CANCELLED, ADMIN),
+        Triple(ACCEPTED, CANCELLED, ADMIN),
+        Triple(PREPARING, CANCELLED, ADMIN),
+        Triple(READY, CANCELLED, ADMIN),
     )
 
     fun isAllowed(from: OrderStatus, to: OrderStatus, actor: Actor): Boolean = Triple(from, to, actor) in allowed

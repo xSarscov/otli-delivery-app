@@ -38,8 +38,31 @@ class OrderTransitionsContractTest {
     }
 
     @Test
-    fun theFixtureHoldsTheNineTriplesOfTheSpec() {
-        assertThat(fixtureTriples()).hasSize(9)
+    fun theFixtureHoldsTheThirteenTriplesOfTheSpec() {
+        assertThat(fixtureTriples()).hasSize(13)
+    }
+
+    @Test
+    fun adminCancelsOnlyBeforeAnyCourierHoldsTheOrder() {
+        val cancellable = listOf(OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY)
+        for (status in cancellable) {
+            assertThat(OrderTransitions.isAllowed(status, OrderStatus.CANCELLED, Actor.ADMIN)).isTrue()
+        }
+        // A claimed order is released first; after pickup nothing can be undone.
+        val others = OrderStatus.entries - cancellable.toSet()
+        assertThat(others).isNotEmpty()
+        for (status in others) {
+            assertThat(OrderTransitions.isAllowed(status, OrderStatus.CANCELLED, Actor.ADMIN)).isFalse()
+        }
+    }
+
+    @Test
+    fun merchantsAndCouriersNeverCancelAnOrder() {
+        for (actor in listOf(Actor.MERCHANT, Actor.COURIER)) {
+            for (status in OrderStatus.entries) {
+                assertThat(OrderTransitions.isAllowed(status, OrderStatus.CANCELLED, actor)).isFalse()
+            }
+        }
     }
 
     @Test
