@@ -116,6 +116,10 @@ Cancel an order with a reason (tab Active):
 - [ ] Mark another order ready and leave it unclaimed: it shows under "Waiting for a courier" with how
       many minutes it has waited. Cancel it with a reason; the customer sees it.
 - [ ] A claimed order has no "Cancel order" button: release it first, then cancel it.
+- [ ] Let courier 1 claim an order and press "Picked up", then leave. As the Admin, tab Active shows it under
+      "Picked up, on the way" with "Cancel order" and no release. Cancel it with a reason: the customer sees
+      "Cancelled by Otli: <reason>", courier 1's active delivery disappears, the courier is free and the order
+      does not come back to the pool.
 
 Support list and detail (tab All orders):
 

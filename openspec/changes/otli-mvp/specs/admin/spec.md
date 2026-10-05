@@ -112,9 +112,10 @@ The system MUST allow Admin to cancel an order in state `placed`, `accepted`,
 orders a merchant never answers and erroneous orders can be closed, not only
 stuck ones. Every Admin cancellation MUST carry a non-empty reason, and the
 customer MUST be able to see that the order was cancelled and why. An order in
-state `claimed` or `picked_up` MUST NOT be cancellable by Admin: a claimed
-order has to be released first (see Release of Abandoned Claims), after which
-it may be cancelled.
+state `claimed` MUST NOT be cancellable by Admin: it has to be released first
+(see Release of Abandoned Claims), after which it may be cancelled. An order
+in state `picked_up` has its own requirement (see Admin Cancellation of a
+Picked-Up Order).
 
 #### Scenario: Admin cancels an order the merchant never answered
 
@@ -131,7 +132,7 @@ it may be cancelled.
 
 #### Scenario: Admin cannot cancel an order a courier holds
 
-- GIVEN an order in state `claimed`, `picked_up`, `delivered`, `rejected` or `cancelled`
+- GIVEN an order in state `claimed`, `delivered`, `rejected` or `cancelled`
 - WHEN an Admin attempts to cancel it
 - THEN the system MUST reject the attempt
 - AND for a `claimed` order the Admin MUST release the claim first
@@ -141,6 +142,48 @@ it may be cancelled.
 - GIVEN an order in state `accepted`, `preparing` or `ready`
 - WHEN a Merchant or Courier attempts to cancel it
 - THEN the system MUST reject the attempt
+
+### Requirement: Admin Cancellation of a Picked-Up Order
+
+The system MUST allow Admin to cancel an order in state `picked_up` whose
+courier has vanished after collecting it (decision of 2026-10-05, F.13). The
+food has already left the store, so the order MUST NOT return to the pool: it
+becomes `cancelled`, never `ready`. The cancellation MUST carry a non-empty
+reason of at most 200 characters, record that Admin cancelled it, and clear the
+courier's active order in the same atomic write, so neither the order nor the
+courier's slot can be written alone. The stuck and active orders view MUST list
+picked-up orders and offer Cancel (with the reason dialog) for them, and MUST NOT
+offer a release.
+
+#### Scenario: Admin cancels a picked-up order whose courier vanished
+
+- GIVEN an order in state `picked_up`, assigned to courier X whose active order is that order
+- WHEN an Admin cancels the order with a non-empty reason
+- THEN the system MUST transition the order to `cancelled`
+- AND the order MUST record that Admin cancelled it and the reason given
+- AND the system MUST clear courier X's active order in the same atomic write
+- AND the order MUST NOT become `ready` or visible in the pool
+
+#### Scenario: Both sides of the cancellation are written together or not at all
+
+- GIVEN an order in state `picked_up`, assigned to courier X
+- WHEN an Admin writes only the order's cancellation, or only the clearing of courier X's active order
+- THEN the system MUST reject the attempt
+- AND a slot that holds another order, or a write that frees another courier's slot, MUST be rejected too
+
+#### Scenario: Picked-up cancellation requires a reason and an Admin
+
+- GIVEN an order in state `picked_up`
+- WHEN an Admin attempts to cancel it with an empty, blank or over-long reason
+- THEN the system MUST reject the attempt
+- AND WHEN a Customer, Merchant or Courier (including the assigned courier) attempts it
+- THEN the system MUST reject the attempt
+
+#### Scenario: Everyone sees the outcome
+
+- GIVEN an Admin cancelled a picked-up order with a reason
+- THEN the customer MUST see the order as cancelled with "Cancelled by Otli: <reason>"
+- AND the courier's active delivery MUST disappear and the courier MUST be free to go offline or claim another order
 
 ### Requirement: Release of Abandoned Claims
 
