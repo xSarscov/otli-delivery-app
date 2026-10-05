@@ -272,6 +272,15 @@
     <string name="admin_reactivate">Reactivate</string>
     <string name="admin_approvals_load_failed">We could not load the accounts. Check your connection and reopen this tab.</string>
     <string name="admin_approvals_action_failed">That did not go through. The account may have changed; check its status and try again.</string>
+    <string name="admin_stuck_waiting">Waiting for a courier</string>
+    <string name="admin_stuck_with_courier">With a courier</string>
+    <string name="admin_stuck_kitchen">In the kitchen</string>
+    <string name="admin_stuck_empty">No orders need attention right now.</string>
+    <string name="admin_stuck_load_failed">We could not load the orders. Check your connection and reopen this tab.</string>
+    <string name="admin_stuck_action_failed">That did not go through. The order may have changed, so check its status and try again.</string>
+    <string name="admin_order_customer">Customer: %1$s</string>
+    <string name="admin_order_waiting">Waiting %1$d min</string>
+    <string name="admin_release_claim">Release to the pool</string>
     <string name="admin_cancel_order">Cancel order</string>
     <string name="admin_cancel_title">Cancel this order?</string>
     <string name="admin_cancel_message">%1$s. The customer will see the reason you give.</string>
