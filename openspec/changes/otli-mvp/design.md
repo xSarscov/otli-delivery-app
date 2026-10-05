@@ -466,12 +466,13 @@ interface LocationRepository { suspend fun publish(orderId: String, courierId: S
 
 // admin/application/AdminRepository.kt  (port)
 interface AdminRepository {
-    suspend fun setAccountStatus(uid: String, role: Role, status: AccountStatus) // batch users + merchants mirror
-    suspend fun setDeliveryFee(fee: Money)
-    suspend fun releaseClaim(orderId: String)                                   // paired transaction
-    suspend fun cancelOrder(orderId: String, reason: String)
-    fun observeStuckOrders(): Flow<List<Order>>
-    fun observePendingAccounts(): Flow<List<UserAccount>>
+    suspend fun setAccountStatus(uid: String, role: Role, status: AccountStatus): Result<Unit> // batch users + merchants mirror
+    suspend fun setDeliveryFee(fee: Money): Result<Unit>
+    suspend fun releaseClaim(orderId: String): Result<Unit>                   // paired transaction
+    suspend fun cancelOrder(orderId: String, reason: String): Result<Unit>
+    fun observeStuckOrders(): Flow<List<Order>>     // placed, accepted, preparing, ready and claimed: what Admin can still act on
+    fun observeManagedAccounts(): Flow<List<UserAccount>> // every merchant and courier; pending ones are the approval queue
+    fun observeAllOrders(): Flow<List<Order>>       // latest 50, newest first in the view model
 }
 
 // core/notification
