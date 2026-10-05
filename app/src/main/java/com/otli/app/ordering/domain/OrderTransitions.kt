@@ -36,6 +36,8 @@ object OrderTransitions {
         Triple(ACCEPTED, CANCELLED, ADMIN),
         Triple(PREPARING, CANCELLED, ADMIN),
         Triple(READY, CANCELLED, ADMIN),
+        // A courier who vanished after pickup: the food left the store, so it is cancelled, never returned to the pool.
+        Triple(PICKED_UP, CANCELLED, ADMIN),
     )
 
     fun isAllowed(from: OrderStatus, to: OrderStatus, actor: Actor): Boolean = Triple(from, to, actor) in allowed

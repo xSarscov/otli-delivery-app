@@ -156,11 +156,26 @@ class AdminUseCasesTest {
     }
 
     @Test
-    fun aClaimedPickedUpOrFinishedOrderIsNotCancellable() = runTest {
-        val others = OrderStatus.entries - setOf(OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY)
-        assertThat(others).containsExactly(
-            OrderStatus.CLAIMED, OrderStatus.PICKED_UP, OrderStatus.DELIVERED, OrderStatus.REJECTED, OrderStatus.CANCELLED,
-        )
+    fun aPickedUpOrderIsCancelledWithTheTrimmedReason() = runTest {
+        val result = CancelOrder(admin)(anOrder("o1", OrderStatus.PICKED_UP, courierId = "courier-1"), "  Courier vanished  ")
+
+        assertThat(result).isEqualTo(done)
+        assertThat(admin.cancellations).containsExactly(FakeAdminRepository.Cancellation("o1", "Courier vanished"))
+    }
+
+    @Test
+    fun aPickedUpOrderStillNeedsAReason() = runTest {
+        val order = anOrder("o1", OrderStatus.PICKED_UP, courierId = "courier-1")
+
+        assertThat(CancelOrder(admin)(order, "  ")).isEqualTo(rejected(AdminRejection.REASON_REQUIRED))
+        assertThat(CancelOrder(admin)(order, "x".repeat(CancelOrder.MAX_REASON_LENGTH + 1))).isEqualTo(rejected(AdminRejection.REASON_TOO_LONG))
+        assertThat(admin.cancellations).isEmpty()
+    }
+
+    @Test
+    fun aClaimedOrFinishedOrderIsNotCancellable() = runTest {
+        val others = OrderStatus.entries - setOf(OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.PICKED_UP)
+        assertThat(others).containsExactly(OrderStatus.CLAIMED, OrderStatus.DELIVERED, OrderStatus.REJECTED, OrderStatus.CANCELLED)
         for (status in others) {
             assertThat(CancelOrder(admin)(anOrder("o-$status", status), "Reason")).isEqualTo(rejected(AdminRejection.ORDER_NOT_CANCELLABLE))
         }

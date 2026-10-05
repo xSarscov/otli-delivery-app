@@ -296,18 +296,31 @@ service cloud.firestore {
           && get(courierPath(resource.data.courierId)).data.activeOrderId == orderId
           && getAfter(courierPath(resource.data.courierId)).data.activeOrderId == null;
       }
-      // Admin cancels before any courier holds the order, always saying why; a claimed order is released first.
-      function adminCancel() {
-        return isActiveAdmin()
-          && resource.data.status in ['placed', 'accepted', 'preparing', 'ready']
-          && request.resource.data.status == 'cancelled'
+      // The write every Admin cancellation shares: only the cancellation fields, always saying who and why.
+      function adminCancellation() {
+        return request.resource.data.status == 'cancelled'
           && changed().hasOnly(['status', 'cancelledBy', 'cancelReason', 'cancelledAt', 'updatedAt'])
           && stamped('cancelledAt')
           && request.resource.data.cancelledBy == 'admin'
           && validText(request.resource.data.cancelReason, 1, 200);
       }
+      // Admin cancels before any courier holds the order; a claimed order is released first.
+      function adminCancel() {
+        return isActiveAdmin()
+          && resource.data.status in ['placed', 'accepted', 'preparing', 'ready']
+          && adminCancellation();
+      }
+      // Admin cancels a picked-up order whose courier vanished: the food already left the store, so it is never
+      // returned to the pool. The courier's slot is freed in the same write and must hold this very order beforehand.
+      function adminCancelPickedUp() {
+        return isActiveAdmin()
+          && resource.data.status == 'picked_up'
+          && adminCancellation()
+          && get(courierPath(resource.data.courierId)).data.activeOrderId == orderId
+          && getAfter(courierPath(resource.data.courierId)).data.activeOrderId == null;
+      }
       function courierStep() { return claim() || pickUp() || deliver(); }
-      function adminStep() { return release() || adminCancel(); }
+      function adminStep() { return release() || adminCancel() || adminCancelPickedUp(); }
 
       // The pool is every ready order for any active courier; the dropoff and customer contact are readable
       // before the claim because rules cannot hide fields (accepted risk, ADR-7). A courier also reads the
@@ -387,9 +400,22 @@ service cloud.firestore {
           && getAfter(orderPath(id)).data.courierId == null;
       }
 
+      // The slot is freed by Admin with the cancellation of a picked-up order: the order must be picked up before and
+      // cancelled after, and its cancellation requires this slot to be freed, so neither commits alone.
+      function pairedAdminCancel() {
+        let id = resource.data.activeOrderId;
+        return isActiveAdmin()
+          && id is string
+          && request.resource.data.activeOrderId == null
+          && changed().hasOnly(['activeOrderId', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time
+          && get(orderPath(id)).data.status == 'picked_up'
+          && getAfter(orderPath(id)).data.status == 'cancelled';
+      }
+
       allow read: if isSelf() || isActiveAdmin();
       allow create: if validCourierCreate();
-      allow update: if availability() || pairedClaim() || pairedDeliver() || pairedRelease();
+      allow update: if availability() || pairedClaim() || pairedDeliver() || pairedRelease() || pairedAdminCancel();
       allow delete: if false;
     }
 
