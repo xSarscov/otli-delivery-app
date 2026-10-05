@@ -3,6 +3,12 @@ import { describe, expect, it } from "vitest";
 import { serverTime, useCatalogEnv } from "./catalog-support";
 import { claim, seedCourier, seedFreeCourier, seedReadyOrder, seedServing } from "./dispatch-support";
 
+/**
+ * A client-chosen time the rules must refuse in place of the server time. It is an hour off on purpose:
+ * a plain new Date() can equal the emulator's request.time when both land in the same millisecond.
+ */
+const clientTime = () => new Date(Date.now() - 3_600_000);
+
 const { as, admin } = useCatalogEnv();
 
 type Db = ReturnType<typeof as>;
@@ -92,9 +98,9 @@ describe("releasing a claimed order", () => {
     await assertFails(release(admin1, "o1", "courier-1", { courierId: "courier-2" }));
     await assertFails(release(admin1, "o1", "courier-1", { totalCents: 1 }));
     await assertFails(release(admin1, "o1", "courier-1", { readyAt: serverTime() }));
-    await assertFails(release(admin1, "o1", "courier-1", { updatedAt: new Date() }));
+    await assertFails(release(admin1, "o1", "courier-1", { updatedAt: clientTime() }));
     await assertFails(release(admin1, "o1", "courier-1", {}, { isOnline: false }));
-    await assertFails(release(admin1, "o1", "courier-1", {}, { updatedAt: new Date() }));
+    await assertFails(release(admin1, "o1", "courier-1", {}, { updatedAt: clientTime() }));
     await assertSucceeds(release(admin1, "o1", "courier-1"));
   });
 
@@ -150,8 +156,8 @@ describe("cancelling an order no courier holds", () => {
     await assertFails(orderRef("admin-1", "o1").update(withoutBy));
     await assertFails(orderRef("admin-1", "o1").update(cancelOrder("Reason", { cancelledBy: "customer" })));
     await assertFails(orderRef("admin-1", "o1").update(cancelOrder("Reason", { cancelledBy: "merchant" })));
-    await assertFails(orderRef("admin-1", "o1").update(cancelOrder("Reason", { cancelledAt: new Date() })));
-    await assertFails(orderRef("admin-1", "o1").update(cancelOrder("Reason", { updatedAt: new Date() })));
+    await assertFails(orderRef("admin-1", "o1").update(cancelOrder("Reason", { cancelledAt: clientTime() })));
+    await assertFails(orderRef("admin-1", "o1").update(cancelOrder("Reason", { updatedAt: clientTime() })));
   });
 
   it("can only move the order to cancelled, whatever else the cancellation fields say", async () => {
