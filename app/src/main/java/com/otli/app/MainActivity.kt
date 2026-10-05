@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.otli.app.admin.adapters.ui.AdminHomeTabsScreen
+import com.otli.app.admin.adapters.ui.OrderDetailScreen
 import com.otli.app.auth.adapters.ui.PendingApprovalScreen
 import com.otli.app.auth.adapters.ui.ProfileIncompleteScreen
 import com.otli.app.auth.adapters.ui.SessionViewModel
@@ -65,6 +67,8 @@ class MainActivity : ComponentActivity() {
                             RequestNotificationPermission()
                             CourierDashboardScreen()
                         },
+                        adminHome = { openOrder -> AdminHomeTabsScreen(onOpenOrder = openOrder) },
+                        adminOrder = { _, onBack -> OrderDetailScreen(onBack = onBack) },
                     )
                 }
             }

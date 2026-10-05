@@ -68,6 +68,10 @@ fun RootNavHost(
     },
     merchantHome: @Composable () -> Unit = { MerchantHomeScreen() },
     courierHome: @Composable () -> Unit = { CourierHomeScreen() },
+    adminHome: @Composable (onOpenOrder: (orderId: String) -> Unit) -> Unit = { AdminHomeScreen() },
+    adminOrder: @Composable (orderId: String, onBack: () -> Unit) -> Unit = { _, _ ->
+        HomePlaceholder(R.string.home_admin, RootTags.ADMIN_ORDER)
+    },
 ) {
     val state by session.collectAsStateWithLifecycle()
     val navController = rememberNavController()
@@ -88,6 +92,8 @@ fun RootNavHost(
                 CustomerSlots(customerHome, storefront, cart, checkout, customerOrders, orderTracking),
                 merchantHome,
                 courierHome,
+                adminHome,
+                adminOrder,
             )
         }
     }
@@ -114,6 +120,8 @@ private fun RootGraph(
     customer: CustomerSlots,
     merchantHome: @Composable () -> Unit,
     courierHome: @Composable () -> Unit,
+    adminHome: @Composable (onOpenOrder: (orderId: String) -> Unit) -> Unit,
+    adminOrder: @Composable (orderId: String, onBack: () -> Unit) -> Unit,
 ) {
     NavHost(navController, startDestination = start) {
         composable<LoadingRoute> { LoadingScreen() }
@@ -163,7 +171,10 @@ private fun RootGraph(
             composable<CourierHome> { courierHome() }
         }
         navigation<AdminGraph>(startDestination = AdminHome) {
-            composable<AdminHome> { AdminHomeScreen() }
+            composable<AdminHome> { adminHome { orderId -> navController.navigate(AdminOrderRoute(orderId)) } }
+            composable<AdminOrderRoute> { entry ->
+                adminOrder(entry.toRoute<AdminOrderRoute>().orderId) { navController.popBackStack() }
+            }
         }
     }
 }

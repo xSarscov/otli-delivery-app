@@ -24,6 +24,7 @@ object RootTags {
     const val CHECKOUT = "root-checkout"
     const val CUSTOMER_ORDERS = "root-customer-orders"
     const val ORDER_TRACKING = "root-order-tracking"
+    const val ADMIN_ORDER = "root-admin-order"
 
     fun pending(role: Role) = "root-pending-${role.name.lowercase()}"
 
