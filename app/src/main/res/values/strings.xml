@@ -262,4 +262,14 @@
     <string name="admin_fee_not_positive">The fee must be greater than zero.</string>
     <string name="admin_fee_save_failed">We could not save the fee. Check your connection and try again.</string>
     <string name="admin_fee_load_failed">We could not load the current fee. Check your connection and try again.</string>
+    <string name="admin_approvals_pending">Waiting for approval</string>
+    <string name="admin_approvals_none_pending">No accounts are waiting for approval.</string>
+    <string name="admin_approvals_active">Active</string>
+    <string name="admin_approvals_suspended">Suspended</string>
+    <string name="admin_approvals_account_line">%1$s · %2$s</string>
+    <string name="admin_approve">Approve</string>
+    <string name="admin_suspend">Suspend</string>
+    <string name="admin_reactivate">Reactivate</string>
+    <string name="admin_approvals_load_failed">We could not load the accounts. Check your connection and reopen this tab.</string>
+    <string name="admin_approvals_action_failed">That did not go through. The account may have changed; check its status and try again.</string>
 </resources>
