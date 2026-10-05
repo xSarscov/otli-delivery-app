@@ -80,11 +80,14 @@ class StuckOrdersContentTest {
     private val withCourier = anOrder("c1", OrderStatus.CLAIMED, merchantName = "Pizzeria Chepe", createdAtMillis = millisAt(14, 40), courierId = "courier-1")
     private val inKitchen = anOrder("k1", OrderStatus.PREPARING, merchantName = "Fritanga Lola", createdAtMillis = millisAt(14, 50))
 
+    private val onTheWay = anOrder("p1", OrderStatus.PICKED_UP, merchantName = "Tacos Don Pepe", createdAtMillis = millisAt(14, 10), courierId = "courier-2")
+
     private val everything = StuckOrdersUiState(
         isLoading = false,
         waiting = listOf(waiting),
         withCourier = listOf(withCourier),
         inKitchen = listOf(inKitchen),
+        pickedUp = listOf(onTheWay),
     )
 
     private fun row(order: Order) = hasTestTag(StuckOrdersTags.row(order.id))
@@ -118,6 +121,8 @@ class StuckOrdersContentTest {
         compose.onNodeWithText(text(R.string.admin_stuck_waiting)).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.admin_stuck_with_courier)).assertIsDisplayed()
         compose.onNodeWithText(text(R.string.admin_stuck_kitchen)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.admin_stuck_picked_up)).assertIsDisplayed()
+        compose.onNodeWithText("Tacos Don Pepe").assertIsDisplayed()
         compose.onNodeWithText("Comedor Marta").assertIsDisplayed()
         compose.onNodeWithText("Pizzeria Chepe").assertIsDisplayed()
         compose.onNodeWithText("Fritanga Lola").assertIsDisplayed()
@@ -165,6 +170,42 @@ class StuckOrdersContentTest {
     }
 
     @Test
+    fun aPickedUpOrderCanBeCancelledButNeverReleasedBackToThePool() {
+        val events = show(everything)
+
+        compose.onNodeWithTag(StuckOrdersTags.cancel("p1")).assertTextEquals(text(R.string.admin_cancel_order))
+        compose.onNodeWithTag(StuckOrdersTags.cancel("p1")).performClick()
+        compose.onNodeWithTag(StuckOrdersTags.release("p1")).assertDoesNotExist()
+
+        assertThat(events.cancelStarted).containsExactly("p1")
+        assertThat(events.released).isEmpty()
+    }
+
+    @Test
+    fun aPickedUpOrderShowsItsStatus() {
+        show(everything)
+
+        compose.onNode(row(onTheWay) and hasAnyDescendant(hasText(text(R.string.order_status_picked_up)))).assertIsDisplayed()
+    }
+
+    @Test
+    fun aLonePickedUpOrderIsListedInsteadOfTheNothingToDoMessage() {
+        show(StuckOrdersUiState(isLoading = false, pickedUp = listOf(onTheWay)))
+
+        compose.onNodeWithText(text(R.string.admin_stuck_picked_up)).assertIsDisplayed()
+        compose.onNodeWithText("Tacos Don Pepe").assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.admin_stuck_empty)).assertDoesNotExist()
+    }
+
+    @Test
+    fun withoutAPickedUpOrderThereIsNoOnTheWayGroup() {
+        show(everything.copy(pickedUp = emptyList()))
+
+        compose.onNodeWithText(text(R.string.admin_stuck_picked_up)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.admin_stuck_waiting)).assertIsDisplayed()
+    }
+
+    @Test
     fun theActionButtonsSayWhatTheyDo() {
         show(everything)
 
@@ -178,6 +219,7 @@ class StuckOrdersContentTest {
 
         compose.onNodeWithTag(StuckOrdersTags.cancel("w1")).assertIsNotEnabled()
         compose.onNodeWithTag(StuckOrdersTags.cancel("k1")).assertIsNotEnabled()
+        compose.onNodeWithTag(StuckOrdersTags.cancel("p1")).assertIsNotEnabled()
         compose.onNodeWithTag(StuckOrdersTags.release("c1")).assertIsNotEnabled()
     }
 

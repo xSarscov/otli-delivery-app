@@ -275,6 +275,7 @@
     <string name="admin_approvals_action_failed">That did not go through. The account may have changed; check its status and try again.</string>
     <string name="admin_stuck_waiting">Waiting for a courier</string>
     <string name="admin_stuck_with_courier">With a courier</string>
+    <string name="admin_stuck_picked_up">Picked up, on the way</string>
     <string name="admin_stuck_kitchen">In the kitchen</string>
     <string name="admin_stuck_empty">No orders need attention right now.</string>
     <string name="admin_stuck_load_failed">We could not load the orders. Check your connection and reopen this tab.</string>

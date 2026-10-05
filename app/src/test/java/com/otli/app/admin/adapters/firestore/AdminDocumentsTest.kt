@@ -79,6 +79,22 @@ class AdminDocumentsTest {
         assertThat(AdminDocuments.courierToFree(mapOf("status" to "claimed", "courierId" to ""))).isNull()
     }
 
+    @Test
+    fun aPickedUpOrderCancelledByAdminFreesTheCourierNamedOnIt() {
+        assertThat(AdminDocuments.courierToFreeOnCancel(mapOf("status" to "picked_up", "courierId" to "courier-1"))).isEqualTo("courier-1")
+        assertThat(AdminDocuments.courierToFreeOnCancel(mapOf("status" to "picked_up", "courierId" to "courier-2"))).isEqualTo("courier-2")
+    }
+
+    @Test
+    fun anyOtherOrderCancelledByAdminHasNoSlotToFree() {
+        assertThat(AdminDocuments.courierToFreeOnCancel(null)).isNull()
+        for (status in listOf("placed", "accepted", "preparing", "ready", "claimed", "delivered", "cancelled")) {
+            assertThat(AdminDocuments.courierToFreeOnCancel(mapOf("status" to status, "courierId" to "courier-1"))).isNull()
+        }
+        assertThat(AdminDocuments.courierToFreeOnCancel(mapOf("status" to "picked_up", "courierId" to null))).isNull()
+        assertThat(AdminDocuments.courierToFreeOnCancel(mapOf("status" to "picked_up", "courierId" to ""))).isNull()
+    }
+
     // --- reading accounts ---
 
     private val merchantDoc: Map<String, Any?> = mapOf(

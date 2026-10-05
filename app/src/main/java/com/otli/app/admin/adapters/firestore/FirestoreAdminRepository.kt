@@ -24,8 +24,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 /**
- * The Admin's side of Firestore. The release writes the order and the courier's slot in one
- * transaction, which the rules require to be paired (ADR-7); an account status change writes
+ * The Admin's side of Firestore. The release, and the cancellation of a picked-up order, write the order and
+ * the courier's slot in one transaction, which the rules require to be paired (ADR-7); an account status change writes
  * `users/{uid}` and, for a merchant, its storefront mirror in one batch. Listener errors close the
  * flow, so collectors must `catch`. The rules refuse everything unless the signed-in user is an
  * active Admin, so none of these writes is reachable from another role.
@@ -65,7 +65,15 @@ class FirestoreAdminRepository @Inject constructor(
     }
 
     override suspend fun cancelOrder(orderId: String, reason: String): Result<Unit> = suspendRunCatching {
-        orders().document(orderId).update(AdminDocuments.cancelUpdate(reason)).await()
+        firestore.runTransaction { transaction ->
+            val orderRef = orders().document(orderId)
+            val courierId = AdminDocuments.courierToFreeOnCancel(transaction.get(orderRef).data)
+            transaction.update(orderRef, AdminDocuments.cancelUpdate(reason))
+            // A picked-up order's cancellation is paired with the courier's slot (ADR-7); any other is written alone.
+            if (courierId != null) {
+                transaction.update(firestore.collection(DispatchDocuments.COURIERS).document(courierId), AdminDocuments.releaseCourierUpdate())
+            }
+        }.await()
         Unit
     }
 
@@ -110,9 +118,9 @@ class FirestoreAdminRepository @Inject constructor(
     private fun orders() = firestore.collection(OrderDocuments.ORDERS)
 
     companion object {
-        /** What Admin can still act on: cancel while no courier holds the order, release once one does. */
+        /** What Admin can still act on: cancel while no courier holds the order, release a claim, cancel after pickup. */
         val ACTIONABLE_STATUSES = listOf(
-            OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.CLAIMED,
+            OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.CLAIMED, OrderStatus.PICKED_UP,
         )
 
         const val ALL_ORDERS_LIMIT = 50L

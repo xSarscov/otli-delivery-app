@@ -30,6 +30,8 @@ data class StuckOrdersUiState(
     val withCourier: List<Order> = emptyList(),
     /** `placed`, `accepted` and `preparing` orders the store has not finished: Admin can cancel them. Newest first. */
     val inKitchen: List<Order> = emptyList(),
+    /** `picked_up` orders: a courier took the food and has not delivered it. Admin can cancel them if the courier vanished. Newest first. */
+    val pickedUp: List<Order> = emptyList(),
     /** The order an action is running for; nothing else can be acted on meanwhile. */
     val busyOrderId: String? = null,
     /** The order whose cancellation reason Admin is entering; the reason dialog is open while this is set. */
@@ -41,7 +43,8 @@ data class StuckOrdersUiState(
 
 /**
  * The orders Admin can still act on: those nobody is moving (a `ready` order no courier takes, a store
- * that never answers) and the claimed ones to release. Every list is ordered through [OrderOrdering].
+ * that never answers), the claimed ones to release and the picked-up ones whose courier may have vanished
+ * (cancelled, never returned to the pool). Every list is ordered through [OrderOrdering].
  */
 @HiltViewModel
 class StuckOrdersViewModel @Inject constructor(
@@ -69,6 +72,7 @@ class StuckOrdersViewModel @Inject constructor(
                             waiting = newestFirst.filter { order -> order.status == OrderStatus.READY },
                             withCourier = newestFirst.filter { order -> order.status == OrderStatus.CLAIMED },
                             inKitchen = newestFirst.filter { order -> order.status in KITCHEN },
+                            pickedUp = newestFirst.filter { order -> order.status == OrderStatus.PICKED_UP },
                         )
                     }
                 }

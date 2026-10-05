@@ -48,6 +48,8 @@ class StuckOrdersViewModelTest {
             anOrder("w-new", OrderStatus.READY, createdAtMillis = 800),
             anOrder("c-new", OrderStatus.CLAIMED, createdAtMillis = 700, courierId = "courier-2"),
             anOrder("k-mid", OrderStatus.ACCEPTED, createdAtMillis = 500),
+            anOrder("p-old", OrderStatus.PICKED_UP, createdAtMillis = 400, courierId = "courier-3"),
+            anOrder("p-new", OrderStatus.PICKED_UP, createdAtMillis = 600, courierId = "courier-4"),
         )
 
         val state = viewModel().uiState.value
@@ -55,16 +57,18 @@ class StuckOrdersViewModelTest {
         assertThat(state.waiting.map { it.id }).containsExactly("w-new", "w-old").inOrder()
         assertThat(state.withCourier.map { it.id }).containsExactly("c-new", "c-old").inOrder()
         assertThat(state.inKitchen.map { it.id }).containsExactly("k-new", "k-mid", "k-old").inOrder()
+        assertThat(state.pickedUp.map { it.id }).containsExactly("p-new", "p-old").inOrder()
         assertThat(state.isLoading).isFalse()
     }
 
     @Test
-    fun anOrderThatIsPickedUpOrFinishedHasNoPlaceInTheLists() {
+    fun aFinishedOrderHasNoPlaceInTheListsAndAPickedUpOneIsOnTheWay() {
         admin.stuckOrders.value = listOf(
             ready,
             anOrder("picked", OrderStatus.PICKED_UP, courierId = "courier-1"),
             anOrder("done", OrderStatus.DELIVERED),
             anOrder("gone", OrderStatus.CANCELLED),
+            anOrder("no", OrderStatus.REJECTED),
         )
 
         val state = viewModel().uiState.value
@@ -72,6 +76,7 @@ class StuckOrdersViewModelTest {
         assertThat(state.waiting.map { it.id }).containsExactly("ready")
         assertThat(state.withCourier).isEmpty()
         assertThat(state.inKitchen).isEmpty()
+        assertThat(state.pickedUp.map { it.id }).containsExactly("picked")
     }
 
     @Test
@@ -189,6 +194,38 @@ class StuckOrdersViewModelTest {
         assertThat(viewModel.uiState.value.cancelTarget).isNull()
         assertThat(viewModel.uiState.value.error).isNull()
         assertThat(viewModel.uiState.value.busyOrderId).isNull()
+    }
+
+    @Test
+    fun aPickedUpOrderIsCancelledWithTheTrimmedReasonAndLeavesTheListWhenTheCourierSlotIsFreed() {
+        val picked = anOrder("picked", OrderStatus.PICKED_UP, createdAtMillis = 500, courierId = "courier-1")
+        admin.stuckOrders.value = listOf(ready, picked)
+        val viewModel = viewModel()
+
+        viewModel.startCancel(picked)
+        viewModel.confirmCancel("  Courier vanished after pickup ")
+
+        assertThat(admin.cancellations).containsExactly(FakeAdminRepository.Cancellation("picked", "Courier vanished after pickup"))
+        assertThat(viewModel.uiState.value.cancelTarget).isNull()
+        assertThat(viewModel.uiState.value.error).isNull()
+
+        admin.stuckOrders.value = listOf(ready)
+        assertThat(viewModel.uiState.value.pickedUp).isEmpty()
+        assertThat(viewModel.uiState.value.waiting.map { it.id }).containsExactly("ready")
+    }
+
+    @Test
+    fun aPickedUpOrderDeliveredWhileTheDialogWasOpenIsNotCancelled() {
+        val picked = anOrder("picked", OrderStatus.PICKED_UP, courierId = "courier-1")
+        admin.stuckOrders.value = listOf(picked)
+        val viewModel = viewModel()
+        viewModel.startCancel(picked)
+
+        admin.stuckOrders.value = listOf(picked.copy(status = OrderStatus.DELIVERED))
+        viewModel.confirmCancel("Reason")
+
+        assertThat(admin.cancellations).isEmpty()
+        assertThat(viewModel.uiState.value.error).isEqualTo(StuckOrdersError.ACTION_FAILED)
     }
 
     @Test
