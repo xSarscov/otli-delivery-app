@@ -252,4 +252,14 @@
     <string name="delivery_deliver">Delivered</string>
     <string name="delivery_error_load">We could not load your delivery. Check your connection.</string>
     <string name="delivery_error_action">That did not go through. The order may have changed, so check it and try again.</string>
+    <string name="admin_fee_title">Delivery fee</string>
+    <string name="admin_fee_current">Current fee: C$ %1$s</string>
+    <string name="admin_fee_hint">One flat fee for the whole city. A change applies to orders placed from now on; orders already placed keep the fee they were placed with.</string>
+    <string name="admin_fee_label">New flat fee (C$)</string>
+    <string name="admin_fee_save">Save fee</string>
+    <string name="admin_fee_saved">Fee saved.</string>
+    <string name="admin_fee_invalid">Enter an amount such as 30 or 30.50.</string>
+    <string name="admin_fee_not_positive">The fee must be greater than zero.</string>
+    <string name="admin_fee_save_failed">We could not save the fee. Check your connection and try again.</string>
+    <string name="admin_fee_load_failed">We could not load the current fee. Check your connection and try again.</string>
 </resources>
