@@ -161,10 +161,21 @@ service cloud.firestore {
     }
 
     // settings/app: platform configuration. Orders snapshot its flat delivery fee at placement (ADR-10).
-    // Clients only read it; the Admin fee editor and its write rule arrive in Slice 6.
+    // Every signed-in user reads it; only an active Admin writes it, with an audit stamp (ADR-10).
     match /settings/app {
+      function validFee() {
+        let data = request.resource.data;
+        return isActiveAdmin()
+          && data.keys().hasOnly(['deliveryFeeCents', 'updatedAt', 'updatedBy'])
+          && data.keys().hasAll(['deliveryFeeCents', 'updatedAt', 'updatedBy'])
+          && data.deliveryFeeCents is int && data.deliveryFeeCents > 0
+          && data.updatedAt == request.time
+          && data.updatedBy == request.auth.uid;
+      }
+
       allow read: if signedIn();
-      allow write: if false;
+      allow create, update: if validFee();
+      allow delete: if false;
     }
 
     // orders/{orderId}: created by an active customer; the fee is a snapshot that later settings changes never touch.
