@@ -97,3 +97,86 @@ describe("the live location write of the Android tracking adapter", () => {
 async function seedCourier(adminFn: typeof admin) {
   await adminFn((db) => db.collection("couriers").doc(UID).set({ isOnline: false, activeOrderId: null, updatedAt: new Date() }));
 }
+
+/**
+ * The exact documents the Android Admin adapter writes (`AdminDocuments`), in the exact shape of its
+ * calls (`FirestoreAdminRepository`): the fee is a whole-document set, a status change is one batch of
+ * the account and, for a merchant, its mirror, the release is a transaction that reads the order first,
+ * the cancellation is one update and the three observers are the queries below.
+ */
+describe("the writes and queries of the Android admin adapter", () => {
+  const ADMIN = "admin-1";
+  const feeData = (cents: number) => ({ deliveryFeeCents: cents, updatedAt: serverTime(), updatedBy: ADMIN });
+  const userStatusUpdate = (status: string) => ({ status });
+  const merchantMirrorUpdate = (status: string) => ({ status, updatedAt: serverTime() });
+  const releaseOrderUpdate = () => ({ status: "ready", courierId: null, updatedAt: serverTime() });
+  const releaseCourierUpdate = () => ({ activeOrderId: null, updatedAt: serverTime() });
+  const cancelUpdate = (reason: string) => ({
+    status: "cancelled",
+    cancelledBy: "admin",
+    cancelReason: reason,
+    cancelledAt: serverTime(),
+    updatedAt: serverTime(),
+  });
+
+  function setStatusLikeTheAdapter(uid: string, status: string, merchant: boolean) {
+    const db = as(ADMIN);
+    const batch = db.batch();
+    batch.update(db.collection("users").doc(uid), userStatusUpdate(status));
+    if (merchant) batch.update(db.collection("merchants").doc(uid), merchantMirrorUpdate(status));
+    return batch.commit();
+  }
+
+  function releaseLikeTheAdapter(orderId: string, courierId: string) {
+    const db = as(ADMIN);
+    const orderRef = db.collection("orders").doc(orderId);
+    return db.runTransaction(async (tx) => {
+      await tx.get(orderRef);
+      tx.update(orderRef, releaseOrderUpdate());
+      tx.update(db.collection("couriers").doc(courierId), releaseCourierUpdate());
+    });
+  }
+
+  it("sets the fee with a whole-document set, and the next order snapshots it", async () => {
+    await assertSucceeds(as(ADMIN).collection("settings").doc("app").set(feeData(4500)));
+    expect((await admin((db) => db.collection("settings").doc("app").get())).data()).toMatchObject({ deliveryFeeCents: 4500, updatedBy: ADMIN });
+  });
+
+  it("approves a pending merchant with its mirror, suspends a courier alone and reactivates them", async () => {
+    await assertSucceeds(setStatusLikeTheAdapter("merchant-pending", "active", true));
+    expect((await admin((db) => db.collection("merchants").doc("merchant-pending").get())).data()?.status).toBe("active");
+    await assertSucceeds(setStatusLikeTheAdapter("merchant-pending", "suspended", true));
+    await assertSucceeds(setStatusLikeTheAdapter("courier-1", "suspended", false));
+    await assertSucceeds(setStatusLikeTheAdapter("courier-1", "active", false));
+    expect((await admin((db) => db.collection("users").doc("courier-1").get())).data()?.status).toBe("active");
+  });
+
+  it("releases a claimed order and then cancels it", async () => {
+    await seedReadyOrder(admin, "o1");
+    await seedFreeCourier(admin, UID);
+    await assertSucceeds(claimLikeTheAdapter("o1"));
+    await assertSucceeds(releaseLikeTheAdapter("o1", UID));
+    expect(await order("o1")).toMatchObject({ status: "ready", courierId: null });
+    expect(await courier()).toMatchObject({ activeOrderId: null });
+    await assertSucceeds(as(ADMIN).collection("orders").doc("o1").update(cancelUpdate("Courier unreachable")));
+    expect(await order("o1")).toMatchObject({ status: "cancelled", cancelledBy: "admin", cancelReason: "Courier unreachable" });
+  });
+
+  it("reads the actionable orders, the latest orders and the merchant and courier accounts", async () => {
+    await seedReadyOrder(admin, "o1");
+    const orders = as(ADMIN).collection("orders");
+    const actionable = await assertSucceeds(orders.where("status", "in", ["placed", "accepted", "preparing", "ready", "claimed"]).get());
+    expect(actionable.docs.map((d) => d.id)).toEqual(["o1"]);
+    await assertSucceeds(orders.orderBy("createdAt", "desc").limit(50).get());
+    const accounts = await assertSucceeds(as(ADMIN).collection("users").where("role", "in", ["merchant", "courier"]).get());
+    expect(accounts.docs.length).toBeGreaterThan(0);
+  });
+
+  it("cannot be used by anyone else", async () => {
+    await seedReadyOrder(admin, "o1");
+    await assertFails(as("merchant-a").collection("settings").doc("app").set({ ...feeData(1), updatedBy: "merchant-a" }));
+    await assertFails(as("customer-1").collection("orders").doc("o1").update(cancelUpdate("No")));
+    await assertFails(as("customer-1").collection("users").where("role", "in", ["merchant", "courier"]).get());
+    await assertFails(as("customer-1").collection("orders").orderBy("createdAt", "desc").limit(50).get());
+  });
+});
