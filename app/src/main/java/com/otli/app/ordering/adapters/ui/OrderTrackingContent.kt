@@ -98,6 +98,10 @@ private fun OrderDetails(
         if (order.status == OrderStatus.REJECTED && !reason.isNullOrBlank()) {
             Text(stringResource(R.string.tracking_reject_reason, reason), color = MaterialTheme.colorScheme.error)
         }
+        val cancelReason = order.cancelReason
+        if (order.status == OrderStatus.CANCELLED && !cancelReason.isNullOrBlank()) {
+            Text(stringResource(R.string.tracking_cancel_reason, cancelReason), color = MaterialTheme.colorScheme.error)
+        }
         Timeline(order.status)
         liveMap()
         HorizontalDivider()

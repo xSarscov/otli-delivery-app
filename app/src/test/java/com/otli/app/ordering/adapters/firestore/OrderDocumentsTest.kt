@@ -108,6 +108,7 @@ class OrderDocumentsTest {
                 courierId = null,
                 rejectReason = null,
                 createdAtMillis = 1_700_000_000_000L,
+                cancelReason = null,
             ),
         )
     }
@@ -121,6 +122,20 @@ class OrderDocumentsTest {
         assertThat(rejected?.rejectReason).isEqualTo("Sin ingredientes")
         assertThat(claimed?.status).isEqualTo(OrderStatus.CLAIMED)
         assertThat(claimed?.courierId).isEqualTo("courier-9")
+    }
+
+    @Test
+    fun theReasonAnAdminGaveForCancellingIsMappedAndAbsentOtherwise() {
+        val cancelled = OrderDocuments.orderFrom(
+            "o4",
+            document + mapOf("status" to "cancelled", "cancelledBy" to "admin", "cancelReason" to "Store closed early"),
+        )
+        val customerCancelled = OrderDocuments.orderFrom("o5", document + mapOf("status" to "cancelled", "cancelledBy" to "customer"))
+
+        assertThat(cancelled?.status).isEqualTo(OrderStatus.CANCELLED)
+        assertThat(cancelled?.cancelReason).isEqualTo("Store closed early")
+        assertThat(customerCancelled?.cancelReason).isNull()
+        assertThat(OrderDocuments.orderFrom("o1", document)?.cancelReason).isNull()
     }
 
     @Test

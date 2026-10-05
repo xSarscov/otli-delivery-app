@@ -114,6 +114,28 @@ class OrderTrackingContentTest {
     }
 
     @Test
+    fun anOrderCancelledByAdminShowsTheReasonTheyGave() {
+        show(tracking(anOrder("o1", OrderStatus.CANCELLED, cancelReason = "Store closed early")))
+
+        compose.onNodeWithText(text(R.string.tracking_cancel_reason, "Store closed early")).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.tracking_step_cancelled)).assertIsDisplayed()
+    }
+
+    @Test
+    fun aCancelledOrderWithoutAReasonShowsNoneAndOtherOrdersNeverShowOne() {
+        show(tracking(anOrder("o1", OrderStatus.CANCELLED, cancelReason = " ")))
+        compose.onNodeWithText(text(R.string.tracking_cancel_reason, " ")).assertDoesNotExist()
+    }
+
+    @Test
+    fun aRejectionReasonIsNotShownForACancelledOrderNorTheCancelReasonForARejectedOne() {
+        show(tracking(anOrder("o1", OrderStatus.REJECTED, rejectReason = "Out", cancelReason = "stale cancel")))
+
+        compose.onNodeWithText(text(R.string.tracking_cancel_reason, "stale cancel")).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.tracking_reject_reason, "Out")).assertIsDisplayed()
+    }
+
+    @Test
     fun otherOrdersShowNoRejectionReason() {
         show(tracking(anOrder("o1", OrderStatus.ACCEPTED, rejectReason = "stale")))
 

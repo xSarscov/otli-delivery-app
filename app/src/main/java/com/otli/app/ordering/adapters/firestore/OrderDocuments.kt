@@ -62,6 +62,7 @@ internal object OrderDocuments {
             courierId = data["courierId"] as? String,
             rejectReason = data["rejectReason"] as? String,
             createdAtMillis = (data["createdAt"] as? Timestamp)?.toDate()?.time ?: 0L,
+            cancelReason = data["cancelReason"] as? String,
         )
     }
 
