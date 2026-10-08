@@ -211,6 +211,7 @@
     <string name="tracking_step_current">Current step</string>
     <string name="tracking_step_upcoming">Coming up</string>
     <string name="tracking_reject_reason">Reason from the store: %1$s</string>
+    <string name="tracking_cancel_reason">Cancelled by Otli: %1$s</string>
     <string name="tracking_cancel">Cancel order</string>
     <string name="tracking_cancel_hint">You can only cancel while the store has not answered yet.</string>
     <string name="tracking_cancel_failed">We could not cancel the order. It may have been answered already; check its status.</string>

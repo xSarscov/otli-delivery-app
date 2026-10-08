@@ -24,6 +24,7 @@ fun anOrder(
     createdAtMillis: Long = 1_000L,
     rejectReason: String? = null,
     courierId: String? = null,
+    cancelReason: String? = null,
 ) = Order(
     id = id,
     customerId = customerId,
@@ -39,6 +40,7 @@ fun anOrder(
     courierId = courierId,
     rejectReason = rejectReason,
     createdAtMillis = createdAtMillis,
+    cancelReason = cancelReason,
 )
 
 /**
