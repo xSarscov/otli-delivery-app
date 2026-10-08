@@ -278,6 +278,7 @@ class FirestoreAdminRepositoryTest {
 
         assertThat(admin.cancelOrder(id, "Reason").isFailure).isTrue()
 
+        signInAdmin()
         assertThat(orderField(id, "status")).isEqualTo("picked_up")
         assertThat(slotOfCourier1()).isEqualTo(id)
     }
