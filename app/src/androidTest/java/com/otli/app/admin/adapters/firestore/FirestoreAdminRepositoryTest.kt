@@ -90,6 +90,12 @@ class FirestoreAdminRepositoryTest {
         return id
     }
 
+    private suspend fun pickedUpOrder(): String {
+        val id = claimedOrder()
+        dispatch.markPickedUp(id, COURIER_1).getOrThrow()
+        return id
+    }
+
     private suspend fun orderField(id: String, field: String): Any? =
         firestore.collection("orders").document(id).get(Source.SERVER).await().get(field)
 
@@ -110,14 +116,14 @@ class FirestoreAdminRepositoryTest {
         Unit
     }
 
-    /** Frees courier 1 (releasing its claim as Admin if needed), restores the fee and re-pends the two accounts. */
+    /** Frees courier 1 (releasing its claim or cancelling its picked-up order as Admin if needed), restores the fee and re-pends the two accounts. */
     private suspend fun resetSeedState(strict: Boolean) {
         signInAdmin()
         val held = firestore.collection("couriers").document(COURIER_1).get(Source.SERVER).await().getString("activeOrderId")
         if (held != null) {
             val status = orderField(held, "status")
             if (status == OrderStatus.CLAIMED.wire) admin.releaseClaim(held).required(strict)
-            if (status == OrderStatus.PICKED_UP.wire) strictFail(strict, "courier 1 holds a picked-up order $held")
+            if (status == OrderStatus.PICKED_UP.wire) admin.cancelOrder(held, "Test reset").required(strict)
         }
         admin.setDeliveryFee(SEED_FEE).required(strict)
         admin.setAccountStatus(PENDING_MERCHANT, Role.MERCHANT, AccountStatus.PENDING).required(strict)
@@ -128,10 +134,6 @@ class FirestoreAdminRepositoryTest {
 
     private fun Result<Unit>.required(strict: Boolean) {
         if (strict) getOrThrow()
-    }
-
-    private fun strictFail(strict: Boolean, message: String) {
-        if (strict) error(message)
     }
 
     // --- the fee ---
@@ -251,6 +253,34 @@ class FirestoreAdminRepositoryTest {
         admin.cancelOrder(id, "Courier unreachable").getOrThrow()
 
         assertThat(orderField(id, "status")).isEqualTo("cancelled")
+    }
+
+    @Test
+    fun cancellingAPickedUpOrderRecordsTheReasonAndFreesTheCourierInOneWrite() = await {
+        val id = pickedUpOrder()
+        signInAdmin()
+        assertThat(admin.observeStuckOrders().first { list -> list.any { it.id == id && it.status == OrderStatus.PICKED_UP } }).isNotEmpty()
+
+        admin.cancelOrder(id, "Courier vanished after pickup").getOrThrow()
+
+        assertThat(orderField(id, "status")).isEqualTo("cancelled")
+        assertThat(orderField(id, "cancelledBy")).isEqualTo("admin")
+        assertThat(orderField(id, "courierId")).isEqualTo(COURIER_1)
+        assertThat(slotOfCourier1()).isNull()
+        signIn(CUSTOMER_EMAIL)
+        assertThat(orderField(id, "cancelReason")).isEqualTo("Courier vanished after pickup")
+    }
+
+    @Test
+    fun aMerchantCannotCancelAPickedUpOrderAndNeitherTheOrderNorTheSlotChange() = await {
+        val id = pickedUpOrder()
+        signIn(MERCHANT_EMAIL)
+
+        assertThat(admin.cancelOrder(id, "Reason").isFailure).isTrue()
+
+        signInAdmin()
+        assertThat(orderField(id, "status")).isEqualTo("picked_up")
+        assertThat(slotOfCourier1()).isEqualTo(id)
     }
 
     @Test

@@ -206,7 +206,7 @@
     <string name="tracking_step_picked_up">On the way to you</string>
     <string name="tracking_step_delivered">Delivered</string>
     <string name="tracking_step_rejected">Rejected by the store</string>
-    <string name="tracking_step_cancelled">Cancelled by you</string>
+    <string name="tracking_step_cancelled">Order cancelled</string>
     <string name="tracking_step_done">Done</string>
     <string name="tracking_step_current">Current step</string>
     <string name="tracking_step_upcoming">Coming up</string>
@@ -275,6 +275,7 @@
     <string name="admin_approvals_action_failed">That did not go through. The account may have changed; check its status and try again.</string>
     <string name="admin_stuck_waiting">Waiting for a courier</string>
     <string name="admin_stuck_with_courier">With a courier</string>
+    <string name="admin_stuck_picked_up">Picked up, on the way</string>
     <string name="admin_stuck_kitchen">In the kitchen</string>
     <string name="admin_stuck_empty">No orders need attention right now.</string>
     <string name="admin_stuck_load_failed">We could not load the orders. Check your connection and reopen this tab.</string>

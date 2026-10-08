@@ -110,7 +110,7 @@ Android API levels (`https://developer.android.com/tools/releases/platforms`).
 **Choice**: The claim is one client transaction that writes **both** `orders/{orderId}` (`ready → claimed`, `courierId = uid`) and `couriers/{uid}` (`activeOrderId = orderId`). Rules on each document require the other document's post-write state via `getAfter()`, so neither write can be committed alone. Pre-state conditions (`status == 'ready'`, `courierId == null`, `activeOrderId == null`, courier online and active) are checked against `resource`/`get()`.
 **Alternatives considered**: Order-only update checking "courier has no active order" with a query (rules cannot run queries); counter documents; Cloud Function claim (Blaze).
 **Rationale**: Firestore serializes commits on a document. Two couriers racing on one order both touch `orders/{orderId}`: the loser's transaction is aborted and retried by the SDK, re-reads `status == 'claimed'`, and fails with `AlreadyClaimed`; a malicious client that skips the transaction is still denied by rules because `resource.data.status != 'ready'` at commit. One courier racing on two orders touches `couriers/{uid}` twice: the second commit sees `activeOrderId != null` and is denied. The dedicated concurrency tests (Testing Strategy) prove both properties against the emulator.
-**Release paths**: deliver (`picked_up → delivered` + `activeOrderId = null`) and Admin release (`claimed → ready`, `courierId = null` + `activeOrderId = null`) use the same paired-write pattern.
+**Release paths**: deliver (`picked_up → delivered` + `activeOrderId = null`), Admin release (`claimed → ready`, `courierId = null` + `activeOrderId = null`) and Admin cancel of a vanished courier's order (`picked_up → cancelled` + `activeOrderId = null`, F.13) use the same paired-write pattern: each half reads the other through `getAfter()`, so neither can be written alone.
 
 ### ADR-8: Live location in `liveLocations/{orderId}`, throttled client-side and floored server-side
 
@@ -219,7 +219,7 @@ All timestamps are server timestamps (`FieldValue.serverTimestamp()`), which rul
 | `merchants/{uid}/categories/{cid}` | `name`, `sortOrder` | active owner | signed-in |
 | `merchants/{uid}/products/{pid}` | `categoryId`, `name`, `description`, `priceCents` (int > 0), `isAvailable`, `photoVersion` (int, 0 = none), `updatedAt` | active owner | signed-in |
 | `merchants/{uid}/productPhotos/{pid}` | `jpeg` (Bytes ≤ 300 KB), `version` | active owner | signed-in |
-| `couriers/{uid}` | `isOnline`, `activeOrderId` (string\|null), `updatedAt` | self (availability, paired claim/deliver), Admin (paired release) | self, Admin |
+| `couriers/{uid}` | `isOnline`, `activeOrderId` (string\|null), `updatedAt` | self (availability, paired claim/deliver), Admin (paired release, paired cancel of a picked-up order) | self, Admin |
 | `orders/{orderId}` | `customerId`, `customerName`, `customerPhone`, `merchantId`, `merchantName`, `pickup {lat,lng,reference}`, `dropoff {lat,lng,reference}`, `items [{productId,name,unitPriceCents,quantity}]`, `subtotalCents`, `deliveryFeeCents`, `totalCents`, `paymentMethod='cash'`, `status`, `courierId` (null until claimed), `rejectReason?`, `cancelReason?`, `cancelledBy?` (`customer`\|`admin`), `createdAt`, `acceptedAt?`, `preparingAt?`, `readyAt?`, `claimedAt?`, `pickedUpAt?`, `deliveredAt?`, `rejectedAt?`, `cancelledAt?`, `updatedAt` | see transition table | customer owner, merchant owner, assigned courier, active online-or-not courier when `status=='ready'` (pool), Admin |
 | `liveLocations/{orderId}` | `courierId`, `lat`, `lng`, `accuracyM`, `updatedAt` | assigned courier while order `claimed`/`picked_up` | order's customer, assigned courier, Admin |
 | `settings/app` | `deliveryFeeCents`, `updatedAt`, `updatedBy` | Admin | signed-in |
@@ -254,8 +254,9 @@ Admin "all orders" uses the automatic single-field index on `createdAt` DESC wit
 | `picked_up` | `delivered` | assigned active courier | paired write clearing `activeOrderId` |
 | `claimed` | `ready` | Admin (release) | `courierId → null`, paired write clearing courier `activeOrderId` |
 | `placed`\|`accepted`\|`preparing`\|`ready` | `cancelled` | Admin | `cancelledBy == 'admin'`, `cancelReason` non-empty |
+| `picked_up` | `cancelled` | Admin (courier vanished) | `cancelledBy == 'admin'`, `cancelReason` non-empty, paired write clearing the courier's `activeOrderId`; never returned to the pool |
 
-Terminal: `delivered`, `rejected`, `cancelled`. A claimed order must be released before Admin can cancel it. Suspended actors cannot perform transitions; if a courier is suspended mid-delivery, Admin releases the claim.
+Terminal: `delivered`, `rejected`, `cancelled`. A claimed order must be released before Admin can cancel it; a picked-up order is cancelled directly (its food left the store) and frees the courier's slot in the same write. Suspended actors cannot perform transitions; if a courier is suspended mid-delivery, Admin releases the claim.
 
 ### Rules structure (excerpt of the load-bearing parts)
 
@@ -469,8 +470,8 @@ interface AdminRepository {
     suspend fun setAccountStatus(uid: String, role: Role, status: AccountStatus): Result<Unit> // batch users + merchants mirror
     suspend fun setDeliveryFee(fee: Money): Result<Unit>
     suspend fun releaseClaim(orderId: String): Result<Unit>                   // paired transaction
-    suspend fun cancelOrder(orderId: String, reason: String): Result<Unit>
-    fun observeStuckOrders(): Flow<List<Order>>     // placed, accepted, preparing, ready and claimed: what Admin can still act on
+    suspend fun cancelOrder(orderId: String, reason: String): Result<Unit>   // a picked_up order is cancelled in a paired transaction with the courier slot
+    fun observeStuckOrders(): Flow<List<Order>>     // placed, accepted, preparing, ready, claimed and picked_up: what Admin can still act on
     fun observeManagedAccounts(): Flow<List<UserAccount>> // every merchant and courier; pending ones are the approval queue
     fun observeAllOrders(): Flow<List<Order>>       // latest 50, newest first in the view model
 }

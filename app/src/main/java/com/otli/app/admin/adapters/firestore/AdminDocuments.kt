@@ -56,8 +56,16 @@ internal object AdminDocuments {
     )
 
     /** The courier whose slot a release frees: the one named on a `claimed` order, or null when there is none to free. */
-    fun courierToFree(order: Map<String, Any?>?): String? {
-        if (order?.get("status") != OrderStatus.CLAIMED.wire) return null
+    fun courierToFree(order: Map<String, Any?>?): String? = courierNamedOn(order, OrderStatus.CLAIMED)
+
+    /**
+     * The courier whose slot a cancellation frees: the one named on a `picked_up` order, whose cancellation
+     * the rules pair with that slot. Any other order is cancelled alone.
+     */
+    fun courierToFreeOnCancel(order: Map<String, Any?>?): String? = courierNamedOn(order, OrderStatus.PICKED_UP)
+
+    private fun courierNamedOn(order: Map<String, Any?>?, status: OrderStatus): String? {
+        if (order?.get("status") != status.wire) return null
         return (order["courierId"] as? String)?.takeIf { it.isNotEmpty() }
     }
 

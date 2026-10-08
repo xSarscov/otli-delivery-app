@@ -49,8 +49,9 @@ object StuckOrdersTags {
 }
 
 /**
- * Stateless list of the orders Admin can act on, in three groups: waiting for a courier (cancel), with a
- * courier (release) and in the kitchen (cancel). A claimed order offers no cancel: it is released first.
+ * Stateless list of the orders Admin can act on, in four groups: waiting for a courier (cancel), with a
+ * courier (release), picked up (cancel, for a courier who vanished) and in the kitchen (cancel). A claimed
+ * order offers no cancel: it is released first. A picked-up order offers no release: it is never returned to the pool.
  * The [cancelDialog] slot hosts the reason dialog, because a text field inside a dialog cannot be hosted by
  * the unit tests; the default is the real [CancelReasonDialog].
  */
@@ -97,13 +98,14 @@ private fun Orders(
     onCancel: (Order) -> Unit,
     onDismissError: () -> Unit,
 ) {
-    val none = state.waiting.isEmpty() && state.withCourier.isEmpty() && state.inKitchen.isEmpty()
+    val none = state.waiting.isEmpty() && state.withCourier.isEmpty() && state.pickedUp.isEmpty() && state.inKitchen.isEmpty()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (state.error != null) item(key = "error") { ErrorBanner(onDismissError) }
         if (none) item(key = "none") { Text(stringResource(R.string.admin_stuck_empty), style = MaterialTheme.typography.bodyLarge) }
         val busy = state.busyOrderId != null
         group(R.string.admin_stuck_waiting, state.waiting, nowMillis, placedAt, busy, R.string.admin_cancel_order, StuckOrdersTags::cancel, onCancel)
         group(R.string.admin_stuck_with_courier, state.withCourier, nowMillis, placedAt, busy, R.string.admin_release_claim, StuckOrdersTags::release, onRelease)
+        group(R.string.admin_stuck_picked_up, state.pickedUp, nowMillis, placedAt, busy, R.string.admin_cancel_order, StuckOrdersTags::cancel, onCancel)
         group(R.string.admin_stuck_kitchen, state.inKitchen, nowMillis, placedAt, busy, R.string.admin_cancel_order, StuckOrdersTags::cancel, onCancel)
     }
 }
@@ -175,6 +177,7 @@ private fun StuckOrdersPreview() {
                 isLoading = false,
                 waiting = listOf(sampleOrder("w1", OrderStatus.READY)),
                 withCourier = listOf(sampleOrder("c1", OrderStatus.CLAIMED)),
+                pickedUp = listOf(sampleOrder("p1", OrderStatus.PICKED_UP)),
                 inKitchen = listOf(sampleOrder("k1", OrderStatus.PREPARING)),
             ),
             nowMillis = 2_100_000L,

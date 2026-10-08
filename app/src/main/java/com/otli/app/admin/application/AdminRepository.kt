@@ -29,10 +29,14 @@ interface AdminRepository {
      */
     suspend fun releaseClaim(orderId: String): Result<Unit>
 
-    /** Cancels an order no courier holds, recording [reason] and that Admin did it. */
+    /**
+     * Cancels an order, recording [reason] and that Admin did it. An order a courier picked up and then abandoned
+     * is cancelled in one transaction with that courier's `activeOrderId`, which is cleared; it is never returned
+     * to the pool. A `claimed` order must be released first.
+     */
     suspend fun cancelOrder(orderId: String, reason: String): Result<Unit>
 
-    /** The orders Admin can still act on: waiting in the kitchen, ready for a courier, or claimed. */
+    /** The orders Admin can still act on: waiting in the kitchen, ready for a courier, claimed or picked up. */
     fun observeStuckOrders(): Flow<List<Order>>
 
     /** Every merchant and courier account, whatever its status; pending ones are the approval queue. */
