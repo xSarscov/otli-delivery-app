@@ -8,6 +8,10 @@
     { "from": "ready", "to": "claimed", "actor": "courier" },
     { "from": "claimed", "to": "picked_up", "actor": "courier" },
     { "from": "picked_up", "to": "delivered", "actor": "courier" },
-    { "from": "claimed", "to": "ready", "actor": "admin" }
+    { "from": "claimed", "to": "ready", "actor": "admin" },
+    { "from": "placed", "to": "cancelled", "actor": "admin" },
+    { "from": "accepted", "to": "cancelled", "actor": "admin" },
+    { "from": "preparing", "to": "cancelled", "actor": "admin" },
+    { "from": "ready", "to": "cancelled", "actor": "admin" }
   ]
 }

@@ -62,7 +62,8 @@ role-scoped actions.
 ### Requirement: Merchant and Courier Suspension
 
 The system MUST allow Admin to suspend an `active` Merchant or Courier
-account, immediately blocking that account's role-scoped actions.
+account, immediately blocking that account's role-scoped actions, and MUST
+allow Admin to reactivate a `suspended` account (back to `active`).
 
 #### Scenario: Admin suspends an active merchant
 
@@ -77,6 +78,13 @@ account, immediately blocking that account's role-scoped actions.
 - WHEN an Admin suspends the account
 - THEN the system MUST transition the account status to `suspended`
 - AND the courier MUST immediately lose the ability to go online or claim orders
+
+#### Scenario: Admin reactivates a suspended account
+
+- GIVEN a Merchant or Courier account in status `suspended`
+- WHEN an Admin reactivates the account
+- THEN the system MUST transition the account status to `active`
+- AND the account MUST regain its role-scoped actions
 
 ### Requirement: Stuck and Unclaimed Orders Visibility
 
@@ -93,8 +101,46 @@ allow Admin to cancel such an order.
 #### Scenario: Admin cancels a stuck order
 
 - GIVEN an order in state `ready` with no assigned courier
-- WHEN an Admin cancels the order
+- WHEN an Admin cancels the order with a reason
 - THEN the system MUST transition the order to `cancelled`
+- AND the order MUST record that Admin cancelled it and the reason given
+
+### Requirement: Admin Cancellation Before Any Courier Claims
+
+The system MUST allow Admin to cancel an order in state `placed`, `accepted`,
+`preparing` or `ready` (that is, before any courier claims it), so that
+orders a merchant never answers and erroneous orders can be closed, not only
+stuck ones. Every Admin cancellation MUST carry a non-empty reason, and the
+customer MUST be able to see that the order was cancelled and why. An order in
+state `claimed` or `picked_up` MUST NOT be cancellable by Admin: a claimed
+order has to be released first (see Release of Abandoned Claims), after which
+it may be cancelled.
+
+#### Scenario: Admin cancels an order the merchant never answered
+
+- GIVEN an order in state `placed`, `accepted` or `preparing`
+- WHEN an Admin cancels the order with a non-empty reason
+- THEN the system MUST transition the order to `cancelled`
+- AND the customer MUST see the order as cancelled together with the reason
+
+#### Scenario: Admin cancellation requires a reason
+
+- GIVEN an order in state `placed`, `accepted`, `preparing` or `ready`
+- WHEN an Admin attempts to cancel it with an empty or blank reason
+- THEN the system MUST reject the attempt
+
+#### Scenario: Admin cannot cancel an order a courier holds
+
+- GIVEN an order in state `claimed`, `picked_up`, `delivered`, `rejected` or `cancelled`
+- WHEN an Admin attempts to cancel it
+- THEN the system MUST reject the attempt
+- AND for a `claimed` order the Admin MUST release the claim first
+
+#### Scenario: Non-admin cannot cancel on the Admin's behalf
+
+- GIVEN an order in state `accepted`, `preparing` or `ready`
+- WHEN a Merchant or Courier attempts to cancel it
+- THEN the system MUST reject the attempt
 
 ### Requirement: Release of Abandoned Claims
 
