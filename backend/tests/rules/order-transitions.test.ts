@@ -14,11 +14,11 @@ const contract: Triple[] = JSON.parse(readFileSync("contracts/order-transitions.
 const STATUSES = ["placed", "accepted", "preparing", "ready", "claimed", "picked_up", "delivered", "rejected", "cancelled"];
 const ACTORS = ["customer", "merchant", "courier", "admin"];
 
-/**
- * Actors whose transitions the rules implement so far. The admin release arrives in Slice 6: until
- * then every attempt by an admin must be denied, and this set grows with each slice.
- */
-const IMPLEMENTED_ACTORS = new Set(["customer", "merchant", "courier"]);
+/** Actors whose transitions the rules implement; every attempt by an actor outside this set must be denied. */
+const IMPLEMENTED_ACTORS = new Set(["customer", "merchant", "courier", "admin"]);
+
+/** The Admin release is the one transition that clears the courier instead of stamping a status time. */
+const isRelease = (to: string, actor: string) => actor === "admin" && to === "ready";
 
 const UID: Record<string, string> = { customer: "customer-1", merchant: "merchant-a", courier: "courier-1", admin: "admin-1" };
 const TIMESTAMP_FIELD: Record<string, string> = {
@@ -48,9 +48,10 @@ const seed = (id: string, status: string, overrides: Record<string, unknown> = {
 
 /** The most complete update an actor could send to move to [to]: denial of a combination is then about the transition itself. */
 function updateTo(to: string, actor: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  if (isRelease(to, actor)) return { status: "ready", courierId: null, updatedAt: serverTime(), ...overrides };
   const extra: Record<string, unknown> = {};
   if (to === "rejected") extra.rejectReason = "Out of stock";
-  if (to === "cancelled") extra.cancelledBy = actor === "admin" ? "admin" : "customer";
+  if (to === "cancelled") Object.assign(extra, actor === "admin" ? { cancelledBy: "admin", cancelReason: "Store never answered" } : { cancelledBy: "customer" });
   if (to === "claimed") extra.courierId = UID[actor];
   const stamp = TIMESTAMP_FIELD[to];
   return { status: to, ...(stamp ? { [stamp]: serverTime() } : {}), ...extra, updatedAt: serverTime(), ...overrides };
@@ -61,11 +62,15 @@ const orderOf = (uid: string, id: string) => as(uid).collection("orders").doc(id
 /** The contract triples the rules implement so far. */
 const implemented = contract.filter((t) => IMPLEMENTED_ACTORS.has(t.actor));
 
-/** Sends [payload] as [actor]. A courier's claim and delivery carry the paired write on couriers/{uid}, as the app's transaction does. */
+/**
+ * Sends [payload] as [actor]. A courier's claim and delivery and the Admin's release carry the paired
+ * write on couriers/{uid}, as the app's transactions do.
+ */
 function send(actor: string, id: string, to: string, payload: Record<string, unknown>) {
   const db = as(UID[actor]);
   const ref = db.collection("orders").doc(id);
-  if (actor !== "courier" || (to !== "claimed" && to !== "delivered")) return ref.update(payload);
+  const paired = (actor === "courier" && (to === "claimed" || to === "delivered")) || isRelease(to, actor);
+  if (!paired) return ref.update(payload);
   const batch = db.batch();
   batch.update(ref, payload);
   batch.update(db.collection("couriers").doc(UID.courier), { activeOrderId: to === "claimed" ? id : null, updatedAt: serverTime() });
@@ -120,8 +125,10 @@ describe("every implemented transition touches only its own fields", () => {
     await assertFails(attempt("extra-total", { totalCents: 1 }));
     await assertFails(attempt("extra-courier", { courierId: "courier-2" }));
     await assertFails(attempt("extra-customer", { customerName: "Someone else" }));
-    await assertFails(attempt("no-stamp", {}, [stamp]));
-    await assertFails(attempt("client-stamp", { [stamp]: new Date() }));
+    if (stamp && !isRelease(t.to, t.actor)) {
+      await assertFails(attempt("no-stamp", {}, [stamp]));
+      await assertFails(attempt("client-stamp", { [stamp]: new Date() }));
+    }
     await assertFails(attempt("client-updated", { updatedAt: new Date() }));
     await assertFails(attempt("no-updated", {}, ["updatedAt"]));
   });

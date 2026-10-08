@@ -286,9 +286,28 @@ service cloud.firestore {
           && get(c).data.activeOrderId == orderId
           && getAfter(c).data.activeOrderId == null;
       }
-      // The Admin release/cancel are implemented in Slice 6.
+      // Admin releases an abandoned claim: back to ready, courier cleared, and the courier's slot freed in the
+      // same write, which must hold this very order beforehand (ADR-7 release path). A picked-up order stays put.
+      function release() {
+        return isActiveAdmin() && moves('claimed', 'ready')
+          && request.resource.data.courierId == null
+          && changed().hasOnly(['status', 'courierId', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time
+          && get(courierPath(resource.data.courierId)).data.activeOrderId == orderId
+          && getAfter(courierPath(resource.data.courierId)).data.activeOrderId == null;
+      }
+      // Admin cancels before any courier holds the order, always saying why; a claimed order is released first.
+      function adminCancel() {
+        return isActiveAdmin()
+          && resource.data.status in ['placed', 'accepted', 'preparing', 'ready']
+          && request.resource.data.status == 'cancelled'
+          && changed().hasOnly(['status', 'cancelledBy', 'cancelReason', 'cancelledAt', 'updatedAt'])
+          && stamped('cancelledAt')
+          && request.resource.data.cancelledBy == 'admin'
+          && validText(request.resource.data.cancelReason, 1, 200);
+      }
       function courierStep() { return claim() || pickUp() || deliver(); }
-      function adminStep() { return false; }
+      function adminStep() { return release() || adminCancel(); }
 
       // The pool is every ready order for any active courier; the dropoff and customer contact are readable
       // before the claim because rules cannot hide fields (accepted risk, ADR-7). A courier also reads the
@@ -354,9 +373,23 @@ service cloud.firestore {
           && getAfter(orderPath(id)).data.status == 'delivered';
       }
 
+      // The slot is freed by Admin with the order's release: the order must be claimed before and ready
+      // (and courier-less) after, and its release requires this slot to be freed, so neither commits alone.
+      function pairedRelease() {
+        let id = resource.data.activeOrderId;
+        return isActiveAdmin()
+          && id is string
+          && request.resource.data.activeOrderId == null
+          && changed().hasOnly(['activeOrderId', 'updatedAt'])
+          && request.resource.data.updatedAt == request.time
+          && get(orderPath(id)).data.status == 'claimed'
+          && getAfter(orderPath(id)).data.status == 'ready'
+          && getAfter(orderPath(id)).data.courierId == null;
+      }
+
       allow read: if isSelf() || isActiveAdmin();
       allow create: if validCourierCreate();
-      allow update: if availability() || pairedClaim() || pairedDeliver();
+      allow update: if availability() || pairedClaim() || pairedDeliver() || pairedRelease();
       allow delete: if false;
     }
 
