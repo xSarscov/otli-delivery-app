@@ -3,6 +3,12 @@ import { describe, expect, it } from "vitest";
 import { DELIVERY_FEE_CENTS, serverTime, useCatalogEnv } from "./catalog-support";
 import { orderDoc } from "./order-support";
 
+/**
+ * A client-chosen time the rules must refuse in place of the server time. It is an hour off on purpose:
+ * a plain new Date() can equal the emulator's request.time when both land in the same millisecond.
+ */
+const clientTime = () => new Date(Date.now() - 3_600_000);
+
 const { as, signedOut, admin } = useCatalogEnv();
 
 /** The document the Admin fee editor writes: the amount, when, and by whom. */
@@ -57,7 +63,7 @@ describe("settings/app writes", () => {
   });
 
   it("requires the server time and the admin's own uid as the audit stamp", async () => {
-    await assertFails(settings("admin-1").set(feeDoc(4000, { updatedAt: new Date() })));
+    await assertFails(settings("admin-1").set(feeDoc(4000, { updatedAt: clientTime() })));
     await assertFails(settings("admin-1").set({ deliveryFeeCents: 4000, updatedBy: "admin-1" }));
     await assertFails(settings("admin-1").set(feeDoc(4000, { updatedBy: "someone-else" })));
     await assertFails(settings("admin-1").set({ deliveryFeeCents: 4000, updatedAt: serverTime() }));

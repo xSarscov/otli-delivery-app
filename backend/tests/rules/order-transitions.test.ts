@@ -4,6 +4,12 @@ import { describe, expect, it } from "vitest";
 import { serverTime, useCatalogEnv } from "./catalog-support";
 import { orderDoc } from "./order-support";
 
+/**
+ * A client-chosen time the rules must refuse in place of the server time. It is an hour off on purpose:
+ * a plain new Date() can equal the emulator's request.time when both land in the same millisecond.
+ */
+const clientTime = () => new Date(Date.now() - 3_600_000);
+
 const { as, admin } = useCatalogEnv();
 
 type Triple = { from: string; to: string; actor: string };
@@ -127,9 +133,9 @@ describe("every implemented transition touches only its own fields", () => {
     await assertFails(attempt("extra-customer", { customerName: "Someone else" }));
     if (stamp && !isRelease(t.to, t.actor)) {
       await assertFails(attempt("no-stamp", {}, [stamp]));
-      await assertFails(attempt("client-stamp", { [stamp]: new Date() }));
+      await assertFails(attempt("client-stamp", { [stamp]: clientTime() }));
     }
-    await assertFails(attempt("client-updated", { updatedAt: new Date() }));
+    await assertFails(attempt("client-updated", { updatedAt: clientTime() }));
     await assertFails(attempt("no-updated", {}, ["updatedAt"]));
   });
 });
