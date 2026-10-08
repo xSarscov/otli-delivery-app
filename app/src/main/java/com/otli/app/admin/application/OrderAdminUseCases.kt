@@ -24,8 +24,9 @@ class ReleaseClaim @Inject constructor(private val admin: AdminRepository) {
 }
 
 /**
- * Cancels an order before any courier holds it, with a reason the customer will see. A claimed order
- * has to be released first: [OrderTransitions] is the single source of what Admin may cancel.
+ * Cancels an order with a reason the customer will see: before any courier holds it, or after a courier who
+ * vanished picked it up (it is never returned to the pool). A claimed order has to be released first:
+ * [OrderTransitions] is the single source of what Admin may cancel.
  */
 class CancelOrder @Inject constructor(private val admin: AdminRepository) {
     suspend operator fun invoke(order: Order, reason: String): AdminActionResult {

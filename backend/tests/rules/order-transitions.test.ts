@@ -26,6 +26,9 @@ const IMPLEMENTED_ACTORS = new Set(["customer", "merchant", "courier", "admin"])
 /** The Admin release is the one transition that clears the courier instead of stamping a status time. */
 const isRelease = (to: string, actor: string) => actor === "admin" && to === "ready";
 
+/** Cancelling a picked-up order frees the courier's slot in the same write, like the release (F.13). */
+const isPickedUpCancel = (from: string, to: string, actor: string) => actor === "admin" && from === "picked_up" && to === "cancelled";
+
 const UID: Record<string, string> = { customer: "customer-1", merchant: "merchant-a", courier: "courier-1", admin: "admin-1" };
 const TIMESTAMP_FIELD: Record<string, string> = {
   accepted: "acceptedAt",
@@ -69,13 +72,14 @@ const orderOf = (uid: string, id: string) => as(uid).collection("orders").doc(id
 const implemented = contract.filter((t) => IMPLEMENTED_ACTORS.has(t.actor));
 
 /**
- * Sends [payload] as [actor]. A courier's claim and delivery and the Admin's release carry the paired
- * write on couriers/{uid}, as the app's transactions do.
+ * Sends [payload] as [actor]. A courier's claim and delivery and the Admin's release and picked-up
+ * cancellation carry the paired write on couriers/{uid}, as the app's transactions do.
  */
-function send(actor: string, id: string, to: string, payload: Record<string, unknown>) {
+function send(actor: string, id: string, from: string, to: string, payload: Record<string, unknown>) {
   const db = as(UID[actor]);
   const ref = db.collection("orders").doc(id);
-  const paired = (actor === "courier" && (to === "claimed" || to === "delivered")) || isRelease(to, actor);
+  const paired =
+    (actor === "courier" && (to === "claimed" || to === "delivered")) || isRelease(to, actor) || isPickedUpCancel(from, to, actor);
   if (!paired) return ref.update(payload);
   const batch = db.batch();
   batch.update(ref, payload);
@@ -84,8 +88,8 @@ function send(actor: string, id: string, to: string, payload: Record<string, unk
 }
 
 describe("the transitions contract", () => {
-  it("lists the thirteen allowed triples of the spec", () => {
-    expect(contract).toHaveLength(13);
+  it("lists the fourteen allowed triples of the spec", () => {
+    expect(contract).toHaveLength(14);
   });
 
   it("allows every implemented triple and denies every other (from, to, actor) combination", async () => {
@@ -102,7 +106,7 @@ describe("the transitions contract", () => {
           await seed(id, from);
           let ok: boolean;
           try {
-            await assertSucceeds(send(actor, id, to, updateTo(to, actor)));
+            await assertSucceeds(send(actor, id, from, to, updateTo(to, actor)));
             ok = true;
           } catch {
             ok = false;
@@ -123,7 +127,7 @@ describe("every implemented transition touches only its own fields", () => {
       await seed(id, t.from);
       const payload: Record<string, unknown> = { ...updateTo(t.to, t.actor), ...overrides };
       for (const key of omit) delete payload[key];
-      return send(t.actor, id, t.to, payload);
+      return send(t.actor, id, t.from, t.to, payload);
     };
     const stamp = TIMESTAMP_FIELD[t.to];
 

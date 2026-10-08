@@ -204,3 +204,167 @@ describe("cancelling an order no courier holds", () => {
     await assertFails(orderRef("merchant-a", "o1").update({ status: "ready", readyAt: serverTime(), updatedAt: serverTime() }));
   });
 });
+
+/** Cancels [orderId] of [courierUid] the way the app does for a picked-up order: the order and the freed slot in one atomic write. */
+function cancelPickedUp(db: Db, orderId: string, courierUid: string, order: Record<string, unknown> = {}, slot: Record<string, unknown> = {}) {
+  const batch = db.batch();
+  batch.update(db.collection("orders").doc(orderId), cancelOrder("Courier vanished after pickup", order));
+  batch.update(db.collection("couriers").doc(courierUid), releaseSlot(slot));
+  return batch.commit();
+}
+
+describe("cancelling a picked-up order whose courier vanished", () => {
+  it("cancels the order with the reason and frees the courier in one write, without returning it to the pool", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    await assertSucceeds(cancelPickedUp(as("admin-1"), "o1", "courier-1"));
+    expect(await order("o1")).toMatchObject({ status: "cancelled", cancelledBy: "admin", cancelReason: "Courier vanished after pickup", courierId: "courier-1" });
+    expect((await order("o1"))?.cancelledAt).toBeDefined();
+    expect(await courier("courier-1")).toMatchObject({ isOnline: true, activeOrderId: null });
+  });
+
+  it("frees the courier for another order and lets the customer read why", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    await seedReadyOrder(admin, "o2");
+    await assertSucceeds(cancelPickedUp(as("admin-1"), "o1", "courier-1"));
+    await assertSucceeds(claim(as("courier-1"), "courier-1", "o2"));
+    expect(await order("o2")).toMatchObject({ status: "claimed", courierId: "courier-1" });
+
+    const seen = await assertSucceeds(orderRef("customer-1", "o1").get());
+    expect(seen.data()).toMatchObject({ status: "cancelled", cancelReason: "Courier vanished after pickup", cancelledBy: "admin" });
+  });
+
+  it("works when the courier was suspended meanwhile, and leaves their online flag alone", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    await admin((db) => db.collection("users").doc("courier-1").update({ status: "suspended" }));
+    await assertSucceeds(cancelPickedUp(as("admin-1"), "o1", "courier-1"));
+    expect(await courier("courier-1")).toMatchObject({ isOnline: true, activeOrderId: null });
+  });
+
+  it("is denied for the order alone or the courier slot alone", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    await assertFails(orderRef("admin-1", "o1").update(cancelOrder("Courier vanished after pickup")));
+    await assertFails(as("admin-1").collection("couriers").doc("courier-1").update(releaseSlot()));
+    expect(await order("o1")).toMatchObject({ status: "picked_up", courierId: "courier-1" });
+    expect(await courier("courier-1")).toMatchObject({ activeOrderId: "o1" });
+  });
+
+  it("is denied to everyone but an active admin, the vanished courier included", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    await seedFreeCourier(admin, "courier-2");
+    for (const uid of ["customer-1", "merchant-a", "courier-1", "courier-2"]) {
+      await assertFails(cancelPickedUp(as(uid), "o1", "courier-1"));
+    }
+    await admin((db) =>
+      db.collection("users").doc("admin-off").set({ role: "admin", status: "suspended", displayName: "x", email: "x@otli.test", phone: "1", createdAt: new Date() }),
+    );
+    await assertFails(cancelPickedUp(as("admin-off"), "o1", "courier-1"));
+    expect(await order("o1")).toMatchObject({ status: "picked_up", courierId: "courier-1" });
+    expect(await courier("courier-1")).toMatchObject({ activeOrderId: "o1" });
+  });
+
+  it("needs a reason of 1 to 200 characters of text", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    const admin1 = as("admin-1");
+    for (const reason of ["", "   ", null, 42, "x".repeat(201)]) {
+      await assertFails(cancelPickedUp(admin1, "o1", "courier-1", { cancelReason: reason }));
+    }
+    const { cancelReason: _omitted, ...withoutReason } = cancelOrder();
+    const batch = admin1.batch();
+    batch.update(admin1.collection("orders").doc("o1"), withoutReason);
+    batch.update(admin1.collection("couriers").doc("courier-1"), releaseSlot());
+    await assertFails(batch.commit());
+    await assertSucceeds(cancelPickedUp(admin1, "o1", "courier-1", { cancelReason: "x".repeat(200) }));
+  });
+
+  it("must say the admin cancelled, use the server time and touch nothing else", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    const admin1 = as("admin-1");
+    await assertFails(cancelPickedUp(admin1, "o1", "courier-1", { cancelledBy: "customer" }));
+    await assertFails(cancelPickedUp(admin1, "o1", "courier-1", { cancelledBy: "courier" }));
+    await assertFails(cancelPickedUp(admin1, "o1", "courier-1", { cancelledAt: clientTime() }));
+    await assertFails(cancelPickedUp(admin1, "o1", "courier-1", { updatedAt: clientTime() }));
+    await assertFails(cancelPickedUp(admin1, "o1", "courier-1", { courierId: null }));
+    await assertFails(cancelPickedUp(admin1, "o1", "courier-1", { totalCents: 1 }));
+    await assertFails(cancelPickedUp(admin1, "o1", "courier-1", {}, { isOnline: false }));
+    await assertFails(cancelPickedUp(admin1, "o1", "courier-1", {}, { updatedAt: clientTime() }));
+    await assertSucceeds(cancelPickedUp(admin1, "o1", "courier-1"));
+  });
+
+  it("can only move the order to cancelled", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    for (const status of ["ready", "claimed", "delivered", "picked_up"]) {
+      await assertFails(cancelPickedUp(as("admin-1"), "o1", "courier-1", { status }));
+    }
+    expect((await order("o1"))?.status).toBe("picked_up");
+  });
+
+  it("is denied when the courier's slot does not hold this order", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    await admin((db) => db.collection("couriers").doc("courier-1").update({ activeOrderId: "other" }));
+    await assertFails(cancelPickedUp(as("admin-1"), "o1", "courier-1"));
+    await seedCourier(admin, "courier-2", { isOnline: true, activeOrderId: "o1" });
+    await assertFails(cancelPickedUp(as("admin-1"), "o1", "courier-2"));
+    expect(await order("o1")).toMatchObject({ status: "picked_up" });
+  });
+
+  it("is denied while the slot holds another order, even when that one is cancelled in the same write", async () => {
+    await seedServing(admin, "courier-1", "o2", "picked_up");
+    await seedReadyOrder(admin, "o1", { status: "picked_up", courierId: "courier-1" });
+    const db = as("admin-1");
+    const batch = db.batch();
+    batch.update(db.collection("orders").doc("o1"), cancelOrder());
+    batch.update(db.collection("orders").doc("o2"), cancelOrder());
+    batch.update(db.collection("couriers").doc("courier-1"), releaseSlot());
+    await assertFails(batch.commit());
+    expect(await order("o1")).toMatchObject({ status: "picked_up" });
+    expect(await order("o2")).toMatchObject({ status: "picked_up" });
+  });
+
+  it("cannot free another courier's slot in the same write", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    await seedServing(admin, "courier-2", "o2", "picked_up");
+    const db = as("admin-1");
+    const batch = db.batch();
+    batch.update(db.collection("orders").doc("o1"), cancelOrder());
+    batch.update(db.collection("couriers").doc("courier-1"), releaseSlot());
+    batch.update(db.collection("couriers").doc("courier-2"), releaseSlot());
+    await assertFails(batch.commit());
+    expect(await courier("courier-1")).toMatchObject({ activeOrderId: "o1" });
+    expect(await courier("courier-2")).toMatchObject({ activeOrderId: "o2" });
+  });
+
+  it("frees a slot only for a picked-up order, not for one cancelled by the plain cancellation", async () => {
+    await seedCourier(admin, "courier-2", { isOnline: true, activeOrderId: "o3" });
+    await seedReadyOrder(admin, "o3", { status: "ready" });
+    const db = as("admin-1");
+    const batch = db.batch();
+    batch.update(db.collection("orders").doc("o3"), cancelOrder());
+    batch.update(db.collection("couriers").doc("courier-2"), releaseSlot());
+    await assertFails(batch.commit());
+    expect(await order("o3")).toMatchObject({ status: "ready" });
+    expect(await courier("courier-2")).toMatchObject({ activeOrderId: "o3" });
+  });
+
+  it("is denied for a claimed order, which is released first, and for a delivered one", async () => {
+    await seedServing(admin, "courier-1", "o1", "claimed");
+    await assertFails(cancelPickedUp(as("admin-1"), "o1", "courier-1"));
+    expect(await order("o1")).toMatchObject({ status: "claimed" });
+    expect(await courier("courier-1")).toMatchObject({ activeOrderId: "o1" });
+    await admin((db) => db.collection("orders").doc("o1").update({ status: "delivered" }));
+    await assertFails(cancelPickedUp(as("admin-1"), "o1", "courier-1"));
+    expect(await order("o1")).toMatchObject({ status: "delivered" });
+  });
+
+  it("still never puts a picked-up order back in the pool", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    await assertFails(release(as("admin-1"), "o1", "courier-1"));
+    expect(await order("o1")).toMatchObject({ status: "picked_up", courierId: "courier-1" });
+  });
+
+  it("leaves a cancelled order final", async () => {
+    await seedServing(admin, "courier-1", "o1", "picked_up");
+    await assertSucceeds(cancelPickedUp(as("admin-1"), "o1", "courier-1"));
+    await assertFails(orderRef("admin-1", "o1").update(cancelOrder("Again")));
+    await assertFails(cancelPickedUp(as("admin-1"), "o1", "courier-1"));
+  });
+});

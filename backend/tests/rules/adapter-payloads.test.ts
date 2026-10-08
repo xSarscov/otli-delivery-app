@@ -1,7 +1,7 @@
 import { assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
 import { describe, expect, it } from "vitest";
 import { useCatalogEnv, serverTime } from "./catalog-support";
-import { seedFreeCourier, seedReadyOrder } from "./dispatch-support";
+import { seedFreeCourier, seedReadyOrder, seedServing } from "./dispatch-support";
 import { liveFix } from "./live-support";
 
 /**
@@ -102,7 +102,8 @@ async function seedCourier(adminFn: typeof admin) {
  * The exact documents the Android Admin adapter writes (`AdminDocuments`), in the exact shape of its
  * calls (`FirestoreAdminRepository`): the fee is a whole-document set, a status change is one batch of
  * the account and, for a merchant, its mirror, the release is a transaction that reads the order first,
- * the cancellation is one update and the three observers are the queries below.
+ * the cancellation is a transaction that reads the order first (a picked-up order's also frees the
+ * courier's slot, like the release) and the three observers are the queries below.
  */
 describe("the writes and queries of the Android admin adapter", () => {
   const ADMIN = "admin-1";
@@ -125,6 +126,18 @@ describe("the writes and queries of the Android admin adapter", () => {
     batch.update(db.collection("users").doc(uid), userStatusUpdate(status));
     if (merchant) batch.update(db.collection("merchants").doc(uid), merchantMirrorUpdate(status));
     return batch.commit();
+  }
+
+  /** The adapter's cancellation: reads the order, then writes it, and the courier's slot too when it is picked up. */
+  function cancelLikeTheAdapter(orderId: string, reason: string) {
+    const db = as(ADMIN);
+    const orderRef = db.collection("orders").doc(orderId);
+    return db.runTransaction(async (tx) => {
+      const snapshot = await tx.get(orderRef);
+      const data = snapshot.data();
+      tx.update(orderRef, cancelUpdate(reason));
+      if (data?.status === "picked_up" && data.courierId) tx.update(db.collection("couriers").doc(data.courierId), releaseCourierUpdate());
+    });
   }
 
   function releaseLikeTheAdapter(orderId: string, courierId: string) {
@@ -158,15 +171,37 @@ describe("the writes and queries of the Android admin adapter", () => {
     await assertSucceeds(releaseLikeTheAdapter("o1", UID));
     expect(await order("o1")).toMatchObject({ status: "ready", courierId: null });
     expect(await courier()).toMatchObject({ activeOrderId: null });
-    await assertSucceeds(as(ADMIN).collection("orders").doc("o1").update(cancelUpdate("Courier unreachable")));
+    await assertSucceeds(cancelLikeTheAdapter("o1", "Courier unreachable"));
     expect(await order("o1")).toMatchObject({ status: "cancelled", cancelledBy: "admin", cancelReason: "Courier unreachable" });
+  });
+
+  it("cancels an order no courier holds with a transaction that writes the order alone", async () => {
+    await seedReadyOrder(admin, "o1", { status: "preparing" });
+    await assertSucceeds(cancelLikeTheAdapter("o1", "Store never answered"));
+    expect(await order("o1")).toMatchObject({ status: "cancelled", cancelledBy: "admin", cancelReason: "Store never answered" });
+  });
+
+  it("cancels a picked-up order and frees the courier in the same transaction", async () => {
+    await seedServing(admin, UID, "o1", "picked_up");
+    await assertSucceeds(cancelLikeTheAdapter("o1", "Courier vanished after pickup"));
+    expect(await order("o1")).toMatchObject({ status: "cancelled", cancelledBy: "admin", cancelReason: "Courier vanished after pickup", courierId: UID });
+    expect(await courier()).toMatchObject({ isOnline: true, activeOrderId: null });
+  });
+
+  it("cannot cancel a claimed order with that transaction, which is released first", async () => {
+    await seedServing(admin, UID, "o1", "claimed");
+    await assertFails(cancelLikeTheAdapter("o1", "Reason"));
+    expect(await order("o1")).toMatchObject({ status: "claimed" });
+    expect(await courier()).toMatchObject({ activeOrderId: "o1" });
   });
 
   it("reads the actionable orders, the latest orders and the merchant and courier accounts", async () => {
     await seedReadyOrder(admin, "o1");
+    await seedReadyOrder(admin, "o2", { status: "picked_up", courierId: UID });
+    await seedReadyOrder(admin, "o3", { status: "delivered", courierId: UID });
     const orders = as(ADMIN).collection("orders");
-    const actionable = await assertSucceeds(orders.where("status", "in", ["placed", "accepted", "preparing", "ready", "claimed"]).get());
-    expect(actionable.docs.map((d) => d.id)).toEqual(["o1"]);
+    const actionable = await assertSucceeds(orders.where("status", "in", ["placed", "accepted", "preparing", "ready", "claimed", "picked_up"]).get());
+    expect(actionable.docs.map((d) => d.id).sort()).toEqual(["o1", "o2"]);
     await assertSucceeds(orders.orderBy("createdAt", "desc").limit(50).get());
     const accounts = await assertSucceeds(as(ADMIN).collection("users").where("role", "in", ["merchant", "courier"]).get());
     expect(accounts.docs.length).toBeGreaterThan(0);
