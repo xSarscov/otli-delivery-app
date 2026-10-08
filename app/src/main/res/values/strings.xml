@@ -295,4 +295,8 @@
     <string name="admin_order_courier">Courier account: %1$s</string>
     <string name="admin_order_pickup">Pickup: %1$s</string>
     <string name="admin_order_dropoff">Dropoff: %1$s</string>
+    <string name="admin_tab_active">Active</string>
+    <string name="admin_tab_orders">All orders</string>
+    <string name="admin_tab_accounts">Accounts</string>
+    <string name="admin_tab_fee">Fee</string>
 </resources>

@@ -48,6 +48,9 @@ object Gate {
 
 @Serializable data object AdminHome
 
+/** One order's detail for Admin; [orderId] is the argument key read by the order view models. */
+@Serializable data class AdminOrderRoute(val orderId: String)
+
 /** Maps a [SessionState] to the single destination it may occupy. Pure, so it is easy to reason about. */
 fun routeFor(state: SessionState): Any = when (state) {
     SessionState.Loading -> LoadingRoute
