@@ -424,59 +424,59 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 6.1 — Domain and application
 
-- [ ] 6.1.1 Create `admin/application/AdminRepository.kt` port (`setAccountStatus`, `setDeliveryFee`, `releaseClaim`, `cancelOrder`, `observeStuckOrders`, `observePendingAccounts`, `observeAllOrders`) exactly as specified in `design.md`.
+- [x] 6.1.1 Create `admin/application/AdminRepository.kt` port (`setAccountStatus`, `setDeliveryFee`, `releaseClaim`, `cancelOrder`, `observeStuckOrders`, `observePendingAccounts`, `observeAllOrders`) exactly as specified in `design.md`.
   - Test-first: N/A (interface).
   - Acceptance: compiles; consumed by PR 6.3.
   - Est. lines: ~50
-- [ ] 6.1.2 Create `admin/application/ApproveAccount.kt`, `SuspendAccount.kt`, `UpdateFee.kt`, `ReleaseClaim.kt`, `CancelOrder.kt` use cases (thin orchestration over the port; `ReleaseClaim`/`CancelOrder` enforce the pre-conditions from the spec — release only from `claimed`, cancel-stuck only from `ready`-with-no-courier, admin-cancel allowed from `placed`/`accepted`/`preparing`/`ready`) and `app/src/test/java/com/otli/app/admin/application/AdminUseCasesTest.kt` with fake ports.
+- [x] 6.1.2 Create `admin/application/ApproveAccount.kt`, `SuspendAccount.kt`, `UpdateFee.kt`, `ReleaseClaim.kt`, `CancelOrder.kt` use cases (thin orchestration over the port; `ReleaseClaim`/`CancelOrder` enforce the pre-conditions from the spec — release only from `claimed`, cancel-stuck only from `ready`-with-no-courier, admin-cancel allowed from `placed`/`accepted`/`preparing`/`ready`) and `app/src/test/java/com/otli/app/admin/application/AdminUseCasesTest.kt` with fake ports.
   - Test-first: write `AdminUseCasesTest` RED (each use case's precondition, success, and rejection paths), then implement GREEN.
   - Acceptance: admin spec — "Admin updates the flat fee", "Admin approves a pending merchant", "Admin approves a pending courier", "Admin suspends an active merchant", "Admin suspends an active courier", "Admin releases a claimed order back to the pool", "Admin sees unclaimed ready orders", "Admin cancels a stuck order" (application half of every one).
   - Est. lines: ~220
 
-**PR 6.1** = tasks 6.1.1–6.1.2 (~270 lines).
+**PR 6.1** = tasks 6.1.1–6.1.2 (~270 lines). Delivered as `feat/otli-mvp-06-1a-admin-transitions` (92 lines: the four Admin-cancel triples in the contract and the Kotlin table, spec delta) and `06-1b-admin-application` (410 lines: port, five use cases, fake and tests). Deviation: the port observes `observeManagedAccounts()` (every merchant and courier, any status) instead of `observePendingAccounts()`, because suspending and reactivating need the active and suspended accounts too; pending ones are a subset. Also `observeAllOrders()` and Result-returning writes.
 
 ### PR 6.2 — Admin rules
 
-- [ ] 6.2.1 Extend `backend/firestore.rules`: `settings/app` (Admin-only write of `deliveryFeeCents`, signed-in read — already partially covered by PR 3.2.1's read path), `users/{uid}`+`merchants/{uid}` batched status mirror update (Admin-only, both documents in one batch), `orders/{orderId}` `release()` (`claimed→ready`, Admin-only, paired `couriers/{uid}.activeOrderId→null` via `getAfter()`) and `adminCancel()` (`placed|accepted|preparing|ready → cancelled`, Admin-only, non-empty `cancelReason`, `cancelledBy=='admin'`). Add the `orders(status ASC, createdAt ASC)` composite index (Admin stuck view) if not already present.
+- [x] 6.2.1 Extend `backend/firestore.rules`: `settings/app` (Admin-only write of `deliveryFeeCents`, signed-in read — already partially covered by PR 3.2.1's read path), `users/{uid}`+`merchants/{uid}` batched status mirror update (Admin-only, both documents in one batch), `orders/{orderId}` `release()` (`claimed→ready`, Admin-only, paired `couriers/{uid}.activeOrderId→null` via `getAfter()`) and `adminCancel()` (`placed|accepted|preparing|ready → cancelled`, Admin-only, non-empty `cancelReason`, `cancelledBy=='admin'`). Add the `orders(status ASC, createdAt ASC)` composite index (Admin stuck view) if not already present.
   - Test-first: write `backend/tests/rules/admin.test.ts` RED first (fee update by Admin succeeds, by anyone else denied; status-mirror batch succeeds atomically; release from `claimed` succeeds and pairs the courier write, release attempted by a non-admin denied; admin-cancel from each allowed source state succeeds with a reason, denied without one, denied from `claimed`/`picked_up`/`delivered`/`rejected`/`cancelled`), then extend rules GREEN.
   - Acceptance: admin spec — every scenario under "Flat Delivery Fee Configuration", "Merchant and Courier Approval", "Merchant and Courier Suspension", "Release of Abandoned Claims" (rules half).
   - Est. lines: ~320
 
-**PR 6.2** = task 6.2.1 (~320 lines). Verify: `npm --prefix backend test -- admin`.
+**PR 6.2** = task 6.2.1 (~320 lines). Verify: `npm --prefix backend test -- admin`. Delivered as `06-2a-admin-fee-approval-rules` (234 lines: `settings/app` Admin write plus approval/suspension proofs) and `06-2b-admin-release-cancel-rules` (266 lines: `release()`, `adminCancel()`, `pairedRelease()`, parity test with admin implemented). The stuck and all-orders observers need no new composite index (a `whereIn` on status without `orderBy`, and the automatic `createdAt` index), so `firestore.indexes.json` is unchanged.
 
 ### PR 6.3 — Firestore admin adapter, fee and approvals UI
 
-- [ ] 6.3.1 Create `admin/adapters/firestore/FirestoreAdminRepository.kt` implementing the port from 6.1.1 and `admin/di/AdminModule.kt`.
+- [x] 6.3.1 Create `admin/adapters/firestore/FirestoreAdminRepository.kt` implementing the port from 6.1.1 and `admin/di/AdminModule.kt`.
   - Test-first: write `app/src/androidTest/java/com/otli/app/admin/adapters/firestore/FirestoreAdminRepositoryTest.kt` RED (fee update round trip; approve/suspend round trip; release-claim round trip clearing both documents), then implement GREEN.
   - Acceptance: admin spec adapter-level proof for the same scenarios as 6.2.1.
   - Est. lines: ~180
-- [ ] 6.3.2 Create `admin/adapters/ui/FeeSettingsScreen.kt`/`Content`/`ViewModel` and its test.
+- [x] 6.3.2 Create `admin/adapters/ui/FeeSettingsScreen.kt`/`Content`/`ViewModel` and its test.
   - Test-first: write the ViewModel test RED, then implement GREEN.
   - Acceptance: admin spec — "Admin updates the flat fee".
   - Est. lines: ~110
-- [ ] 6.3.3 Create `admin/adapters/ui/ApprovalsScreen.kt`/`Content`/`ViewModel` (pending merchants/couriers list, approve/suspend actions) and its test.
+- [x] 6.3.3 Create `admin/adapters/ui/ApprovalsScreen.kt`/`Content`/`ViewModel` (pending merchants/couriers list, approve/suspend actions) and its test.
   - Test-first: write the ViewModel test RED, then implement GREEN.
   - Acceptance: admin spec — "Admin approves a pending merchant", "Admin approves a pending courier", "Admin suspends an active merchant", "Admin suspends an active courier", "Pending account remains blocked until approved".
   - Est. lines: ~150
 
-**PR 6.3** = tasks 6.3.1–6.3.3 (~440 lines — split at merge into 6.3a (6.3.1, ~180 lines) and 6.3b (6.3.2+6.3.3, ~260 lines) if needed).
+**PR 6.3** = tasks 6.3.1–6.3.3 (~440 lines — split at merge into 6.3a (6.3.1, ~180 lines) and 6.3b (6.3.2+6.3.3, ~260 lines) if needed). Delivered as `06-3a-admin-documents` (277), `06-3b-admin-repository` (416; the instrumented test is written and compiled, pending on device), `06-3c-fee-viewmodel` (258), `06-3d-fee-content` (261), `06-3e-approvals-viewmodel` (265) and `06-3f-approvals-content` (367). Approvals also reactivates suspended accounts (user decision).
 
 ### PR 6.4 — Stuck orders, order list, release/cancel UI, demo script
 
-- [ ] 6.4.1 Create `admin/adapters/ui/StuckOrdersScreen.kt`/`Content`/`ViewModel` (lists unclaimed `ready` orders, release-claim action for `claimed` orders shown elsewhere, cancel action) and its test.
+- [x] 6.4.1 Create `admin/adapters/ui/StuckOrdersScreen.kt`/`Content`/`ViewModel` (lists unclaimed `ready` orders, release-claim action for `claimed` orders shown elsewhere, cancel action) and its test.
   - Test-first: write the ViewModel test RED, then implement GREEN.
   - Acceptance: admin spec — "Admin sees unclaimed ready orders", "Admin cancels a stuck order", "Admin releases a claimed order back to the pool", "Non-admin cannot release a claim" (UI never exposes the action to a non-admin — no such path exists), "Non-admin cannot change the fee" (same reasoning).
   - Est. lines: ~180
-- [ ] 6.4.2 Create `admin/adapters/ui/OrderListScreen.kt`/`Content`/`ViewModel` (all orders across merchants/customers with status) and its test.
+- [x] 6.4.2 Create `admin/adapters/ui/OrderListScreen.kt`/`Content`/`ViewModel` (all orders across merchants/customers with status) and its test.
   - Test-first: write the ViewModel test RED, then implement GREEN.
   - Acceptance: admin spec — "Admin views the full order list".
   - Est. lines: ~130
-- [ ] 6.4.3 Write `docs/demo-script.md`: the manual E2E checklist from `design.md`'s Testing Strategy (full happy path on two-plus devices, claim race by simultaneous tap, Admin release/cancel), and update `README.md` with the final run/demo instructions.
+- [x] 6.4.3 Write `docs/demo-script.md`: the manual E2E checklist from `design.md`'s Testing Strategy (full happy path on two-plus devices, claim race by simultaneous tap, Admin release/cancel), and update `README.md` with the final run/demo instructions.
   - Test-first: N/A (documentation).
   - Acceptance: proposal success criteria — every unchecked box in "Success Criteria (academic demo)" maps to one demo-script step.
   - Est. lines: ~90
 
-**PR 6.4** = tasks 6.4.1–6.4.3 (~400 lines).
+**PR 6.4** = tasks 6.4.1–6.4.3 (~400 lines). Delivered as `06-4a-stuck-viewmodel` (418), `06-4b-cancel-dialog` (117), `06-4c-stuck-content` (458), `06-4d-cancel-reason` (49: `Order.cancelReason` and the customer tracking line), `06-4e-order-list` (329), `06-4f-order-detail` (302), `06-4g-admin-home` (341) and `06-4h-demo-script` (159). The stuck view lists orders Admin can act on in three groups (waiting for a courier, with a courier, in the kitchen): Cancel for ready and kitchen orders, Release for claimed ones. Orders are listed newest first through `OrderOrdering`.
 
 ### PR 6.5 — Production deployment (requires user authorization; not counted against the review budget)
 
