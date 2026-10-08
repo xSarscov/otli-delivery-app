@@ -35,12 +35,16 @@ class FakeAdminRepository : AdminRepository {
     /** When set, every write fails with it. */
     var writeFailure: Throwable? = null
 
+    /** Lets a test hold every write open, to observe the state while it is in flight. */
+    var beforeWrite: suspend () -> Unit = {}
+
     val stuckOrders = MutableStateFlow<List<Order>>(emptyList())
     val managedAccounts = MutableStateFlow<List<UserAccount>>(emptyList())
     val allOrders = MutableStateFlow<List<Order>>(emptyList())
     var listenerError: Throwable? = null
 
-    private fun write(record: () -> Unit): Result<Unit> {
+    private suspend fun write(record: () -> Unit): Result<Unit> {
+        beforeWrite()
         writeFailure?.let { return Result.failure(it) }
         record()
         return Result.success(Unit)
