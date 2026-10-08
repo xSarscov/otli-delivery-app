@@ -206,7 +206,7 @@
     <string name="tracking_step_picked_up">On the way to you</string>
     <string name="tracking_step_delivered">Delivered</string>
     <string name="tracking_step_rejected">Rejected by the store</string>
-    <string name="tracking_step_cancelled">Cancelled by you</string>
+    <string name="tracking_step_cancelled">Order cancelled</string>
     <string name="tracking_step_done">Done</string>
     <string name="tracking_step_current">Current step</string>
     <string name="tracking_step_upcoming">Coming up</string>
