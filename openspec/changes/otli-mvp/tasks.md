@@ -481,9 +481,9 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 6.5 — Production deployment (requires user authorization; not counted against the review budget)
 
-- [ ] 6.5.1 **Requires user authorization.** Create the Firebase project on the Spark plan and register the Android app (produces the real `google-services.json`, replacing the placeholder committed in Phase 0).
+- [x] 6.5.1 (2026-10-13: project `otli-39efc` created by the user; Android app `com.otli.app` registered with the CLI; no `google-services.json` and no plugin: the app identity is committed in `app/firebase-prod.properties` and `OtliFirebase` builds `FirebaseOptions` from it when a build sets `-Potli.useEmulator=false`, keeping the emulator hermetic; restricting the API key by package and SHA-1 is a manual console step) **Requires user authorization.** Create the Firebase project on the Spark plan and register the Android app.
   - Acceptance: proposal Dependencies — "A free-tier BaaS project (Firebase proposed)".
-- [ ] 6.5.2 **Requires user authorization.** Deploy security rules and indexes to production: `firebase deploy --only firestore:rules,firestore:indexes`.
+- [x] 6.5.2 (2026-10-08: deployed to `otli-39efc` after the rules suite was green on main; the deploy also enabled the Firestore API and created the `(default)` database) **Requires user authorization.** Deploy security rules and indexes to production: `firebase deploy --only firestore:rules,firestore:indexes`.
   - Acceptance: rules identical to the ones proven green in every `backend/tests/rules/*.test.ts` file across Phases 1–6.
 - [ ] 6.5.3 **Requires user authorization.** Run `backend/scripts/seed.ts --target=production --confirm` with `GOOGLE_APPLICATION_CREDENTIALS` and `OTLI_SEED_PASSWORD` set, per ADR-15.
   - Acceptance: production accounts exist for the live-device demo.

@@ -25,20 +25,22 @@ object OtliFirebase {
     @Synchronized
     fun app(context: Context): FirebaseApp {
         FirebaseApp.getApps(context).firstOrNull()?.let { return it }
-        return if (BuildConfig.OTLI_USE_EMULATOR) {
-            // No google-services.json yet: placeholder options are enough for the emulators.
-            val options = FirebaseOptions.Builder()
+        val options = if (BuildConfig.OTLI_USE_EMULATOR) {
+            // Placeholder options are enough for the emulators.
+            FirebaseOptions.Builder()
                 .setProjectId(EMULATOR_PROJECT_ID)
                 .setApplicationId("1:000000000000:android:0000000000000000")
                 .setApiKey("demo-api-key")
                 .build()
-            FirebaseApp.initializeApp(context, options)
         } else {
-            // Live project: options come from google-services.json once task 6.5.1 adds it.
-            checkNotNull(FirebaseApp.initializeApp(context)) {
-                "Firebase is not configured: add google-services.json (task 6.5.1)"
-            }
+            // Live project: identity comes from app/firebase-prod.properties via BuildConfig.
+            FirebaseOptions.Builder()
+                .setProjectId(BuildConfig.OTLI_FIREBASE_PROJECT_ID)
+                .setApplicationId(BuildConfig.OTLI_FIREBASE_APP_ID)
+                .setApiKey(BuildConfig.OTLI_FIREBASE_API_KEY)
+                .build()
         }
+        return FirebaseApp.initializeApp(context, options)
     }
 
     @Synchronized
