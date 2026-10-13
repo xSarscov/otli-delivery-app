@@ -82,6 +82,14 @@ kotlin {
     jvmToolchain(17)
 }
 
+// DomainPurityTest reads the domain sources at runtime. Declaring them as inputs keeps Gradle from
+// reporting the test up to date after an edit that does not change any compiled class (e.g. an unused import).
+tasks.withType<Test>().configureEach {
+    inputs.files(fileTree("src/main/java") { include("**/domain/**/*.kt") })
+        .withPropertyName("domainSources")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 // Debug-only: generate res/xml/network_security_config.xml allowing cleartext for the emulator
 // hosts plus exactly the configured otli.emulatorHost. Release has no such resource.
 androidComponents {
