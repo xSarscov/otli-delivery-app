@@ -9,8 +9,9 @@ plugins {
 }
 
 // AGP 9 ships built-in Kotlin support: do NOT apply org.jetbrains.kotlin.android.
-// The google-services plugin is intentionally NOT applied until the real Firebase
-// project exists (task 6.5.1); debug builds target the emulator via FirebaseOptions.
+// The google-services plugin is intentionally NOT applied: OtliFirebase builds FirebaseOptions
+// itself, from the emulator placeholders or from app/firebase-prod.properties, so a build never
+// initializes Firebase behind its back and the emulator stays hermetic.
 
 val localProps = Properties().apply {
     val file = rootProject.file("local.properties")
@@ -24,6 +25,15 @@ fun otliProp(name: String, default: String): String =
 val useEmulator: String = otliProp("otli.useEmulator", "true")
 // Validated eagerly so a malformed value fails the build with a clear message.
 val emulatorHost: String = com.otli.buildlogic.DebugNetworkSecurityConfig.validateHost(otliProp("otli.emulatorHost", "10.0.2.2"))
+
+// Live Firebase project identity, committed on purpose (see the file header).
+val firebaseProd = Properties().apply {
+    file("firebase-prod.properties").inputStream().use { load(it) }
+}
+fun firebaseProdProp(name: String): String =
+    checkNotNull(firebaseProd.getProperty(name)?.takeIf { it.isNotBlank() }) {
+        "app/firebase-prod.properties is missing '$name'"
+    }
 
 android {
     namespace = "com.otli.app"
@@ -40,6 +50,9 @@ android {
 
         buildConfigField("boolean", "OTLI_USE_EMULATOR", useEmulator)
         buildConfigField("String", "OTLI_EMULATOR_HOST", "\"$emulatorHost\"")
+        buildConfigField("String", "OTLI_FIREBASE_PROJECT_ID", "\"${firebaseProdProp("firebase.projectId")}\"")
+        buildConfigField("String", "OTLI_FIREBASE_APP_ID", "\"${firebaseProdProp("firebase.appId")}\"")
+        buildConfigField("String", "OTLI_FIREBASE_API_KEY", "\"${firebaseProdProp("firebase.apiKey")}\"")
     }
 
     buildTypes {
