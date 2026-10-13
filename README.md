@@ -105,6 +105,21 @@ Security: while the LAN emulators run, any device on that Wi-Fi can reach Auth a
 (no authentication in front of the emulators). Use trusted networks only and stop the emulators
 afterwards.
 
+## Running against the live Firebase project
+
+Builds use the emulators by default. To point a debug build at the live project (`otli-39efc`):
+
+```
+./gradlew installDebug -Potli.useEmulator=false
+```
+
+The project identity lives in `app/firebase-prod.properties` (committed on purpose: it identifies the
+app and is not a secret; data is protected by `backend/firestore.rules`). There is no
+`google-services.json` and no google-services plugin, so a build never initializes Firebase on its own.
+Rules and indexes are deployed with `firebase deploy --only firestore:rules,firestore:indexes --project otli-39efc`
+from `backend/`. Email/Password sign-in must be enabled in the Firebase console, and accounts are
+created with the production seed (task 6.5.3).
+
 ## Demo
 
 `docs/demo-script.md` is the manual end-to-end checklist for the academic demo: all four roles, the
