@@ -1,22 +1,24 @@
-// Seeds the local Firebase emulators with fixed-UID test accounts (ADR-15).
-// Safety: this script only ever talks to the emulators. It refuses to run unless both
-// emulator host variables are set, so it can never touch a production project.
+// Seeds Firebase with fixed-UID demo accounts (ADR-15). The target and its safeguards live in
+// seed-target.ts (unit-tested).
 //
+// Emulators (default; refuses to run unless both emulator hosts are set):
 //   FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 npm --prefix backend run seed
+//
+// Production (live project; needs a service-account key of that project and a private password):
+//   GOOGLE_APPLICATION_CREDENTIALS=<key.json> OTLI_SEED_PASSWORD=<password> npm --prefix backend run seed -- --target=production --confirm
+import { readFileSync } from "node:fs";
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { resolveSeedTarget } from "./seed-target";
 
-const PROJECT_ID = "demo-otli";
-const EMULATOR_PASSWORD = "otli-demo-123";
-
-function requireEmulatorEnv(env: NodeJS.ProcessEnv): void {
-  const missing = ["FIRESTORE_EMULATOR_HOST", "FIREBASE_AUTH_EMULATOR_HOST"].filter((name) => !env[name]);
-  if (missing.length > 0) {
-    throw new Error(
-      `Refusing to seed: ${missing.join(", ")} not set. This script only targets the local emulators ` +
-        "(example: FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099).",
-    );
+function credentialProjectId(env: NodeJS.ProcessEnv): string | undefined {
+  const path = env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (!path) return undefined;
+  try {
+    return (JSON.parse(readFileSync(path, "utf8")) as { project_id?: string }).project_id ?? "(no project_id in the key file)";
+  } catch {
+    throw new Error("Refusing to seed: GOOGLE_APPLICATION_CREDENTIALS does not point at a readable JSON key file.");
   }
 }
 
@@ -121,16 +123,16 @@ const SEED_MERCHANTS: SeedMerchant[] = [
   },
 ];
 
-async function upsertUser(user: SeedUser): Promise<"created" | "updated"> {
+async function upsertUser(user: SeedUser, password: string): Promise<"created" | "updated"> {
   const auth = getAuth();
   const db = getFirestore();
   let outcome: "created" | "updated" = "updated";
   try {
     await auth.getUser(user.uid);
-    await auth.updateUser(user.uid, { email: user.email, password: EMULATOR_PASSWORD, displayName: user.displayName });
+    await auth.updateUser(user.uid, { email: user.email, password, displayName: user.displayName });
   } catch (error) {
     if ((error as { code?: string }).code !== "auth/user-not-found") throw error;
-    await auth.createUser({ uid: user.uid, email: user.email, password: EMULATOR_PASSWORD, displayName: user.displayName });
+    await auth.createUser({ uid: user.uid, email: user.email, password, displayName: user.displayName });
     outcome = "created";
   }
 
@@ -178,10 +180,11 @@ async function upsertSettings(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  requireEmulatorEnv(process.env);
-  initializeApp({ projectId: PROJECT_ID });
+  const target = resolveSeedTarget(process.argv.slice(2), process.env, credentialProjectId(process.env));
+  initializeApp({ projectId: target.projectId });
+  console.log(`Seeding ${target.kind} project ${target.projectId}`);
   for (const user of SEED_USERS) {
-    const outcome = await upsertUser(user);
+    const outcome = await upsertUser(user, target.password);
     console.log(`${user.uid}: auth user ${outcome}, users/${user.uid} document upserted`);
   }
   for (const merchant of SEED_MERCHANTS) {

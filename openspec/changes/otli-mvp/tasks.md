@@ -485,7 +485,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
   - Acceptance: proposal Dependencies — "A free-tier BaaS project (Firebase proposed)".
 - [x] 6.5.2 (2026-10-08: deployed to `otli-39efc` after the rules suite was green on main; the deploy also enabled the Firestore API and created the `(default)` database) **Requires user authorization.** Deploy security rules and indexes to production: `firebase deploy --only firestore:rules,firestore:indexes`.
   - Acceptance: rules identical to the ones proven green in every `backend/tests/rules/*.test.ts` file across Phases 1–6.
-- [ ] 6.5.3 **Requires user authorization.** Run `backend/scripts/seed.ts --target=production --confirm` with `GOOGLE_APPLICATION_CREDENTIALS` and `OTLI_SEED_PASSWORD` set, per ADR-15.
+- [x] 6.5.3 (2026-10-13: run against `otli-39efc`; 8 Auth users and documents, 3 merchants with 10 products, 3 couriers offline, `settings/app` fee C$ 30.00; the production seed target is guarded by `seed-target.ts`, unit-tested) **Requires user authorization.** Run `backend/scripts/seed.ts --target=production --confirm` with `GOOGLE_APPLICATION_CREDENTIALS` and `OTLI_SEED_PASSWORD` set, per ADR-15.
   - Acceptance: production accounts exist for the live-device demo.
 
 Do not execute 6.5.1–6.5.3 automatically; each is a remote operation and must be explicitly authorized by the user at the time it runs, per the proposal's dependency on a real Firebase project and `design.md`'s Migration/Rollout section.

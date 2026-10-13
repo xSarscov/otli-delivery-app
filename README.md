@@ -118,7 +118,17 @@ app and is not a secret; data is protected by `backend/firestore.rules`). There 
 `google-services.json` and no google-services plugin, so a build never initializes Firebase on its own.
 Rules and indexes are deployed with `firebase deploy --only firestore:rules,firestore:indexes --project otli-39efc`
 from `backend/`. Email/Password sign-in must be enabled in the Firebase console, and accounts are
-created with the production seed (task 6.5.3).
+created with the production seed (task 6.5.3):
+
+```
+GOOGLE_APPLICATION_CREDENTIALS=<service-account key of otli-39efc> OTLI_SEED_PASSWORD=<private password> \
+  npm --prefix backend run seed -- --target=production --confirm
+```
+
+The seed refuses to run without `--confirm`, with a key of another project, with an emulator host set, or
+with a missing, short or public demo password. Keep the key outside the repository (`*service-account*.json`
+is git-ignored). It creates the same accounts as the emulator seed (see `docs/demo-script.md`), all with
+`OTLI_SEED_PASSWORD`; it is idempotent and resets the seeded documents on every run.
 
 ## Demo
 
