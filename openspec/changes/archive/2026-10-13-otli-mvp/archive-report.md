@@ -90,3 +90,12 @@ Suggestions:
 - `tasks.md`: present, 84 of 84 checked, 0 unchecked
 - `specs/`: present (six capability folders)
 - `archive-report.md`: this file (additive; not in the source snapshot)
+
+## Resolutions after archive (2026-10-13, additive)
+
+Recorded after the archive, on the same day, before the archive branch was pushed. The sections above stay as written.
+
+- Warning 1 (instrumented tests): resolved. `npm --prefix backend run test:android` on a physical device (2510DRA23L) ran all seven adapter classes: 61 tests, 0 failures (admin 13, auth 11, catalog 9, merchant 5, dispatch 11, order 8, location 4).
+- Warning 3 (ADR-3 guard): resolved. `app/src/test/java/com/otli/app/DomainPurityTest.kt` fails when a file under a `domain/` package imports `android.`, `androidx.` or `com.google.firebase.`. It was shown to fail with an injected forbidden import and to pass on the real sources. The domain sources are declared as inputs of the unit-test tasks, so Gradle cannot report it up to date after an edit that changes no compiled class. JVM unit tests are now 1075, 0 failures.
+- Warning 5 (checked tasks whose text said "left unchecked"): resolved in the text of 2.3.0c, 2.3.0d and 2.3.1. The original wording is kept and the outcome is appended. 2.3.0d and 2.3.1 are backed by the device run above. 2.3.0c is a manual check by the user (tap to place the pin, scrolling the screen), not an automated one.
+- Still open: warning 2 (other device-only checks: foreground service, GPS settings dialog, notifications, map rendering of the live courier position), warning 4 (no formal TDD Cycle Evidence table), tasks 3.4.1, 4.3.1 and 5.3.1 still carry "compile-only / device pending" wording although the device run above covers their adapters, and the design drift listed under Suggestions.
