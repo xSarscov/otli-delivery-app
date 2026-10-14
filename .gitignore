@@ -38,3 +38,6 @@ Thumbs.db
 
 # Kotlin compiler cache
 .kotlin/
+
+openspec/changes/otli-device-evidence/evidence/**/*.png
+openspec/changes/otli-device-evidence/evidence/**/*.jpg
