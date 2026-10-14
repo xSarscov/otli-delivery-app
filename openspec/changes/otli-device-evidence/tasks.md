@@ -79,9 +79,10 @@ Apply order (not the same as the phase numbers): Phase 0 → Phase 3 (C, PR 02) 
 - [x] 0.3 Session prerequisite: from `backend/` start fresh local emulators with `npx firebase emulators:start --only firestore,auth --project demo-otli` (no `emulator-data` exists, so do not use `npm run emulators`), then seed with `npm --prefix backend run seed`; run the idempotency repeat only in task 1.8.
   - PR: none (operator action, repeated each session). Acceptance: Firestore on 8080 and Auth on 9099 answer; seeded accounts such as `customer1@otli.test` and `merchant1@otli.test` can sign in. Stop these manual emulators before the full-suite run in 3.7 (`test:android` starts its own through `run-with-emulators.mjs`; confirm port use first).
   - Observed 2026-10-14 (session C): emulators started from `backend/`, ports 8080 and 9099 listening, `npm --prefix backend run seed` created the 8 seeded accounts and the catalog; manual emulators stopped before 3.7.
-- [ ] 0.4 Session prerequisite: confirm the phone with `adb devices` (serial `xkqwijtcyttsaahi`, model 2510DRA23L), build once with `./gradlew assembleDebug -Potli.emulatorHost=127.0.0.1`, install that APK on the phone, and tunnel with `adb -s xkqwijtcyttsaahi reverse tcp:8080 tcp:8080` and `adb -s xkqwijtcyttsaahi reverse tcp:9099 tcp:9099`. adb lives at `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe` (not on PATH).
+- [x] 0.4 Session prerequisite: confirm the phone with `adb devices` (serial `xkqwijtcyttsaahi`, model 2510DRA23L), build once with `./gradlew assembleDebug -Potli.emulatorHost=127.0.0.1`, install that APK on the phone, and tunnel with `adb -s xkqwijtcyttsaahi reverse tcp:8080 tcp:8080` and `adb -s xkqwijtcyttsaahi reverse tcp:9099 tcp:9099`. adb lives at `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe` (not on PATH).
   - PR: none (operator action). Acceptance: the app signs in against the emulators. If `input` or `pm grant/revoke` fail, record a MIUI finding ("USB debugging (Security settings)" off) and ask the user to enable it; if `adb install` is blocked, ask for "Install via USB".
   - Partial 2026-10-14 (session C): `adb devices` lists `xkqwijtcyttsaahi` as `device` and both `adb reverse` tunnels were set; `connectedDebugAndroidTest` and `test:android` installed the debug and test APKs with no install block and the app signed in against the emulators (65/65). The standalone `assembleDebug` install for the adb checks is not done yet, so this box stays open for Phase 1.
+  - Done 2026-10-14 (session A1): `./gradlew installDebug -Potli.emulatorHost=127.0.0.1` built and installed the one debug APK on the phone without an install block, `adb reverse` for 8080 and 9099 was set again, `input` and `uiautomator dump` worked (no "USB debugging (Security settings)" block), and the app signed in against fresh seeded local emulators as customer, merchant, courier and admin.
 - [ ] 0.5 Session prerequisite for R1/R3 only: start AVD `Medium_Phone_API_36.1` (emulator 37.2.12, WHPX OK, serial usually `emulator-5554`), install the same APK, and run `adb -s emulator-5554 reverse tcp:8080 tcp:8080` and `tcp:9099 tcp:9099`.
   - PR: none (operator action). Acceptance: the AVD boots and the app signs in against the same emulators. If the AVD cannot be started at apply time, R1 and R3 become USER-gaps with that reason (spec `Realtime between two actors`).
 
@@ -93,65 +94,66 @@ Agent drives the phone with `adb` against the local emulators. Acceptance criter
 
 Layout and theme
 
-- [ ] 1.1 **L1** Edge-to-edge: no content under the status bar. Technique: `uiautomator dump` plus `dumpsys window | rg -i statusBars`.
+- [x] 1.1 **L1** Edge-to-edge: no content under the status bar. Technique: `uiautomator dump` plus `dumpsys window | rg -i statusBars`.
   - PR: 03. Acceptance: the first content node's `bounds` top is at or below the status bar height.
-  - Evidencia: (to be written when closed)
-- [ ] 1.2 **L2** Dark mode: the gate's Sign out is legible and enabled. Technique: `cmd uimode night yes`, relaunch, dump, then `night no`.
+  - Evidencia: el primer contenido queda debajo de la barra de estado (barra 128 px segun `dumpsys window`; login arranca en y=196 y la barra superior de las cuatro pantallas de inicio en y=150), visto por el agente via adb en el Xiaomi 2510DRA23L (emuladores locales), 2026-10-14; extracto en `evidence/a1-adb-excerpts.txt`.
+- [x] 1.2 **L2** Dark mode: the gate's Sign out is legible and enabled. Technique: `cmd uimode night yes`, relaunch, dump, then `night no`.
   - PR: 03. Acceptance: dump shows the Sign out node `enabled="true"`; contrast is judged by eye and the `Evidencia:` line says so.
-  - Evidencia: (to be written when closed)
-- [ ] 1.3 **L3** ProfileIncomplete gate shows Sign out and Try again. Needs an Auth user without a `users/{uid}` document (craft one through the Auth emulator).
+  - Evidencia: en modo oscuro (el telefono ya estaba en `night yes`, sin cambiarlo) el boton Sign out de la pantalla "Approval pending" sale `enabled="true"` y se lee claro (texto claro sobre fondo oscuro, juzgado a ojo sobre una captura local no guardada), probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
+- [x] 1.3 **L3** ProfileIncomplete gate shows Sign out and Try again. Needs an Auth user without a `users/{uid}` document (craft one through the Auth emulator).
   - PR: 03. Acceptance: both buttons visible. If the account cannot be crafted, record a USER-gap with the reason.
-  - Evidencia: (to be written when closed)
-- [ ] 1.4 **L4** Storefront has a top bar and up arrow, and system back returns.
+  - Evidencia: una cuenta de Auth sin documento `users/{uid}` (creada con el emulador de Auth, `orphan1@otli.test`) muestra "Profile not found" con los botones Try again y Sign out habilitados, probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
+- [x] 1.4 **L4** Storefront has a top bar and up arrow, and system back returns.
   - PR: 03. Acceptance: dump shows the top bar and up arrow; `input keyevent BACK` returns to the previous screen.
-  - Evidencia: (to be written when closed)
-- [ ] 1.5 **L5** Overflow menu offers Sign out on the customer home and on the merchant home.
+  - Evidencia: el storefront de Comedor Dona Marta tiene barra superior con flecha (`content-desc="Back"`) y carrito, y `input keyevent BACK` vuelve al inicio del cliente, probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
+- [x] 1.5 **L5** Overflow menu offers Sign out on the customer home and on the merchant home.
   - PR: 03. Acceptance: Sign out is present on both homes.
-  - Evidencia: (to be written when closed)
-- [ ] 1.6 **L6** Every order list is newest-first and each row shows "Placed HH:mm".
+  - Evidencia: el menu de tres puntos muestra "Sign out" en el inicio del cliente y en el del comerciante (tambien en el del administrador), probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
+- [x] 1.6 **L6** Every order list is newest-first and each row shows "Placed HH:mm".
   - PR: 03. Acceptance: with at least two orders per list, dumps show descending order and the "Placed HH:mm" text on customer, merchant, courier and admin lists.
-  - Evidencia: (to be written when closed)
+  - Evidencia: con dos pedidos de customer1 (23:24:13Z y 23:24:52Z) las listas de cliente, comerciante, repartidor y administrador (Active y All orders) muestran primero el mas nuevo (C$ 150.00 y luego C$ 210.00) y "Placed 17:24" en cada fila (ambos del mismo minuto, el orden se comprobo contra `createdAt` en el emulador), visto por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
 
 Auth, seed idempotency, automated proofs
 
-- [ ] 1.7 **A3** Wrong password is rejected. Technique: `input text`, submit, dump.
+- [x] 1.7 **A3** Wrong password is rejected. Technique: `input text`, submit, dump.
   - PR: 03. Acceptance: an error text is shown, the login screen is still present, no session starts.
-  - Evidencia: (to be written when closed)
-- [ ] 1.8 **O3** Seed and admin scripts are idempotent. On fresh emulators run the seed and the admin script, list document counts per collection with the `Bearer owner` REST call, run both again, list again.
+  - Evidencia: con contrasena incorrecta aparece "We could not sign you in. Check your email and password and try again.", la pantalla de login sigue presente y no se inicia sesion, probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
+- [x] 1.8 **O3** Seed and admin scripts are idempotent. On fresh emulators run the seed and the admin script, list document counts per collection with the `Bearer owner` REST call, run both again, list again.
   - PR: 03. Acceptance (spec `Seed idempotency (O3)...`): second run exits without error and counts per collection are identical; state the counts in `Evidencia:`.
-  - Evidencia: (to be written when closed)
-- [ ] 1.9 **O5** Rerun the demo-script section 8 automated proofs: `./gradlew testDebugUnitTest` (or `./gradlew verifyAll`) and `npm --prefix backend test`.
+  - Evidencia: con emuladores nuevos el seed corrio dos veces sin error y los conteos por coleccion fueron identicos (users 8, merchants 3, couriers 3, settings 1, categories 2+2, products 5+5, cuentas Auth 8; la segunda corrida actualizo las 8 cuentas sin crear ninguna), agente via adb/REST en el PC (emuladores locales), 2026-10-14; no existe un script de admin aparte: la cuenta admin la crea el propio seed (`seed-admin`).
+- [x] 1.9 **O5** Rerun the demo-script section 8 automated proofs: `./gradlew testDebugUnitTest` (or `./gradlew verifyAll`) and `npm --prefix backend test`.
   - PR: 03. Acceptance: green; the `Evidencia:` line states the JVM and rules test counts (the 2026-10-13 baseline was 1075 JVM and 321 rules).
-  - Evidencia: (to be written when closed)
+  - Evidencia: `./gradlew testDebugUnitTest --rerun` dio 1075 pruebas JVM sin fallos (incluye las 2 de DomainPurityTest) y `npm --prefix backend test` dio 321/321 pruebas de reglas en 17 archivos, ejecutado por el agente en el PC, 2026-10-14.
 
 Rows already evidenced: record the citation, do not redo (spec `Already-evidenced rows are cited, not redone`)
 
-- [ ] 1.10 **M1** Pin picker: tap places the pin, screen scrolls. Cite the 2026-10-13 confirmation by the user on the physical device.
+- [x] 1.10 **M1** Pin picker: tap places the pin, screen scrolls. Cite the 2026-10-13 confirmation by the user on the physical device.
   - PR: 03. Acceptance: `Evidencia:` names who, where and the date; no new check.
-  - Evidencia: (to be written when closed)
-- [ ] 1.11 **M2** Customer live map renders courier marker and "x ago". Cite Engram #43 and #44.
+  - Evidencia: la confirmacion del usuario en el telefono fisico del 2026-10-13 (tocar coloca el pin y la pantalla se desplaza) esta registrada en el inventario de la exploracion (Engram #73, fila M1) y en el flujo completo del usuario del #69; no existe una observacion Engram propia de M1; no se repitio.
+- [x] 1.11 **M2** Customer live map renders courier marker and "x ago". Cite Engram #43 and #44.
   - PR: 03. Acceptance: `Evidencia:` names the Engram ids and their date; not re-executed.
-  - Evidencia: (to be written when closed)
-- [ ] 1.12 **M3** Courier map: own dot, pickup/dropoff emphasis, camera fit. Cite Engram #44 (camera fit was still listed manual-only in verify-report #70; state that nuance).
+  - Evidencia: el usuario probo el mapa en vivo en el telefono: caminata con repartidor OK el 2026-10-02 (Engram #43) y "customer sees courier" en la revision del 2026-10-03 (Engram #44); la etiqueta "x ago" no se nombra de forma expresa en esos registros; no se repitio.
+- [x] 1.12 **M3** Courier map: own dot, pickup/dropoff emphasis, camera fit. Cite Engram #44 (camera fit was still listed manual-only in verify-report #70; state that nuance).
   - PR: 03. Acceptance: `Evidencia:` names #44 and date; not re-executed.
-  - Evidencia: (to be written when closed)
-- [ ] 1.13 **M4** No native info window, Compose legend. Cite Engram #44 and #45.
+  - Evidencia: revision del usuario en el telefono el 2026-10-03 (Engram #44): punto propio, pin de recogida resaltado antes de recoger y pin de entrega despues, OK; el ajuste de camara no se nombra en #44 y el verify-report #70 aun lo listaba solo manual, matiz que queda sin confirmar de forma expresa; no se repitio.
+- [x] 1.13 **M4** No native info window, Compose legend. Cite Engram #44 and #45.
   - PR: 03. Acceptance: `Evidencia:` names the ids and date; not re-executed.
-  - Evidencia: (to be written when closed)
-- [ ] 1.14 **G1** "Turn on location?" dialog when going online with services off. Cite Engram #44.
+  - Evidencia: F.11 (info window nativo flotando sobre Compose) se hallo en la revision del usuario del 2026-10-03 (Engram #44) y se corrigio con leyenda Compose, verificada en el telefono (Engram #45, 2026-10-04); no se repitio.
+- [x] 1.14 **G1** "Turn on location?" dialog when going online with services off. Cite Engram #44.
   - PR: 03. Acceptance: `Evidencia:` names #44 and date; not re-executed.
-  - Evidencia: (to be written when closed)
-- [ ] 1.15 **G3** Publishing resumes after GPS off then on, no re-login. Cite Engram #45.
+  - Evidencia: el dialogo de ubicacion de F.9 y el aviso con boton funcionan, segun la revision del usuario en el telefono del 2026-10-03 (Engram #44); no se repitio.
+- [x] 1.15 **G3** Publishing resumes after GPS off then on, no re-login. Cite Engram #45.
   - PR: 03. Acceptance (spec scenario `Citation`): `Evidencia:` names Engram #45 and its date; no new check.
-  - Evidencia: (to be written when closed)
-- [ ] 1.16 **A2** Sign-out does not crash. Cite the 2026-10-13 logcat review (only benign PERMISSION_DENIED); locate its Engram record with `mem_search` and cite the id if one exists.
+  - Evidencia: la publicacion se reanuda tras apagar y encender el GPS sin volver a iniciar sesion: F.12 corregido y verificado en el telefono (Engram #45, 2026-10-04); no se repitio.
+- [x] 1.16 **A2** Sign-out does not crash. Cite the 2026-10-13 logcat review (only benign PERMISSION_DENIED); locate its Engram record with `mem_search` and cite the id if one exists.
   - PR: 03. Acceptance: `Evidencia:` names the recorded 2026-10-13 evidence; not re-executed.
-  - Evidencia: (to be written when closed)
-- [ ] 1.17 **AD1** Cancelling a picked_up order frees the courier. Cite the AD1 device run (device test 13/13, manual scenario, production readback, 2026-10-13); locate its Engram observation with `mem_search` and cite the id.
+  - Evidencia: la revision de logcat del telefono del 2026-10-13 (Engram #69) mostro solo 64 `PERMISSION_DENIED` benignos en los 2 s posteriores al cierre de sesion y ningun fallo de Otli (el cierre era de `com.tiktok.manager`); no se repitio.
+- [x] 1.17 **AD1** Cancelling a picked_up order frees the courier. Cite the AD1 device run (device test 13/13, manual scenario, production readback, 2026-10-13); locate its Engram observation with `mem_search` and cite the id.
   - PR: 03. Acceptance: `Evidencia:` names the observation id and date; not re-executed.
-  - Evidencia: (to be written when closed)
-- [ ] 1.18 Close device session A1: append the rows of 1.1-1.9 to `docs/manual-tests.md` (the citations 1.10-1.17 are not a device session and need no log row) and write one Engram note under `sdd/otli-device-evidence/apply-progress`; commit task-line states, log rows and any optional text dumps as a work-unit commit.
+  - Evidencia: AD1/F.13: `FirestoreAdminRepositoryTest` 13/13 en el Xiaomi y escenario manual (pedido cancelado con motivo, `activeOrderId` del courier1 en null, fuera del pool) en la sesion del 2026-10-08 (Engram #28), reconfirmado en el resumen del 2026-10-13 (Engram #69) junto con el flujo del usuario contra produccion sin errores (no hay un registro propio de lectura en produccion); no se repitio.
+- [x] 1.18 Close device session A1: append the rows of 1.1-1.9 to `docs/manual-tests.md` (the citations 1.10-1.17 are not a device session and need no log row) and write one Engram note under `sdd/otli-device-evidence/apply-progress`; commit task-line states, log rows and any optional text dumps as a work-unit commit.
   - PR: 03. Acceptance (spec scenario `End of a device session`): log rows and Engram note exist; no screenshot staged.
+  - Done 2026-10-14: 9 rows (L1-L6, A3, O3, O5) appended to `docs/manual-tests.md`, Engram note saved under `sdd/otli-device-evidence/apply-progress` (#79, merged with the earlier batches), excerpts in `evidence/a1-adb-excerpts.txt`, no image in the tree. The orchestrator makes the work-unit commit.
 
 ### Block A2 (PR 04): map, location and permissions, foreground service, notifications
 
