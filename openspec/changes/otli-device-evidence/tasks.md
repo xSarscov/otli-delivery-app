@@ -254,7 +254,7 @@ Strict TDD applies with an honest exception: `FirestorePhotoSource` already work
 - [x] 3.13 **O1** Close the row: cite the 2026-10-13 device run of 61/61 (7 classes, now 8 with O2) and the four text fixes.
   - PR: 02. Acceptance: `Evidencia:` names the 61/61 run, who and date, and the four task ids fixed.
   - Evidencia: la suite instrumentada paso 61/61 en 7 clases en el Xiaomi 2510DRA23L el 2026-10-13 y 65/65 en 8 clases el 2026-10-14 (agente via adb, emuladores locales), y las cuatro frases obsoletas del archivo `otli-mvp` (2.4.1, 3.4.1, 4.3.1, 5.3.1) quedaron corregidas conservando el texto original.
-- [ ] 3.14 Close device session C: append the O2 and 3.7 rows to `docs/manual-tests.md` (reference: the Engram id of the apply-progress note), write one Engram note under `sdd/otli-device-evidence/apply-progress`, commit as work units (test + log together; archived text fixes as a docs commit).
+- [x] 3.14 Close device session C: append the O2 and 3.7 rows to `docs/manual-tests.md` (reference: the Engram id of the apply-progress note), write one Engram note under `sdd/otli-device-evidence/apply-progress`, commit as work units (test + log together; archived text fixes as a docs commit).
   - PR: 02. Acceptance: `git diff --stat main..HEAD -- app/src/main` is empty (no runtime code changed).
 
 ## Phase 4: (D) Close-out
