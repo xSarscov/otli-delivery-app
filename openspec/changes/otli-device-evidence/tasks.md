@@ -72,9 +72,9 @@ Apply order (not the same as the phase numbers): Phase 0 → Phase 3 (C, PR 02) 
 
 ## Phase 0: Setup and tooling
 
-- [ ] 0.1 Add the two-line guard to `.gitignore`: `openspec/changes/otli-device-evidence/evidence/**/*.png` and `openspec/changes/otli-device-evidence/evidence/**/*.jpg`.
+- [x] 0.1 Add the two-line guard to `.gitignore`: `openspec/changes/otli-device-evidence/evidence/**/*.png` and `openspec/changes/otli-device-evidence/evidence/**/*.jpg`.
   - PR: 02. Acceptance (spec `Optional artifacts, no screenshots in the repo`): `git check-ignore -v openspec/changes/otli-device-evidence/evidence/x/a.png` and the same for `.jpg` report the new rule. Test-first: N/A (config line); the `check-ignore` command is the check.
-- [ ] 0.2 Create `docs/manual-tests.md` with one table, columns `date | row IDs | what was tested | result | where | who | reference`, and a short note that `reference` is an Engram id, a small text artifact path, or `-`.
+- [x] 0.2 Create `docs/manual-tests.md` with one table, columns `date | row IDs | what was tested | result | where | who | reference`, and a short note that `reference` is an Engram id, a small text artifact path, or `-`.
   - PR: 02. Acceptance (spec `Manual-test log`): the file exists with exactly those columns; later sessions only append rows. Test-first: N/A (documentation).
 - [ ] 0.3 Session prerequisite: from `backend/` start fresh local emulators with `npx firebase emulators:start --only firestore,auth --project demo-otli` (no `emulator-data` exists, so do not use `npm run emulators`), then seed with `npm --prefix backend run seed`; run the idempotency repeat only in task 1.8.
   - PR: none (operator action, repeated each session). Acceptance: Firestore on 8080 and Auth on 9099 answer; seeded accounts such as `customer1@otli.test` and `merchant1@otli.test` can sign in. Stop these manual emulators before the full-suite run in 3.7 (`test:android` starts its own through `run-with-emulators.mjs`; confirm port use first).
@@ -218,9 +218,9 @@ Run order inside the block: row A1 (1.22) before G5 (1.21) since both revoke loc
 
 Strict TDD applies with an honest exception: `FirestorePhotoSource` already works (`FirestoreCatalogRepositoryTest.theStoredPhotoCanBeFetchedThroughThePhotoSource` already reads through it), so no meaningful RED exists. The test is recorded as a characterization test and validated by three temporary mutants, each observed failing then reverted and never committed. RED is never invented.
 
-- [ ] 3.1 Confirm the `productPhotos` read rule in `backend/firestore.rules` (read-only) before writing case 4. At planning time it reads `allow read: if signedIn();` (line 157), so a signed-out read is denied.
+- [x] 3.1 Confirm the `productPhotos` read rule in `backend/firestore.rules` (read-only) before writing case 4. At planning time it reads `allow read: if signedIn();` (line 157), so a signed-out read is denied.
   - PR: 02. Acceptance: if the rule allows unauthenticated reads, drop case 4 and record a finding instead of adjusting the test to pass. Test-first: N/A (read-only check).
-- [ ] 3.2 Write `app/src/androidTest/java/com/otli/app/catalog/adapters/firestore/FirestorePhotoSourceTest.kt`, same shape as `FirestoreCatalogRepositoryTest.kt` (read-only for shape): `AndroidJUnit4`, `OtliFirebase.auth/firestore(context)`, `await { }` with `withTimeout(30_000)`, sign-in via `FirestoreAuthRepository.login(..., "otli-demo-123")`, `@After` cleanup and sign-out. Cases: (1) `aCustomerReadsAMerchantsProductPhoto` (merchant1 `upsertProduct` with bytes, customer1 `fetch(MERCHANT_1, productId)` equals the bytes, cleanup as the merchant); (2) `theProfilePhotoIsReadUnderTheFixedProfileId` (`FirestoreMerchantRepository.updatePhoto(MERCHANT_2, bytes)` then `fetch(MERCHANT_2, PhotoKey.PROFILE_PHOTO_ID)`); (3) `aPhotoThatDoesNotExistIsNull`; (4) `aSignedOutReaderIsRefused` (`runCatching { fetch(...) }.isFailure`).
+- [x] 3.2 Write `app/src/androidTest/java/com/otli/app/catalog/adapters/firestore/FirestorePhotoSourceTest.kt`, same shape as `FirestoreCatalogRepositoryTest.kt` (read-only for shape): `AndroidJUnit4`, `OtliFirebase.auth/firestore(context)`, `await { }` with `withTimeout(30_000)`, sign-in via `FirestoreAuthRepository.login(..., "otli-demo-123")`, `@After` cleanup and sign-out. Cases: (1) `aCustomerReadsAMerchantsProductPhoto` (merchant1 `upsertProduct` with bytes, customer1 `fetch(MERCHANT_1, productId)` equals the bytes, cleanup as the merchant); (2) `theProfilePhotoIsReadUnderTheFixedProfileId` (`FirestoreMerchantRepository.updatePhoto(MERCHANT_2, bytes)` then `fetch(MERCHANT_2, PhotoKey.PROFILE_PHOTO_ID)`); (3) `aPhotoThatDoesNotExistIsNull`; (4) `aSignedOutReaderIsRefused` (`runCatching { fetch(...) }.isFailure`).
   - PR: 02. Spec requirement `FirestorePhotoSource instrumented test (O2)`. TDD note: characterization test, no observable RED because the adapter exists; write the class, compile with `./gradlew compileDebugAndroidTestKotlin`, and state the exception in the commit and in the O2 `Evidencia:`.
 - [ ] 3.3 Run the new class on the phone: with emulators up and seeded (0.3, 0.4), `./gradlew connectedDebugAndroidTest -Potli.emulatorHost=127.0.0.1 -Pandroid.testInstrumentationRunnerArguments.class=com.otli.app.catalog.adapters.firestore.FirestorePhotoSourceTest`.
   - PR: 02. Acceptance: the 4 cases (or 3 if case 4 was dropped) pass on the phone.
@@ -235,13 +235,13 @@ Strict TDD applies with an honest exception: `FirestorePhotoSource` already work
 - [ ] 3.8 **O2** Close the row: `FirestorePhotoSourceTest` exists and passes on the phone.
   - PR: 02. Acceptance: `Evidencia:` states the characterization exception, the three mutants (failing test names) and the 8-class counts, who (agent via adb), where (phone, local emulators) and date.
   - Evidencia: (to be written when closed)
-- [ ] 3.9 Archived `openspec/changes/archive/2026-10-13-otli-mvp/tasks.md`, task 2.4.1: this change authorises the edit. Keep the original wording, strike the stale clause "androidTest pending device GREEN" and append the outcome: covered by `FirestoreCatalogRepositoryTest` and `FirestorePhotoSourceTest`, device GREEN on the date of 3.7 (otli-device-evidence O2).
+- [ ] 3.9 Archived `openspec/changes/archive/2026-10-13-otli-mvp/tasks.md`, task 2.4.1: this change authorises the edit. Keep the original sentence (no strikethrough) and append the outcome right after the stale clause "androidTest pending device GREEN": covered by `FirestoreCatalogRepositoryTest` and `FirestorePhotoSourceTest`, device GREEN on the date of 3.7 (otli-device-evidence O2).
   - PR: 02. Acceptance (spec `Seed idempotency (O3) and automated rows (O1, O5)`): the line no longer asserts "pending". Do this only after 3.8 is DONE.
-- [ ] 3.10 Same file, task 3.4.1: strike "compile-checked only, its device run is pending" and append "passed on device 2026-10-13 (61/61 run)".
+- [x] 3.10 Same file, task 3.4.1: keep the original sentence "compile-checked only, its device run is pending" (no strikethrough) and append the outcome: passed on device 2026-10-13 (`FirestoreOrderRepositoryTest` 8/8, 61/61 run).
   - PR: 02. Acceptance: no "pending" or "compile-only" left in the live wording of 3.4.1.
-- [ ] 3.11 Same file, task 4.3.1: strike "compile-checked only, device run pending" and append the same outcome.
+- [x] 3.11 Same file, task 4.3.1: keep the original sentence "compile-checked only, device run pending" (no strikethrough) and append the outcome: passed on device 2026-10-13 (`FirestoreDispatchRepositoryTest` 11/11, 61/61 run).
   - PR: 02. Acceptance: as 3.10.
-- [ ] 3.12 Same file, task 5.3.1: strike "compiled, device GREEN pending" and append the same outcome.
+- [x] 3.12 Same file, task 5.3.1: keep the original sentence "compiled, device GREEN pending" (no strikethrough) and append the outcome: passed on device 2026-10-13 (`FirestoreLocationRepositoryTest` 4/4, 61/61 run).
   - PR: 02. Acceptance: as 3.10. Verify all four with `rg -n 'compile-only|device run pending|GREEN pending' openspec/changes/archive/2026-10-13-otli-mvp/tasks.md` (matches may remain only inside struck text).
 - [ ] 3.13 **O1** Close the row: cite the 2026-10-13 device run of 61/61 (7 classes, now 8 with O2) and the four text fixes.
   - PR: 02. Acceptance: `Evidencia:` names the 61/61 run, who and date, and the four task ids fixed.
