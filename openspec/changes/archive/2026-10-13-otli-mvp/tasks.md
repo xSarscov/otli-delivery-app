@@ -218,7 +218,7 @@ Every PR below is written to stand on its own: clear start state, clear finish s
 
 ### PR 2.4 — Customer browsing UI
 
-- [x] 2.4.1 (branch 02-4d: `MerchantListViewModel` 5 tests + `MerchantListContent` 6 tests, mutation-checked; merchant photos through `StorePhoto`, see 02-4b/02-4c: `PhotoKey`/`PhotoSource` port, `PhotoLoader` LRU cache + `BitmapPhotoDecoder`, `FirestorePhotoSource` (androidTest pending device GREEN), `StorePhoto` + `LocalPhotoLoader`; Coil not added, see design ADR-11 display note) Create `catalog/adapters/ui/MerchantListScreen.kt`/`Content`/`ViewModel` (lists merchants with open/closed indicator) and its test.
+- [x] 2.4.1 (branch 02-4d: `MerchantListViewModel` 5 tests + `MerchantListContent` 6 tests, mutation-checked; merchant photos through `StorePhoto`, see 02-4b/02-4c: `PhotoKey`/`PhotoSource` port, `PhotoLoader` LRU cache + `BitmapPhotoDecoder`, `FirestorePhotoSource` (androidTest pending device GREEN. **Was pending at the time. Resolved 2026-10-14: covered by `FirestoreCatalogRepositoryTest` and by the new `FirestorePhotoSourceTest` (4/4); `npm --prefix backend run test:android` on a physical device (2510DRA23L) ran 8 classes, 65/65 green (otli-device-evidence O2)**), `StorePhoto` + `LocalPhotoLoader`; Coil not added, see design ADR-11 display note) Create `catalog/adapters/ui/MerchantListScreen.kt`/`Content`/`ViewModel` (lists merchants with open/closed indicator) and its test.
   - Test-first: write `MerchantListViewModelTest` RED, then implement GREEN.
   - Acceptance: merchant-catalog spec — "Customer browses merchants list".
   - Est. lines: ~140
