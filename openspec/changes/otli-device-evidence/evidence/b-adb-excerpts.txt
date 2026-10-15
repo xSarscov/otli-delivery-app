@@ -1,0 +1,26 @@
+Block B excerpts (two-actor realtime, R1 and R3), 2026-10-14, agent via adb.
+Actors: Xiaomi 2510DRA23L (HyperOS, Android 16 = API 36, serial xkqwijtcyttsaahi) and AVD Medium_Phone_API_36.1 (emulator 37.2.12, WHPX/gfxstream, Android 16, serial emulator-5554). Same debug APK (built with -Potli.emulatorHost=127.0.0.1) on both, both through `adb -s <serial> reverse tcp:8080/9099` to fresh seeded local Firebase emulators (project demo-otli). Screenshots are not committed.
+Times are the PC local clock (UTC-6). The AVD clock is UTC, so its "Placed 00:16" is the phone's "Placed 18:16".
+The phone was only READ (uiautomator dump) between the other actor's tap and the phone's new state: no tap, no swipe, no pull-to-refresh, no relaunch on the phone.
+
+0.5 prerequisites
+  AVD booted, getprop sys.boot_completed = 1, ro.build.version.sdk = 36, adb devices lists both serials.
+  Phone install: first two `adb -s xkqwijtcyttsaahi install -r` returned INSTALL_FAILED_USER_RESTRICTED (Install canceled by user); during the third, topResumedActivity was com.miui.securitycenter/com.miui.permcenter.install.AdbInstallActivity (MIUI confirmation prompt) and the install then returned Success. AVD install: Success on the first try.
+  Both devices showed the login screen and signed in against the local emulators (phone customer1, AVD merchant1; later phone merchant1, AVD admin).
+
+R1  phone = customer1 on the tracking screen of an order placed from the phone through the UI (Gallo pinto con queso + Nacatamal, C$ 240.00); AVD = merchant1 on Orders
+  order placed 18:16; AVD merchant list, no action on the AVD: "New orders" > "Ana Lopez", "Placed 00:16", "Total C$ 240.00", buttons Accept / Reject (phone to AVD direction)
+  phone before: "Waiting for the store to answer"
+  18:16:52 AVD tap "Accept"  -> phone (read 2 s later, untouched): "The store accepted your order"
+  18:17:06 AVD tap "Start preparing" -> phone: "Your order is being prepared"
+  18:17:15 AVD tap "Mark ready" -> phone: "Your order is ready"
+  topResumedActivity on the phone stayed com.otli.app/.MainActivity (same task t9164) the whole time; Firestore orders/mIYHpH408TyUTlzLYfAt status = ready at the end.
+
+R3  phone = merchant1 signed in on the Orders tab (order "Ana Lopez ... Your order is ready" listed under "In progress"); AVD = admin on Accounts
+  18:18:48 AVD tap "Suspend" on the "Doña Marta / merchant1@otli.test" row
+  18:18:51 phone (untouched, no re-login): "Account suspended", "Your store account has been suspended, so you cannot receive orders. Contact an administrator for help.", button "Sign out"; topResumedActivity still com.otli.app/.MainActivity t9164
+  Firestore users/seed-merchant-1 status = suspended and merchants/seed-merchant-1 status = suspended
+  the AVD Accounts list moved "Doña Marta" to a "Suspended" section with a "Reactivate" button
+  restore: AVD tap "Reactivate" -> users and merchants seed-merchant-1 status = active; the phone went back to the merchant home (Orders / Catalog / Store, same order in "In progress") with no login
+
+Phone settings read before and after: location_mode 0, screen_off_timeout 600000, Night mode: yes. No phone setting was changed.
