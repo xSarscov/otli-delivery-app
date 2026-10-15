@@ -215,6 +215,7 @@ Run order inside the block: row A1 (1.22) before G5 (1.21) since both revoke loc
 - [ ] 2.6 **O4** Redo the `docs/demo-script.md` sections 2-7 walkthrough. User only; the agent supplies the steps and records the dated confirmation (sections 4, 5 and 6 can also feed R1, R2 and the two-actor evidence if the user says so).
   - PR: 05. Acceptance (spec `Already-evidenced rows...`): dated user confirmation per section confirmed, or USER-gap with reason.
   - Evidencia: (to be written when closed)
+  - Agent run done 2026-10-14: 26 PASS, 0 FAIL, 0 BLOCKED, 1 SKIPPED (claim race, R2), see evidence/o4-walkthrough.txt; awaiting the user's per-section confirmation.
 - [ ] 2.7 **AD2** Fee, approvals, release, cancel and All orders. Covered by O4; no separate check.
   - PR: 05. Acceptance (spec scenario `AD2 covered by O4`): DONE citing O4 if O4 is DONE; if O4 is a USER-gap, AD2 is a USER-gap with the same reason.
   - Evidencia: (to be written when closed)
