@@ -203,15 +203,15 @@ Run order inside the block: row A1 (1.22) before G5 (1.21) since both revoke loc
 - [x] 2.2 **R3** Suspending a merchant while signed in flips that session to "Account suspended" without re-login. The phone is the signed-in merchant; the AVD is the Admin who presses "Suspend".
   - PR: 05. Acceptance: the phone shows "Account suspended" without any re-login. Same AVD fallback as 2.1.
   - Evidencia: con el comerciante 1 firmado en el telefono, al pulsar "Suspend" el Admin en el AVD el telefono mostro en 3 s "Account suspended" con "Sign out", sin volver a iniciar sesion y en la misma actividad (Firestore users y merchants en suspended); "Reactivate" lo dejo en active y el telefono volvio a su inicio; observado por el agente via adb entre el Xiaomi y el AVD Medium_Phone_API_36.1 (emulador local), 2026-10-14 (`evidence/b-adb-excerpts.txt`).
-- [ ] 2.3 **R2** Claim race by literal simultaneous human tap. User only: two couriers press "Claim" together (demo-script section 5). The rules race tests (20 rounds) and `FirestoreDispatchRepositoryTest` may be cited as support but do not close it.
-  - PR: 05. Acceptance: a dated user confirmation in `Evidencia:`, or a USER-gap with reason and date.
-  - Evidencia: (to be written when closed)
-- [ ] 2.4 **G4** Real walking track with the 10 s / 10 m / 60 s throttle. User only: walk with the phone as courier; the agent can read `liveLocations` before and after.
-  - PR: 05. Acceptance: a dated user confirmation (Engram #43 walk of 2026-10-02 is background, not the closing evidence) or a USER-gap with reason.
-  - Evidencia: (to be written when closed)
-- [ ] 2.5 **A4** Production API key restricted by package and SHA-1. User only, in the Firebase/Google Cloud console (the user reported doing it on 2026-10-13 together with enabling Email/Password; no artifact exists).
+- [x] 2.3 **R2** Claim race: exactly one courier wins and the other is told it was taken. Closed by executed automated tests (decision of the user, 2026-10-14; the manual simultaneous-tap session was dropped because a human-versus-adb race is neither fair nor repeatable and adds nothing to what the tests prove).
+  - PR: 05. Acceptance: the three tests below are cited with what each covers.
+  - Evidencia: gana exactamente un repartidor y el otro recibe "ya lo tomo otro repartidor": `backend/tests/rules/claim-concurrency.test.ts` (2 y 10 repartidores, un repartidor contra dos pedidos, 20 rondas y escrituras trampa de medio claim; 321/321 reglas el 2026-10-14), `FirestoreDispatchRepositoryTest.twoCouriersClaimingTheSameOrderExactlyOneWinsAndTheOtherIsToldItWasTaken` en el Xiaomi (clase 11/11 el 2026-10-13 y 65/65 en la suite del 2026-10-14) y `PoolViewModelTest` para el mensaje del perdedor (`pool_message_taken`); decision del usuario, 2026-10-14.
+- [x] 2.4 **G4** Real walking track with the 10 s / 10 m / 60 s throttle. Closed by decision of the user (2026-10-14) by citing the real walk test and the executed throttle test, with what each covers (no new walk).
+  - PR: 05. Acceptance: both citations state their coverage honestly.
+  - Evidencia: la caminata real con el telefono la hizo el usuario el 2026-10-02 y salio bien (Engram #43; no registra los valores exactos de frecuencia) y los limites de 10 s, 10 m y 60 s de latido los prueba `LocationThrottleTest` (parte de los 1075 tests unitarios en verde el 2026-10-14); decision del usuario, 2026-10-14.
+- [x] 2.5 **A4** Production API key restricted by package and SHA-1. User only, in the Firebase/Google Cloud console (the user reported doing it on 2026-10-13 together with enabling Email/Password; no artifact exists).
   - PR: 05. Acceptance: dated user confirmation or USER-gap with reason. The agent MUST NOT probe production for this unless the user explicitly authorizes it.
-  - Evidencia: (to be written when closed)
+  - Evidencia: el usuario confirmo en el chat el 2026-10-13 que habia restringido la API key por paquete (`com.otli.app`) y SHA-1 en la consola de Google Cloud, junto con activar Email/Password; sin artefacto y sin consultar produccion (el agente no la sondeo).
 - [ ] 2.6 **O4** Redo the `docs/demo-script.md` sections 2-7 walkthrough. User only; the agent supplies the steps and records the dated confirmation (sections 4, 5 and 6 can also feed R1, R2 and the two-actor evidence if the user says so).
   - PR: 05. Acceptance (spec `Already-evidenced rows...`): dated user confirmation per section confirmed, or USER-gap with reason.
   - Evidencia: (to be written when closed)
