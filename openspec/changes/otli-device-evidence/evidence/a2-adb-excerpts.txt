@@ -1,0 +1,46 @@
+Block A2 excerpts, 2026-10-14, Xiaomi 2510DRA23L (HyperOS, Android 16 = API 36), debug APK against local emulators, agent via adb.
+Filtered from uiautomator dumps, dumpsys, logcat (events buffer) and the Firestore emulator REST read; screenshots are not committed.
+Times are local (UTC-6) unless a value ends in Z. Statuses marked "REST" were written by the agent straight into the emulator (they stand in for the other role); the app saw them through its normal listeners.
+Phone settings read before: location_mode 0, night yes, screen_off_timeout 600000. location_mode was set to 3 for the session and back to 0 at the end (2 reads).
+
+M5  courier1 claimed order m5order on the phone through the UI; liveLocations/m5order written by the phone itself (fused fix):
+      lat 11.9079314 lng -86.1995612 accuracyM 30.0 updatedAt 2026-10-14T23:57:43.598Z
+    admin (All orders tab > row) "Order detail": text "Courier location", map node (MapLibre), legend "Delivery address" + "Courier", "Updated 1 min ago", "Courier account: seed-courier-1"
+    local screenshot (not kept): red dot near Nagarote (delivery pin), blue dot near Jinotepe (the phone's real position)
+A1  pm revoke + pm clear-permission-flags ACCESS_FINE_LOCATION/COARSE (flags left: USER_SENSITIVE_WHEN_*), courier switch "You are online" tapped:
+      topResumedActivity com.google.android.permissioncontroller/.permission.ui.GrantPermissionsActivity (the AOSP dialog, no MIUI-specific dialog)
+      "¿Permitir que Otli acceda a la ubicación de este dispositivo?" Precisa | Aproximada | Mientras la app está en uso | Solo esta vez | No permitir
+    chose "Mientras la app está en uso" -> ACCESS_FINE_LOCATION granted=true, courier "You are online"
+G2  delivery on screen, location_mode 3 -> 0 (settings get = 0):
+      Play Services LocationSettingsCheckerActivity ("Para continuar, el dispositivo necesita usar la Precisión de la ubicación", No, gracias / Activar), dismissed with "No, gracias"
+      status line "Location is off — turn it on so the customer can follow you." + button "Turn on location" (tapped: the Play Services dialog opened again, dismissed with "No, gracias")
+    location_mode 0 -> 3 (settings get = 3), 6 s later: "Sharing your location with the customer" back, warning and button gone
+G5  pm revoke ACCESS_FINE_LOCATION + ACCESS_COARSE_LOCATION during a claimed delivery (process was killed, no service listed), am start:
+      "Location is off, so the customer cannot follow your delivery. Allow location access to share it, or enable it in the app settings." + button "Allow location"
+      map legend nodes: "Pick up here — Frente al parque central de Nagarote", "Delivery address — blue-house-A2"; NO "You" node (before the revoke the legend also had "You")
+    pm grant both, HOME, am start: "Sharing your location with the customer" and the "You" legend node are back, service listed again
+FS1 order 2IcwuOosEhzdh2D3sN1J (claimed), HOME, keyevent 223 (dumpsys power mWakefulness=Dozing at every read), service listed at every read:
+      liveLocations updatedAt  2026-10-14T23:50:54.830Z (17:51:06, screen just off) -> 23:51:55.600Z -> 23:52:55.557Z -> 23:54:57.436Z (17:55:05)
+      positions  11.9079316,-86.1995613 / 11.9079332,-86.1995481 / 11.9079269,-86.1995385 / 11.9079216,-86.1995896 (a stationary phone: advance comes from the 60 s heartbeat)
+    keyevent 224: lock screen showed notifications only (isKeyguardShowing=true, no PIN prompt); wm dismiss-keyguard returned to the launcher with no credential
+FS2 dumpsys activity services com.otli.app (DeliveryTrackingService ServiceRecord line present = listed):
+      delivered  : picked_up 17:56:19 listed; Delivered tapped (UI) 17:56:26 absent
+      release    : claimed 17:56:54 listed; REST release (status ready, courierId null, courier activeOrderId null, same fields as AdminDocuments.releaseOrderUpdate) 17:57:03 absent
+      cancel     : picked_up 17:57:26 listed; REST cancel (status cancelled, cancelledBy admin, courier activeOrderId null) 17:57:32 absent
+      also: signing the courier out removed it (17:58:22)
+FS3 dumpsys: isForeground=true foregroundId=7001 types=0x00000008 (FOREGROUND_SERVICE_TYPE_LOCATION = 8), notification channel=tracking importance=2 ONGOING_EVENT
+    logcat -d -v time filtered 'DeliveryTrackingService|foregroundServiceType|FOREGROUND_SERVICE' on a freshly cleared buffer (18:05):
+      ActivityManager: Background started FGS: Allowed [callingPackage: com.otli.app ... cmp=com.otli.app/.tracking.adapters.service.DeliveryTrackingService ... code:PROC_STATE_TOP; targetSdkVersion:36 ...]
+      1 hit, no exception and no FOREGROUND_SERVICE error (the earlier, longer buffer also had none)
+N1  customer1 signed in, status changes written by REST; counts from `logcat -b events` notification_enqueue for com.otli.app:
+      order 2Icw..: accepted, preparing, ready -> 3 enqueues of id 838720003 (17:46:11.6, :17.5, :23.3), ONE record whose text ends as "Your order is ready"
+      order n1probe (precise): created placed (no enqueue), accepted -> +1 enqueue (id 350925837, 17:46:51.9), preparing -> +1 (17:46:57.1); one extra system enqueue (id 0, tag g:Aggregate_AlertingSection, channel orders) when a second record appeared
+    merchant1 signed in: new order n1merchant (REST) -> 1 enqueue id 982099019 at 17:59:41.3, title "New order", text "Ana Lopez, C$ 120.00" (+ the system group summary); the same order moved to accepted (REST) -> no further enqueue (the merchant is only told of new orders)
+N2  AOSP dialog "¿Permitir que Otli te envíe notificaciones?" (GrantPermissionsActivity), each time after pm revoke + pm clear-permission-flags POST_NOTIFICATIONS user-set user-fixed and force-stop + start:
+      merchant home: open 1 -> dialog; Permitir; open 2 -> no dialog
+      courier  home: open 1 -> dialog; Permitir; open 2 -> no dialog
+      customer home: open 1 -> dialog; No permitir (flags USER_SET); open 2 -> dialog AGAIN (button now "No permitir" = deny_and_dont_ask_again); No permitir (flags USER_SET|USER_FIXED); open 3 -> no dialog
+N3  customer1, POST_NOTIFICATIONS denied and fixed (dumpsys notification: "AppSettings: com.otli.app (10447) importance=NONE"), logcat cleared:
+      status changes preparing and ready (REST) -> notification_enqueue count 0, no otli NotificationRecord, no FATAL EXCEPTION in logcat, pid 3493 alive, app on the customer home
+      control, same pid and path after pm grant POST_NOTIFICATIONS: accepted (REST) -> 1 enqueue (id 982099019, title "Comedor Doña Marta")
+Restore: pm grant location and notification permissions during the session, location_mode 0 at the end (2 reads), app uninstalled, adb reverse removed, emulators stopped.
