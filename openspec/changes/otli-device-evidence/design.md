@@ -37,7 +37,7 @@ openspec/changes/otli-device-evidence/evidence/**/*.jpg
 **Rationale**: `tasks.md` is the source of truth for status, the log is the chronological record of sessions; the `[~]` state stops available-but-unverified work from being either "pending" or falsely "done".
 
 ### ADR-E4: Already-evidenced rows are cited, O4 redone by the user
-**Choice**: M1, M2, M3, M4, G1, G3, A2, AD1 close with their Engram id or recorded date; O4 is a fresh, dated user walkthrough of `docs/demo-script.md` sections 2-7; AD2 cites O4. R2 is a dated user confirmation or a USER-gap; the existing race tests are cited as support only.
+**Choice**: M1, M2, M3, M4, G1, G3, A2, AD1 close with their Engram id or recorded date; O4 is a fresh, dated user walkthrough of `docs/demo-script.md` sections 2-7; AD2 cites O4. R2 is a dated user confirmation or a USER-gap; the existing race tests are cited as support only. UPDATE 2026-10-14 (user decisions, later than this design): R2 is closed by the executed automated tests (claim-concurrency, the device race test and PoolViewModelTest), G4 by citing the 2026-10-02 walk (Engram #43) plus `LocationThrottleTest`, and A4 by the user's dated statement (also Engram #68).
 
 ### ADR-E5: `FirestorePhotoSourceTest` as a characterization test with a mutation check instead of RED
 **Choice**: New `app/src/androidTest/java/com/otli/app/catalog/adapters/firestore/FirestorePhotoSourceTest.kt`, same shape as `FirestoreCatalogRepositoryTest` (`AndroidJUnit4`, `OtliFirebase.auth/firestore(context)`, `await { }` helper with `withTimeout(30_000)`, sign-in through `FirestoreAuthRepository.login(..., "otli-demo-123")`, `@After` cleanup and sign-out). Cases, each covering what the existing class does not:

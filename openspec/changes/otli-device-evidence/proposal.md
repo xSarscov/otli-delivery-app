@@ -10,7 +10,7 @@ Evidence rule: `tasks.md` states are `[ ]` not done, `[~]` implemented/available
 
 ### In Scope
 - **Group A, adb-driven checks** (agent drives the Xiaomi phone against local Firebase emulators, each closed with an `Evidencia:` line): L1-L6, M5, G2, G5, FS1-FS3, N1-N3, A1, A3; plus automated reruns O3 (seed/admin idempotency) and O5 (demo-script section 8 proofs).
-- **Group B, checks needing the person** (closed with an `Evidencia:` line citing the user's dated confirmation, or recorded as an explicit USER-gap with a reason): R1 and R3 (Xiaomi phone plus the PC emulator, AVD `Medium_Phone_API_36.1`), R2 (literal human tap race), G4, A4, O4.
+- **Group B, checks needing the person** (closed with an `Evidencia:` line citing the user's dated confirmation, or recorded as an explicit USER-gap with a reason): R1 and R3 (Xiaomi phone plus the PC emulator, AVD `Medium_Phone_API_36.1`), R2 (literal human tap race), G4, A4, O4. UPDATE 2026-10-14 (later user decisions): R2 was closed by executed automated tests instead of a manual race, and G4 by citing the 2026-10-02 walk plus `LocationThrottleTest`; A4 is the user's dated statement; O4 was run by the agent and confirmed by the user per section.
 - **Group C, code and text gaps**: write `FirestorePhotoSourceTest` (androidTest) test-first to close 2.4.1 (O2); correct the stale text of 2.4.1, 3.4.1, 4.3.1, 5.3.1 to reflect the 61/61 device run of 2026-10-13 (O1).
 - **Already-done rows** (M1-M4, G1, G3, A2, AD1, AD2): cite the existing evidence (Engram id or date) in their `Evidencia:` line; not re-executed.
 - `docs/manual-tests.md`, the single manual-test log, plus the task states and `Evidencia:` lines in `tasks.md`; each device session also writes one Engram apply-progress note.

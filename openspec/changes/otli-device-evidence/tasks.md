@@ -100,7 +100,7 @@ Layout and theme
   - Evidencia: el primer contenido queda debajo de la barra de estado (barra 128 px segun `dumpsys window`; login arranca en y=196 y la barra superior de las cuatro pantallas de inicio en y=150), visto por el agente via adb en el Xiaomi 2510DRA23L (emuladores locales), 2026-10-14; extracto en `evidence/a1-adb-excerpts.txt`.
 - [x] 1.2 **L2** Dark mode: the gate's Sign out is legible and enabled. Technique: `cmd uimode night yes`, relaunch, dump, then `night no`.
   - PR: 03. Acceptance: dump shows the Sign out node `enabled="true"`; contrast is judged by eye and the `Evidencia:` line says so.
-  - Evidencia: en modo oscuro (el telefono ya estaba en `night yes`, sin cambiarlo) el boton Sign out de la pantalla "Approval pending" sale `enabled="true"` y se lee claro (texto claro sobre fondo oscuro, juzgado a ojo sobre una captura local no guardada), probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
+  - Evidencia: en modo oscuro (el telefono ya estaba en `night yes`, sin cambiarlo) el boton Sign out de la pantalla "Approval pending" sale `enabled="true"` y se lee claro (texto claro sobre fondo oscuro, juzgado a ojo por el agente sobre una captura local no guardada), probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14; ademas el usuario confirmo en el chat el 2026-10-14, sin repetir la prueba, que el boton se lee perfectamente en modo oscuro.
 - [x] 1.3 **L3** ProfileIncomplete gate shows Sign out and Try again. Needs an Auth user without a `users/{uid}` document (craft one through the Auth emulator).
   - PR: 03. Acceptance: both buttons visible. If the account cannot be crafted, record a USER-gap with the reason.
   - Evidencia: una cuenta de Auth sin documento `users/{uid}` (creada con el emulador de Auth, `orphan1@otli.test`) muestra "Profile not found" con los botones Try again y Sign out habilitados, probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
@@ -211,16 +211,17 @@ Run order inside the block: row A1 (1.22) before G5 (1.21) since both revoke loc
   - Evidencia: la caminata real con el telefono la hizo el usuario el 2026-10-02 y salio bien (Engram #43; no registra los valores exactos de frecuencia) y los limites de 10 s, 10 m y 60 s de latido los prueba `LocationThrottleTest` (parte de los 1075 tests unitarios en verde el 2026-10-14); decision del usuario, 2026-10-14.
 - [x] 2.5 **A4** Production API key restricted by package and SHA-1. User only, in the Firebase/Google Cloud console (the user reported doing it on 2026-10-13 together with enabling Email/Password; no artifact exists).
   - PR: 05. Acceptance: dated user confirmation or USER-gap with reason. The agent MUST NOT probe production for this unless the user explicitly authorizes it.
-  - Evidencia: el usuario confirmo en el chat el 2026-10-13 que habia restringido la API key por paquete (`com.otli.app`) y SHA-1 en la consola de Google Cloud, junto con activar Email/Password; sin artefacto y sin consultar produccion (el agente no la sondeo).
-- [ ] 2.6 **O4** Redo the `docs/demo-script.md` sections 2-7 walkthrough. User only; the agent supplies the steps and records the dated confirmation (sections 4, 5 and 6 can also feed R1, R2 and the two-actor evidence if the user says so).
+  - Evidencia: el usuario confirmo en el chat el 2026-10-13 que habia restringido la API key por paquete (`com.otli.app`) y SHA-1 en la consola de Google Cloud, junto con activar Email/Password; sin artefacto y sin consultar produccion (el agente no la sondeo); tambien lo registra Engram #68 (2026-10-13).
+- [x] 2.6 **O4** Redo the `docs/demo-script.md` sections 2-7 walkthrough. User only; the agent supplies the steps and records the dated confirmation (sections 4, 5 and 6 can also feed R1, R2 and the two-actor evidence if the user says so).
   - PR: 05. Acceptance (spec `Already-evidenced rows...`): dated user confirmation per section confirmed, or USER-gap with reason.
-  - Evidencia: (to be written when closed)
-  - Agent run done 2026-10-14: 26 PASS, 0 FAIL, 0 BLOCKED, 1 SKIPPED (claim race, R2), see evidence/o4-walkthrough.txt; awaiting the user's per-section confirmation.
-- [ ] 2.7 **AD2** Fee, approvals, release, cancel and All orders. Covered by O4; no separate check.
+  - Evidencia: el agente recorrio por adb las secciones 2-7 de `docs/demo-script.md` con el Xiaomi (usuario mirando el telefono) y el AVD Medium_Phone_API_36.1 contra emuladores locales (26 PASS, 1 SKIPPED, 0 FAIL, 0 BLOCKED; `evidence/o4-walkthrough.txt`) y el usuario confirmo en el chat el 2026-10-14 que vio funcionar bien TODAS las secciones 2, 3, 4, 5, 6 y 7; matices: en 5.3 el repartidor con entrega activa no puede reclamar otro pedido ni ponerse fuera de linea (interruptor deshabilitado, "Finish your delivery to go offline." visto) pero el texto "Finish your current delivery before claiming another order." no se vio porque la app oculta el pool entero (el texto solo sale ante un reclamo rechazado como BUSY, inalcanzable desde la UI; el comportamiento es correcto y el texto del guion era obsoleto, ya corregido); en 5.2 no se hizo la carrera de reclamo por toque simultaneo (R2 cerrada por pruebas automatizadas, decision del usuario 2026-10-14); en 6.1 el punto del repartidor no esta en el arbol de accesibilidad y el usuario lo confirmo a simple vista en el telefono; en 7d.1 la lista "All orders" se probo con un solo cliente y una sola tienda; la observacion es del agente y la atestacion del usuario, 2026-10-14.
+  - Agent run done 2026-10-14: 26 PASS, 0 FAIL, 0 BLOCKED, 1 SKIPPED (claim race, R2), see evidence/o4-walkthrough.txt; user attestation of sections 2-7 received the same day (see Evidencia).
+- [x] 2.7 **AD2** Fee, approvals, release, cancel and All orders. Covered by O4; no separate check.
   - PR: 05. Acceptance (spec scenario `AD2 covered by O4`): DONE citing O4 if O4 is DONE; if O4 is a USER-gap, AD2 is a USER-gap with the same reason.
-  - Evidencia: (to be written when closed)
-- [ ] 2.8 Close device session B: append the rows of 2.1-2.2 (and any agent-observed part of 2.3-2.6) to `docs/manual-tests.md`, write one Engram note under `sdd/otli-device-evidence/apply-progress`.
+  - Evidencia: cubierto por la seccion 7 de O4 (2.6): aprobaciones y suspensiones (7a items 1-4), liberar un pedido reclamado (7b), cancelar con motivo pedidos sin respuesta, listos sin repartidor, reclamados (tras liberar) y recogidos (7c items 1-4) y la lista y el detalle de "All orders" (7d items 1-2, con un solo cliente y una sola tienda); el cambio de tarifa se vio en la seccion 3 (items 3 y 5); observado por el agente via adb y confirmado por el usuario en el chat, 2026-10-14.
+- [x] 2.8 Close device session B: append the rows of 2.1-2.2 (and any agent-observed part of 2.3-2.6) to `docs/manual-tests.md`, write one Engram note under `sdd/otli-device-evidence/apply-progress`.
   - PR: 05. Acceptance: log rows and Engram note exist; user confirmations are dated.
+  - Done 2026-10-14: rows R1, R3 and O4 (agent run) were already in `docs/manual-tests.md`; one more O4/AD2 row records the user's dated attestation; R2, G4 and A4 are closed by decision or citation (tasks 2.3-2.5, no device session); Engram notes under `sdd/otli-device-evidence/apply-progress` (#79, merged batches 5 and 6, and this batch 7).
 
 ## Phase 3: (C) Code gap and stale archived text
 
@@ -256,7 +257,7 @@ Strict TDD applies with an honest exception: `FirestorePhotoSource` already work
 - [x] 3.11 Same file, task 4.3.1: keep the original sentence "compile-checked only, device run pending" (no strikethrough) and append the outcome: passed on device 2026-10-13 (`FirestoreDispatchRepositoryTest` 11/11, 61/61 run).
   - PR: 02. Acceptance: as 3.10.
 - [x] 3.12 Same file, task 5.3.1: keep the original sentence "compiled, device GREEN pending" (no strikethrough) and append the outcome: passed on device 2026-10-13 (`FirestoreLocationRepositoryTest` 4/4, 61/61 run).
-  - PR: 02. Acceptance: as 3.10. Verify all four with `rg -n 'compile-only|device run pending|GREEN pending' openspec/changes/archive/2026-10-13-otli-mvp/tasks.md` (matches may remain only inside struck text).
+  - PR: 02. Acceptance: as 3.10. Verify all four with `rg -n 'compile-only|device run pending|GREEN pending' openspec/changes/archive/2026-10-13-otli-mvp/tasks.md` (the original sentences are kept, with no strikethrough, so the matches remain, but each one must be followed by its "Resolved ..." outcome; updated 2026-10-14 after the verify, W5).
 - [x] 3.13 **O1** Close the row: cite the 2026-10-13 device run of 61/61 (7 classes, now 8 with O2) and the four text fixes.
   - PR: 02. Acceptance: `Evidencia:` names the 61/61 run, who and date, and the four task ids fixed.
   - Evidencia: la suite instrumentada paso 61/61 en 7 clases en el Xiaomi 2510DRA23L el 2026-10-13 y 65/65 en 8 clases el 2026-10-14 (agente via adb, emuladores locales), y las cuatro frases obsoletas del archivo `otli-mvp` (2.4.1, 3.4.1, 4.3.1, 5.3.1) quedaron corregidas conservando el texto original.
@@ -265,18 +266,24 @@ Strict TDD applies with an honest exception: `FirestorePhotoSource` already work
 
 ## Phase 4: (D) Close-out
 
-- [ ] 4.1 Tick `docs/demo-script.md` sections 2-7 only for the items the user actually confirmed in O4, with the date; leave unconfirmed items unticked and record them as USER-gap in 2.6.
+- [x] 4.1 Tick `docs/demo-script.md` sections 2-7 only for the items the user actually confirmed in O4, with the date; leave unconfirmed items unticked and record them as USER-gap in 2.6.
   - PR: 05. Acceptance: no tick without a matching dated confirmation in the O4 `Evidencia:`.
-- [ ] 4.2 Tick `docs/demo-script.md` section 8 with the date for the items proven by O5 (1.9) and, if run, the optional `test:android` item (3.7).
+  - Done 2026-10-14: 26 of the 27 boxes of sections 2-7 ticked with the date (section 2: 3, section 3: 5, section 4: 3, section 5: 2 of 3, section 6: 2, section 7: 11 as 4 approvals, 1 release, 4 cancellations, 2 support list and detail); section 5 item 2 (claim race) left unticked with the note "covered by automated tests (R2), no manual race performed, 2026-10-14"; the stale 5.3 wording was fixed (the pool is hidden for a courier with an active delivery; going offline is blocked with "Finish your delivery to go offline."); 6.1 and 7d.1 carry their nuance next to the date; a "Last run" line under the title points to `evidence/o4-walkthrough.txt`. No item was left as a USER-gap: the only unticked one is the race, closed by R2 (task 2.3).
+- [x] 4.2 Tick `docs/demo-script.md` section 8 with the date for the items proven by O5 (1.9) and, if run, the optional `test:android` item (3.7).
   - PR: 05. Acceptance: ticks match the counts stated in the O5 and O2 `Evidencia:` lines.
-- [ ] 4.3 In `openspec/changes/archive/2026-10-13-otli-mvp/tasks.md`, update the remaining F.x "device check pending" notes to point at the row that closed them (for example "device: otli-device-evidence L1, <date>"), only after that row is DONE, FAILED or a recorded USER-gap.
+  - Done 2026-10-14: ticked `npm --prefix backend test` (321/321 rules tests in 17 files, O5) and the optional `test:android` (65/65 in 8 classes on the Xiaomi, task 3.7). `./gradlew verifyAll` was first left unticked (O5 had run only `testDebugUnitTest` and the rules tests), and was ticked later the same day, 2026-10-14, after the orchestrator ran `./gradlew verifyAll` in full (BUILD SUCCESSFUL in 7m 8s, 321/321 rules tests); the run is logged in `docs/manual-tests.md` (verify warning W1 resolved).
+- [x] 4.3 In `openspec/changes/archive/2026-10-13-otli-mvp/tasks.md`, update the remaining F.x "device check pending" notes to point at the row that closed them (for example "device: otli-device-evidence L1, <date>"), only after that row is DONE, FAILED or a recorded USER-gap.
   - PR: 05. Acceptance: no F.x note says "pending" without a pointer to its row outcome.
-- [ ] 4.4 Final sweep of the 36 rows: every row has exactly one outcome (DONE with `Evidencia:`, USER-gap with reason and date, or FAILED with finding); none reads "pending", "n/a" or unlisted. Self-check: the count from `rg -c '^- \[x\] [0-9]+\.[0-9]+ \*\*' openspec/changes/otli-device-evidence/tasks.md` equals the count from `rg -c '^  - Evidencia: [^(]' openspec/changes/otli-device-evidence/tasks.md`, and `rg -n '^- \[~\]'` lists every remaining `[~]` row for the verify report.
+  - Done 2026-10-14: the 13 F.x entries (F.1-F.13) keep their original sentence and gain an appended "Was pending at the time. Resolved ..." clause with a "device: otli-device-evidence <row>" pointer, in the style of task 2.4.1: F.1 to L1, F.2 to L2, F.3 to L3, F.4 to L4, F.5 to L5, F.6 to A2 (cited), F.7 and F.8 to L6, F.9 to G1 (cited, plus G2 seen), F.10 to M3 (cited; camera fit not named in the source), F.11 to M4 (cited), F.12 to G3 (cited), F.13 to AD1 (cited). All 13 target rows are DONE; none is FAILED or a USER-gap. Task 2.4.1 was already resolved by task 3.9. `rg -c 'device check pending\)'` on the archived file now finds none. Left alone, not an F.x entry: the PR-slice summary line of 6.3 still says "the instrumented test is written and compiled, pending on device" for `06-3b-admin-repository` (the Admin repository test, 13/13 on the phone, covered by the AD1 and O2 evidence), reported to the orchestrator.
+- [x] 4.4 Final sweep of the 36 rows: every row has exactly one outcome (DONE with `Evidencia:`, USER-gap with reason and date, or FAILED with finding); none reads "pending", "n/a" or unlisted. Self-check: the count from `rg -c '^- \[x\] [0-9]+\.[0-9]+ \*\*' openspec/changes/otli-device-evidence/tasks.md` equals the count from `rg -c '^  - Evidencia: [^(]' openspec/changes/otli-device-evidence/tasks.md`, and `rg -n '^- \[~\]'` lists every remaining `[~]` row for the verify report.
   - PR: 05. Acceptance (spec scenario `Complete log`): complete outcomes; the `[~]` list is ready for the verify report. Each FAILED finding is queued for a separate change, and no source edit for it appears here.
-- [ ] 4.5 Prepare the `sdd-verify` hand-off: note in this file that verify must check (1) every `[x]` device task has `Evidencia:`, (2) every `[~]` is listed, and (3) must search Engram for `sdd/otli-device-evidence/*` and device-run notes such as #44/#45 as well as the repo files.
+  - Done 2026-10-14: the 36 canonical rows each end as exactly one outcome: 35 DONE (each `[x]` with an `Evidencia:` line; 8 of them cite earlier records instead of a new run: M1-M4, G1, G3, A2, AD1; R2, G4 and A4 are closed by executed tests, a citation or a user confirmation), 1 FAILED (N2, with its finding), 0 USER-gap, 0 `[~]`, 0 open. Self-check: `rg -c '^- \[x\] [0-9]+\.[0-9]+ \*\*'` gives 36 and `rg -c '^  - Evidencia: [^(]'` gives 36; `rg -n '^- \[~\]'` finds no row, so the verify report has no `[~]` to list; no row reads "pending" or "n/a" (the only hit of the word is the screen name "Approval pending" inside the L2 evidence). `git diff --stat main..HEAD -- app/src/main` is empty.
+- [x] 4.5 Prepare the `sdd-verify` hand-off: note in this file that verify must check (1) every `[x]` device task has `Evidencia:`, (2) every `[~]` is listed, and (3) must search Engram for `sdd/otli-device-evidence/*` and device-run notes such as #44/#45 as well as the repo files.
   - PR: 05. Acceptance (spec `Verification rules for this change`): the three rules are written in the hand-off note.
-- [ ] 4.6 Add the archive notes to this file and to Engram: the change-local spec `specs/device-evidence/spec.md` MUST stay inside the archived change folder and MUST NOT be promoted or synced into `openspec/specs/`; list the follow-up items (FAILED findings, and the spec gaps for insets and dark mode, foreground-service lifecycle, order notifications, "own position unknown").
+  - Done 2026-10-14: see "Hand-off to `sdd-verify`" at the end of this file.
+- [x] 4.6 Add the archive notes to this file and to Engram: the change-local spec `specs/device-evidence/spec.md` MUST stay inside the archived change folder and MUST NOT be promoted or synced into `openspec/specs/`; list the follow-up items (FAILED findings, and the spec gaps for insets and dark mode, foreground-service lifecycle, order notifications, "own position unknown").
   - PR: 05. Acceptance: the archive note states "do not promote to `openspec/specs/`".
+  - Done 2026-10-14: see "Archive notes" at the end of this file; the same text is saved in Engram under `sdd/otli-device-evidence/archive-notes`.
 
 ## Row coverage map (36 rows, each exactly one task)
 
@@ -293,3 +300,25 @@ Strict TDD applies with an honest exception: `FirestorePhotoSource` already work
 | O2, O1 | 3.8, 3.13 | 02 |
 
 Count check: 6 + 3 + 8 + 4 + 3 + 3 + 3 + 4 + 2 = 36.
+
+## Hand-off to `sdd-verify` (written 2026-10-14)
+
+`sdd-verify` must apply these three rules (spec `Verification rules for this change`):
+
+1. Every `[x]` device task has an `Evidencia:` line. The mechanical check is the equality of `rg -c '^- \[x\] [0-9]+\.[0-9]+ \*\*' openspec/changes/otli-device-evidence/tasks.md` and `rg -c '^  - Evidencia: [^(]' openspec/changes/otli-device-evidence/tasks.md` (36 and 36 at close-out), plus a check that no `Evidencia:` line is a placeholder.
+2. Every `[~]` is listed in the verify report. At close-out there is none (`rg -n '^- \[~\]'` finds nothing); if one appears, it is reported as available but unverified, never as done.
+3. Search Engram for `sdd/otli-device-evidence/*` (apply-progress #79, archive-notes) and for the device-run notes (for example #44, #45, #79, #80, #81, #82) as well as the repo files: the Engram notes are part of the evidence, and the cited rows (M1-M4, G1, G3, A2, AD1) rest on Engram records (#28, #43, #44, #45, #69, #73) that exist only there.
+
+Known shape of the result for the verify report: 36 rows, 35 DONE and 1 FAILED (N2, a finding, not a defect of this change); no USER-gap. The only code in the change is `FirestorePhotoSourceTest` (characterization test, no RED by design, three mutants seen failing); `git diff --stat main..HEAD -- app/src/main` must be empty. Run no device checks again: this change is documentation and evidence.
+
+## Archive notes (written 2026-10-14)
+
+- The change-local spec `specs/device-evidence/spec.md` MUST stay inside the archived change folder. Do not promote or sync it into `openspec/specs/`: it describes a verification protocol for this change only and adds no product behavior.
+- Follow-up items, none of them is done by this change:
+  - (a) FAILED finding N2: the app re-asks `POST_NOTIFICATIONS` on every home entry after a first plain denial (it keeps no memory of the decision). Goes to a separate SDD change, suggested name `otli-notification-permission-once`, test-first.
+  - (b) Spec gaps found while building the inventory: insets and dark mode, foreground-service lifecycle, order notifications and "own position unknown" have no spec scenarios in `otli-mvp`; a later change may add them.
+  - (c) The demo-script item 5.3 wording was stale (a courier with an active delivery does not see the pool, so the "Finish your current delivery before claiming another order." text is unreachable from the UI); fixed here in `docs/demo-script.md`.
+  - (d) The M1, AD1 and M3 citations rest on summary records (Engram #73 and #69, #28, #44), not on a record of their own; M3 camera fit is not named in #44.
+  - (e) L2 (dark-mode contrast of Sign out) was judged by eye by the agent on a local, unsaved screenshot (the dump only proves `enabled="true"`); the user then confirmed in the chat on 2026-10-14 that the button reads perfectly in dark mode, so no re-check is needed. Light mode was not tested.
+  - (f) Demo-script 7d.1 ("all orders" list) was exercised with one customer and one store only.
+- Engram copy of these notes: topic `sdd/otli-device-evidence/archive-notes`.
