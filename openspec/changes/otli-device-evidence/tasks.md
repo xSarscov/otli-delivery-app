@@ -83,8 +83,9 @@ Apply order (not the same as the phase numbers): Phase 0 → Phase 3 (C, PR 02) 
   - PR: none (operator action). Acceptance: the app signs in against the emulators. If `input` or `pm grant/revoke` fail, record a MIUI finding ("USB debugging (Security settings)" off) and ask the user to enable it; if `adb install` is blocked, ask for "Install via USB".
   - Partial 2026-10-14 (session C): `adb devices` lists `xkqwijtcyttsaahi` as `device` and both `adb reverse` tunnels were set; `connectedDebugAndroidTest` and `test:android` installed the debug and test APKs with no install block and the app signed in against the emulators (65/65). The standalone `assembleDebug` install for the adb checks is not done yet, so this box stays open for Phase 1.
   - Done 2026-10-14 (session A1): `./gradlew installDebug -Potli.emulatorHost=127.0.0.1` built and installed the one debug APK on the phone without an install block, `adb reverse` for 8080 and 9099 was set again, `input` and `uiautomator dump` worked (no "USB debugging (Security settings)" block), and the app signed in against fresh seeded local emulators as customer, merchant, courier and admin.
-- [ ] 0.5 Session prerequisite for R1/R3 only: start AVD `Medium_Phone_API_36.1` (emulator 37.2.12, WHPX OK, serial usually `emulator-5554`), install the same APK, and run `adb -s emulator-5554 reverse tcp:8080 tcp:8080` and `tcp:9099 tcp:9099`.
+- [x] 0.5 Session prerequisite for R1/R3 only: start AVD `Medium_Phone_API_36.1` (emulator 37.2.12, WHPX OK, serial usually `emulator-5554`), install the same APK, and run `adb -s emulator-5554 reverse tcp:8080 tcp:8080` and `tcp:9099 tcp:9099`.
   - PR: none (operator action). Acceptance: the AVD boots and the app signs in against the same emulators. If the AVD cannot be started at apply time, R1 and R3 become USER-gaps with that reason (spec `Realtime between two actors`).
+  - Done 2026-10-14 (session B): the AVD booted (`sys.boot_completed` 1, API 36, emulator 37.2.12), the same debug APK built with `-Potli.emulatorHost=127.0.0.1` was installed on both devices and `adb -s emulator-5554 reverse` for 8080 and 9099 was set; the app signed in against fresh seeded local emulators on both. The phone install returned `INSTALL_FAILED_USER_RESTRICTED` twice (MIUI `AdbInstallActivity` confirmation prompt pending) and succeeded on the third try, the AVD install succeeded on the first. Excerpts in `evidence/b-adb-excerpts.txt`.
 
 ## Phase 1: (A) adb-driven checks by family
 
@@ -196,12 +197,12 @@ Run order inside the block: row A1 (1.22) before G5 (1.21) since both revoke loc
 
 ## Phase 2: (B) checks that need the person, and the two-actor realtime checks
 
-- [ ] 2.1 **R1** A status change by one actor appears on the other's screen with no refresh. The user keeps the Xiaomi phone unlocked and plugged in as one role; the agent drives the AVD as the other role with `adb`, changes the order status, and dumps the phone screen.
+- [x] 2.1 **R1** A status change by one actor appears on the other's screen with no refresh. The user keeps the Xiaomi phone unlocked and plugged in as one role; the agent drives the AVD as the other role with `adb`, changes the order status, and dumps the phone screen.
   - PR: 05. Acceptance (spec scenario `Live propagation`): the receiver shows the new status with no manual refresh. Needs 0.5; if the AVD cannot start, USER-gap with that reason.
-  - Evidencia: (to be written when closed)
-- [ ] 2.2 **R3** Suspending a merchant while signed in flips that session to "Account suspended" without re-login. The phone is the signed-in merchant; the AVD is the Admin who presses "Suspend".
+  - Evidencia: el telefono (cliente, en la pantalla de seguimiento del pedido que hizo) paso de "Waiting for the store to answer" a "The store accepted your order", "Your order is being prepared" y "Your order is ready" unos 2 s despues de cada toque del comerciante en el AVD, sin tocar ni refrescar el telefono, y el pedido nuevo aparecio solo en la lista del comerciante del AVD; observado por el agente via adb entre el Xiaomi y el AVD Medium_Phone_API_36.1 (emulador local), 2026-10-14 (`evidence/b-adb-excerpts.txt`).
+- [x] 2.2 **R3** Suspending a merchant while signed in flips that session to "Account suspended" without re-login. The phone is the signed-in merchant; the AVD is the Admin who presses "Suspend".
   - PR: 05. Acceptance: the phone shows "Account suspended" without any re-login. Same AVD fallback as 2.1.
-  - Evidencia: (to be written when closed)
+  - Evidencia: con el comerciante 1 firmado en el telefono, al pulsar "Suspend" el Admin en el AVD el telefono mostro en 3 s "Account suspended" con "Sign out", sin volver a iniciar sesion y en la misma actividad (Firestore users y merchants en suspended); "Reactivate" lo dejo en active y el telefono volvio a su inicio; observado por el agente via adb entre el Xiaomi y el AVD Medium_Phone_API_36.1 (emulador local), 2026-10-14 (`evidence/b-adb-excerpts.txt`).
 - [ ] 2.3 **R2** Claim race by literal simultaneous human tap. User only: two couriers press "Claim" together (demo-script section 5). The rules race tests (20 rounds) and `FirestoreDispatchRepositoryTest` may be cited as support but do not close it.
   - PR: 05. Acceptance: a dated user confirmation in `Evidencia:`, or a USER-gap with reason and date.
   - Evidencia: (to be written when closed)
