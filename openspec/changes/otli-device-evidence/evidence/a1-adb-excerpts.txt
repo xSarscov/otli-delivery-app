@@ -1,0 +1,23 @@
+Block A1 excerpts, 2026-10-14, Xiaomi 2510DRA23L (HyperOS, Android 16), debug APK against local emulators, agent via adb.
+Filtered from uiautomator dumps and dumpsys; screenshots are not committed.
+
+L1  dumpsys window: InsetsSource type=statusBars frame=[0,0][1080,128] (status bar height 128 px)
+    login   first content node  "Welcome back"        bounds [68,196][576,298]   top 196 >= 128
+    homes   top bar container   (customer/merchant/courier/admin)  bounds [..,150][..,285]   top 150 >= 128
+L2  night mode yes (the phone was already in dark mode; "cmd uimode night" read before and after: yes)
+    gate "Approval pending" (merchant-pending@otli.test): "Sign out" enabled=true bounds [466,1391][614,1448]; contrast judged by eye on a local screenshot: light text on a dark surface, legible
+L3  orphan1@otli.test (Auth emulator signUp, no users/{uid} document) -> gate "Profile not found"
+    "Try again" [457,1267][623,1324] enabled=true ; "Sign out" [466,1447][614,1504] enabled=true
+L4  storefront dump: node desc="Back" [45,184][113,252] (up arrow) inside the top bar, title "Comedor Dona Marta", "Open cart"; keyevent BACK returned to the customer home (topResumedActivity MainActivity, home nodes present)
+L5  customer home: "More options" menu -> text "Sign out" [721,347][869,404]
+    merchant home: "More options" menu -> text "Sign out" [788,347][936,404]
+L6  two orders placed by customer1: smhWKpK1... 23:24:52Z (1 x Nacatamal, C$ 150.00, newer) and ccUeEjMI... 23:24:13Z (2 x Gallo pinto, C$ 210.00, older); every list shows the 150.00 order first and "Placed 17:24" (UTC-6) on each row
+    customer "My orders"   : Nacatamal 150.00, then Gallo pinto 210.00
+    merchant "New orders"  : Nacatamal 150.00, then Gallo pinto 210.00 (also under "In progress")
+    courier "Orders waiting for a courier": "Deliver to: second-order" (150.00), then "blue-house-test" (210.00)
+    admin "Waiting for a courier" and "All orders": C$ 150.00, then C$ 210.00
+A3  wrong password: text "We could not sign you in. Check your email and password and try again." [68,762][1012,876]; "Welcome back" and the Sign in button still present; no session
+O3  fresh emulators, seed run twice, exit 0 both times; counts per collection identical:
+    users 8, merchants 3, couriers 3, settings 1, seed-merchant-1/categories 2, seed-merchant-1/products 5, seed-merchant-2/categories 2, seed-merchant-2/products 5; Auth accounts 8 (second run printed "auth user updated" x8, none created)
+O5  ./gradlew testDebugUnitTest --rerun: 1075 tests, 0 failures, 0 errors, 0 skipped (122 result files, DomainPurityTest 2)
+    npm --prefix backend test: Test Files 17 passed (17), Tests 321 passed (321)
