@@ -84,7 +84,7 @@ Checks run on the phone (Xiaomi 2510DRA23L) against the local Firebase emulators
 - N1-N3: N1 one local notification per status change for customer and for merchant; N2 `POST_NOTIFICATIONS` asked once per home and not re-asked after a decision; N3 with notifications disabled no notification appears and the app does not crash.
 - FS1-FS3: FS1 courier location keeps updating backgrounded and screen-off (`updatedAt` advancing across two throttle intervals); FS2 `DeliveryTrackingService` listed while delivering and gone after delivered, release and cancel; FS3 started as a location foreground-service type on API 34+.
 - G2, G5, A1: G2 warning with re-open button appears with location services off mid-delivery and disappears on restore; G5 with permission revoked the courier map shows pins only and no courier marker; A1 going online without permission raises the runtime request.
-- A3: wrong password is rejected with an error and no session. G4 and A4 are a dated user confirmation or USER-gap; A4 MUST NOT be probed with production access unless the user authorizes it.
+- A3: wrong password is rejected with an error and no session. A4 is a dated user confirmation or USER-gap and MUST NOT be probed with production access unless the user authorizes it. G4 is closed, by decision of the user (2026-10-14), by citing the real walk test of 2026-10-02 (Engram #43) together with the executed `LocationThrottleTest` (10 s / 10 m / 60 s heartbeat), stating what each one covers.
 
 #### Scenario: Notifications off
 - GIVEN notifications are disabled for the app
@@ -98,7 +98,7 @@ Checks run on the phone (Xiaomi 2510DRA23L) against the local Firebase emulators
 
 ### Requirement: Realtime between two actors (R1, R3)
 
-R1 and R3 MUST use the user's Xiaomi phone as one actor and the PC Android emulator (AVD `Medium_Phone_API_36.1`, installed and accelerated with WHPX) as the other, both driven with `adb`. R1: a status change by one actor appears on the other's screen with no manual refresh. R3: suspending a merchant while signed in flips that session to "Account suspended" without re-login. If the emulator cannot be started at apply time, the row MUST be a USER-gap with that reason. R2 (literal human tap race) MUST be a dated user confirmation or a USER-gap; the rules race tests and `FirestoreDispatchRepositoryTest` MAY be cited as support but do not close it.
+R1 and R3 MUST use the user's Xiaomi phone as one actor and the PC Android emulator (AVD `Medium_Phone_API_36.1`, installed and accelerated with WHPX) as the other, both driven with `adb`. R1: a status change by one actor appears on the other's screen with no manual refresh. R3: suspending a merchant while signed in flips that session to "Account suspended" without re-login. If the emulator cannot be started at apply time, the row MUST be a USER-gap with that reason. R2 (claim race) is closed by executed automated tests (decision of the user, 2026-10-14: what matters is that exactly one claim wins and the loser is told, which the tests prove; a human-versus-adb tap race is neither fair nor repeatable): `backend/tests/rules/claim-concurrency.test.ts`, `FirestoreDispatchRepositoryTest.twoCouriersClaimingTheSameOrderExactlyOneWinsAndTheOtherIsToldItWasTaken` on the device, and `PoolViewModelTest` for the loser's message. No manual tap session is required.
 
 #### Scenario: Live propagation
 - GIVEN the phone and the emulator are signed in as different roles on the same order
