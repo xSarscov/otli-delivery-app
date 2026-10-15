@@ -100,7 +100,7 @@ Layout and theme
   - Evidencia: el primer contenido queda debajo de la barra de estado (barra 128 px segun `dumpsys window`; login arranca en y=196 y la barra superior de las cuatro pantallas de inicio en y=150), visto por el agente via adb en el Xiaomi 2510DRA23L (emuladores locales), 2026-10-14; extracto en `evidence/a1-adb-excerpts.txt`.
 - [x] 1.2 **L2** Dark mode: the gate's Sign out is legible and enabled. Technique: `cmd uimode night yes`, relaunch, dump, then `night no`.
   - PR: 03. Acceptance: dump shows the Sign out node `enabled="true"`; contrast is judged by eye and the `Evidencia:` line says so.
-  - Evidencia: en modo oscuro (el telefono ya estaba en `night yes`, sin cambiarlo) el boton Sign out de la pantalla "Approval pending" sale `enabled="true"` y se lee claro (texto claro sobre fondo oscuro, juzgado a ojo sobre una captura local no guardada), probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
+  - Evidencia: en modo oscuro (el telefono ya estaba en `night yes`, sin cambiarlo) el boton Sign out de la pantalla "Approval pending" sale `enabled="true"` y se lee claro (texto claro sobre fondo oscuro, juzgado a ojo por el agente sobre una captura local no guardada), probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14; ademas el usuario confirmo en el chat el 2026-10-14, sin repetir la prueba, que el boton se lee perfectamente en modo oscuro.
 - [x] 1.3 **L3** ProfileIncomplete gate shows Sign out and Try again. Needs an Auth user without a `users/{uid}` document (craft one through the Auth emulator).
   - PR: 03. Acceptance: both buttons visible. If the account cannot be crafted, record a USER-gap with the reason.
   - Evidencia: una cuenta de Auth sin documento `users/{uid}` (creada con el emulador de Auth, `orphan1@otli.test`) muestra "Profile not found" con los botones Try again y Sign out habilitados, probado por el agente via adb en el Xiaomi (emuladores locales), 2026-10-14.
@@ -319,6 +319,6 @@ Known shape of the result for the verify report: 36 rows, 35 DONE and 1 FAILED (
   - (b) Spec gaps found while building the inventory: insets and dark mode, foreground-service lifecycle, order notifications and "own position unknown" have no spec scenarios in `otli-mvp`; a later change may add them.
   - (c) The demo-script item 5.3 wording was stale (a courier with an active delivery does not see the pool, so the "Finish your current delivery before claiming another order." text is unreachable from the UI); fixed here in `docs/demo-script.md`.
   - (d) The M1, AD1 and M3 citations rest on summary records (Engram #73 and #69, #28, #44), not on a record of their own; M3 camera fit is not named in #44.
-  - (e) L2 (dark-mode contrast of Sign out) was judged by eye on a local, unsaved screenshot; the dump only proves `enabled="true"`.
+  - (e) L2 (dark-mode contrast of Sign out) was judged by eye by the agent on a local, unsaved screenshot (the dump only proves `enabled="true"`); the user then confirmed in the chat on 2026-10-14 that the button reads perfectly in dark mode, so no re-check is needed. Light mode was not tested.
   - (f) Demo-script 7d.1 ("all orders" list) was exercised with one customer and one store only.
 - Engram copy of these notes: topic `sdd/otli-device-evidence/archive-notes`.
